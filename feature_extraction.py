@@ -1,33 +1,9 @@
-import os, numpy, scipy, time, io, glob
+import os, numpy, scipy, time, io, glob, librosa
 import scipy.signal # Extracts power spectrum
-from scipy.io.wavfile import read, write # Writes temp file of window for sr to use
 import wavio # Converts wav to numpy array
-import speech_recognition as sr # Sphynx transcript
 import matplotlib.pyplot as plt # Visualisation
 
-numpy.set_printoptions(threshold=numpy.inf)
-
-# | Gets transcript of audio converted to text by Sphinx, returns array of
-# | words (as strings). Writes "<fileName>-temp.wav" to work with sr; deletes before exiting
-# | Returns:
-# |   Python array of words detected in audio
-def getTranscriptFromData(data,sampleRate,filePath):
-    tempFilePath = filePath + "-temp.wav"
-    wavio.write(tempFilePath, data, sampleRate, sampwidth=1)
-
-    r = sr.Recognizer() # Initialize recognizer object
-    r.energy_threshold = 200;
-    with sr.AudioFile(tempFilePath) as source:
-        audio = r.record(source)  # Reads in the entire audio file
-    transcript = []
-    try:
-        transcript += r.recognize_sphinx(audio).split()
-    except:
-        print("Sphynx encountered an error!")
-
-    os.remove(tempFilePath)
-
-    return transcript
+### Utilities
 
 # | Gets power of sound and returns numpy arrays
 def getPowerSpectrum(data,sampleRate,windowSize):
@@ -38,28 +14,77 @@ def getPowerSpectrum(data,sampleRate,windowSize):
                                   )
     return freqs,ps
 
-# | Compares power of each window to THRESHOLD and returns numpy array with
-# | 1s representing speech and 0s representing silence
-def getVoiceActivity(data,sampleRate,thresholdForSpeech):
-    minFreq = 300 # In hertz the lowest frequency of the voice band
-    maxFreq = 3000 # In hertz the highest frequency of the voice band
+# | Checks surrounding values in an array around the index to check if
+# | any of them are above the threshold
+def aboveThresholdWithinTolerance(data,indexInQuestion,threshold,tolerance):
+    window = tolerance * 2 - 1
+    for index in range(indexInQuestion - tolerance,indexInQuestion + tolerance):
+        if index >= 0 and index < len(data):
+            if data[index] > threshold:
+                return True
+    return False
 
-    freqs, ps = getPowerSpectrum(data,sampleRate,len(data))
+# | Returns the indices of syllables in audio data
+def getSyllables(data, sampleRate, frameSize, hopSize, peakMinDistance, peakMinWidth, zcrThreshold, dominantFreqThreshold, dominantFreqTolerance):
+    ### Constants
+    frame = int(sampleRate / 1000 * frameSize) # samples
+    hop = int(sampleRate / 1000 * hopSize) # samples
 
-    if numpy.mean(ps[minFreq:maxFreq]) > thresholdForSpeech:
-        return 1
-    else:
-        return 0
+    ### Dominant frequency analysis
+    dominantFrequency = []
+    windowSize = frame
+
+    for i in range(int(len(data)/hop)):
+        start = i*hop
+        end = start+frame
+        if end > len(data):
+            end = len(data)
+            windowSize = len(data[start:end])
+        freq, ps = getPowerSpectrum(data[start:end],sampleRate,windowSize)
+        dominantFrequency.append(freq[numpy.argmax(ps)])
+
+    ### Energy
+    energy = librosa.feature.rmse(data, frame_length=frame, hop_length=hop)[0]
+
+    ### Threshold
+    energyMinThreshold = numpy.median(energy) * 2
+
+    ### Peaks
+    peaks, _ = scipy.signal.find_peaks(energy,
+                                       height=energyMinThreshold,
+                                       distance=peakMinDistance,
+                                       width=peakMinWidth)
+
+    ### ZCR
+    zcr = librosa.feature.zero_crossing_rate(data, frame_length=frame, hop_length=hop)[0]
+
+    ### Removing invalid peaks
+    validPeaks = []
+    for i in range(0,len(peaks)):
+        if zcr[peaks[i]] < zcrThreshold and aboveThresholdWithinTolerance(dominantFrequency,
+                                                                          peaks[i],
+                                                                          dominantFreqThreshold,
+                                                                          dominantFreqTolerance):
+            validPeaks = numpy.append(validPeaks, peaks[i])
+
+    return validPeaks
+
+# |
+def getVoiceActivity(start,end,syllables,sampleRate,hop):
+    for index in syllables:
+        sampleIndex = index * sampleRate / 1000 * 16
+        if start <= sampleIndex and sampleIndex < end:
+            return 1
     return 0
 
 # | Returns the average voice activity (0 <= v <= 1)
-def getVoiceActivityFeatures(data,sampleRate,windowSize,thresholdForSpeech):
+def getVoiceActivityFeatures(length,sampleRate,windowSize,syllables,hop):
     sampleWindowSize = windowSize * sampleRate
     voiceActivity = numpy.zeros(shape=0)
 
     step = 0
-    while step < len(data):
-        voiceActivity = numpy.append(voiceActivity,getVoiceActivity(data[step:step + sampleWindowSize],sampleRate,thresholdForSpeech))
+    while step < length:
+        voiceActivity = numpy.append(voiceActivity,getVoiceActivity(step, step + sampleWindowSize,syllables,sampleRate,hop))
 
         # Increment to next step
         step += sampleWindowSize
@@ -67,31 +92,6 @@ def getVoiceActivityFeatures(data,sampleRate,windowSize,thresholdForSpeech):
     averageVoiceActivity = numpy.mean(voiceActivity)
     voiceActivityStDev = numpy.std(voiceActivity)
     return averageVoiceActivity, voiceActivityStDev
-
-
-# | Goes over whole audiofile and finds loudest noise in band of vocal activity,
-# | multiplies by the supplied percentage and returns. Any noise above this
-# | level in the voice band will be identified as speech
-def getVADThreshold(data,sampleRate,minFreq,maxFreq,percentageThreshold,windowSize=1):
-    sampleWindowSize = windowSize * sampleRate # #windowSize in seconds converted to samples
-
-    rms = numpy.empty((0))
-
-    for window in range(0,int(len(data) / sampleWindowSize)):
-        windowStart = int(window * sampleWindowSize)
-        windowEnd = int(windowStart + sampleWindowSize)
-        if windowEnd < len(data): # Catch running off the end of the wav array
-            freqs,ps = scipy.signal.welch(data[windowStart:windowEnd],
-                                          sampleRate,
-                                          window='hanning',   # Apply a Hanning window
-                                          nperseg= int(sampleWindowSize), # Compute periodograms of ____-long segments of x
-                                          )
-
-            rms = numpy.append(rms, numpy.mean(ps[minFreq:maxFreq]))
-
-    threshold = numpy.amax(rms) * percentageThreshold
-
-    return threshold
 
 # | Computes the absolute value of the raw data values then calculates
 # | the mean, max, min, and standard deviation of those data values
@@ -146,26 +146,13 @@ def getFeatures(filePath,stepSize,lookBackSize,percentageThreshold,printStatus):
 
     # Set up arrays for features
     seconds = numpy.zeros(shape=0)
-    wpm = numpy.zeros(shape=0)
+    syllablesPerSecond = numpy.zeros(shape=0)
     meanVoiceActivity = numpy.zeros(shape=0)
     stDevVoiceActivity = numpy.zeros(shape=0)
     meanPitch = numpy.zeros(shape=0)
     stDevPitch = numpy.zeros(shape=0)
     meanIntensity = numpy.zeros(shape=0)
     stDevIntensity = numpy.zeros(shape=0)
-
-    if printStatus :
-        print("Determining threshold for speech...")
-
-    threshold = getVADThreshold(data,           # audio data
-                                sampleRate=sampleRate,
-                                minFreq=300,    # minimum frequency of vocal activity
-                                maxFreq=3000,   # max frequency of vocal activity
-                                percentageThreshold=percentageThreshold
-                                )
-
-    if printStatus :
-        print("Done!")
 
     step = 0
     sampleStepSize = int(stepSize * sampleRate)
@@ -183,12 +170,20 @@ def getFeatures(filePath,stepSize,lookBackSize,percentageThreshold,printStatus):
             lookBackChunk = data[step + sampleStepSize - sampleLookBackSize:step + sampleStepSize]
 
             ### WORDS PER MINUTE
-            transcript = getTranscriptFromData(lookBackChunk,sampleRate,filePath)
-            currentWPM = len(transcript)/( lookBackSize/60 )
-            wpm = numpy.append(wpm,currentWPM)
+            frameSizeMS = 64
+            hopSizeMS = 16
+            peakMinDistance = 5
+            peakMinWidth = 2
+            zcrThreshold = 0.06
+            dominantFreqThreshold = 200
+            dominantFreqTolerance = 8
+
+            syllables = getSyllables(lookBackChunk, sampleRate, frameSizeMS, hopSizeMS, peakMinDistance, peakMinWidth, zcrThreshold, dominantFreqThreshold, dominantFreqTolerance)
+            currentSyllablesPerSecond = len(syllables)/lookBackSize
+            syllablesPerSecond = numpy.append(syllablesPerSecond,currentSyllablesPerSecond)
 
             ### VAD
-            average, stDev = getVoiceActivityFeatures(lookBackChunk,sampleRate,1,threshold)
+            average, stDev = getVoiceActivityFeatures(len(lookBackChunk),sampleRate,1,syllables,hopSizeMS)
             meanVoiceActivity = numpy.append(meanVoiceActivity,average)
             stDevVoiceActivity = numpy.append(stDevVoiceActivity,stDev)
 
@@ -204,7 +199,7 @@ def getFeatures(filePath,stepSize,lookBackSize,percentageThreshold,printStatus):
 
         # Fills arrays with zeros until step is larger than lookBackSize
         else:
-            wpm = numpy.append(wpm, 0)
+            syllablesPerSecond = numpy.append(syllablesPerSecond, 0)
             meanVoiceActivity = numpy.append(meanVoiceActivity, 0)
             stDevVoiceActivity = numpy.append(stDevVoiceActivity, 0)
             meanPitch = numpy.append(meanPitch, 0)
@@ -216,7 +211,7 @@ def getFeatures(filePath,stepSize,lookBackSize,percentageThreshold,printStatus):
         step += sampleStepSize
 
     # Pulls all the feautures together in one array
-    features = numpy.vstack([seconds,wpm,meanVoiceActivity,stDevVoiceActivity,meanPitch,stDevPitch,meanIntensity,stDevIntensity])
+    features = numpy.vstack([seconds,syllablesPerSecond,meanVoiceActivity,stDevVoiceActivity,meanPitch,stDevPitch,meanIntensity,stDevIntensity])
 
     if printStatus :
         print("[ DONE ] Finished processing",filePath,"!")
@@ -230,7 +225,7 @@ def main():
     startTime = time.time()
     count = 1
 
-    for path in sorted(glob.iglob(dir)):
+    for path in sorted(glob.iglob(dir),reverse=False):
         # Communicate progress
         print("[ " + str(count) + "/" + str(len(sorted(glob.iglob(dir)))) + " ] \tStarting:",path)
 
@@ -238,7 +233,7 @@ def main():
                                    stepSize=1, #how big to step in seconds
                                    lookBackSize=30,  #how big of interval to wait until looking for transcript, pitch/intensity features in seconds
                                    percentageThreshold=0.001,  #percentage of loudest noise in band above which vocal activity is present
-                                   printStatus=False
+                                   printStatus=True
                                    )
 
         # Save the numpy array
