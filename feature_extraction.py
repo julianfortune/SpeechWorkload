@@ -2,6 +2,9 @@ import os, numpy, scipy, time, io, glob, librosa
 import scipy.signal # Extracts power spectrum
 import wavio # Converts wav to numpy array
 import matplotlib.pyplot as plt # Visualisation
+import math
+
+numpy.set_printoptions(threshold=numpy.nan)
 
 ### Utilities
 
@@ -70,7 +73,7 @@ def getSyllables(data, sampleRate, frameSize, hopSize, peakMinDistance, peakMinW
     return validPeaks
 
 # |
-def getVoiceActivity(start,end,syllables,sampleRate,hop):
+def getVoiceActivityFromSyllables(start,end,syllables,sampleRate,hop):
     for index in syllables:
         sampleIndex = index * sampleRate / 1000 * 16
         if start <= sampleIndex and sampleIndex < end:
@@ -84,7 +87,7 @@ def getVoiceActivityFeatures(length,sampleRate,windowSize,syllables,hop):
 
     step = 0
     while step < length:
-        voiceActivity = numpy.append(voiceActivity,getVoiceActivity(step, step + sampleWindowSize,syllables,sampleRate,hop))
+        voiceActivity = numpy.append(voiceActivity,getVoiceActivityFromSyllables(step, step + sampleWindowSize,syllables,sampleRate,hop))
 
         # Increment to next step
         step += sampleWindowSize
@@ -92,6 +95,77 @@ def getVoiceActivityFeatures(length,sampleRate,windowSize,syllables,hop):
     averageVoiceActivity = numpy.mean(voiceActivity)
     voiceActivityStDev = numpy.std(voiceActivity)
     return averageVoiceActivity, voiceActivityStDev
+
+def simpleVAD(data, sampleRate, frameSize, hopSize, medianInitialThresholds, adaptiveThresholds):
+        ### Constants
+        frame = int(sampleRate / 1000 * frameSize) # samples
+        hop = int(sampleRate / 1000 * hopSize) # samples
+
+        ### Dominant frequency analysis
+        dominantFrequency = []
+        windowSize = frame
+
+        for i in range(int(len(data)/hop) + 1): #sketchy but works; TODO fix
+            start = i*hop
+            end = start+frame
+            if end > len(data):
+                end = len(data)
+                windowSize = len(data[start:end])
+            freq, ps = getPowerSpectrum(data[start:end],sampleRate,windowSize)
+            dominantFrequency.append(freq[numpy.argmax(ps)])
+
+        ### Energy
+        energy = librosa.feature.rmse(data, frame_length=frame, hop_length=hop)[0]
+
+        ### ZCR
+        zcr = librosa.feature.zero_crossing_rate(data, frame_length=frame, hop_length=hop)[0]
+
+        ###Thresholds
+        dominantFreqTolerance = 8
+
+        if medianInitialThresholds == True:
+            zcrThreshold = numpy.median(zcr)
+            energyPrimaryThreshold = numpy.median(energy)
+            dominantFreqThreshold = numpy.median(dominantFrequency)
+        else:
+            zcrThreshold = 0.06
+            energyPrimaryThreshold = 40
+            dominantFreqThreshold = 18
+
+        if adaptiveThresholds:
+            minEnergy = numpy.mean(energy[0:30])
+            energyThreshold = energyPrimaryThreshold * math.log(minEnergy)
+        else:
+            nergyThreshold = energyPrimaryThreshold
+
+        ### Going through each frame
+        voiceActivity = []
+        silenceCount = 0
+
+        if len(zcr) != len(energy) or len(energy) != len(dominantFrequency):
+            print("Error! Lengths differ!")
+            print("zcr: ", len(zcr), " energy: ", len(energy), " dominantFreq: ", len(dominantFrequency))
+            return voiceActivity
+
+        for i in range(0,len(energy)):
+            currentActivity = 0
+
+            if  zcr[i] < zcrThreshold and energy[i] > energyThreshold and aboveThresholdWithinTolerance(dominantFrequency,
+                                                                                                           i,
+                                                                                                           dominantFreqThreshold,
+                                                                                                           dominantFreqTolerance):
+
+                currentActivity = 1 # Voice acitivty present
+            else:
+                silenceCount += 1
+
+            voiceActivity = numpy.append(voiceActivity, currentActivity) # No voice acitivty present
+
+            if adaptiveThresholds:
+                minEnergy = ( (silenceCount * minEnergy) + energy(i) ) / ( silenceCount + 1 )
+                energyThreshold = energyPrimaryThreshold * math.log(minEnergy)
+
+        return voiceActivity
 
 # | Computes the absolute value of the raw data values then calculates
 # | the mean, max, min, and standard deviation of those data values
@@ -130,7 +204,9 @@ def getPitchFeatures(data,sampleRate,windowSize):
 # |   - printStatus: if True will print out as each second is processed, else no print
 # | Returns:
 # |   - Numpy array with features
-def getFeatures(filePath,stepSize,lookBackSize,percentageThreshold,printStatus):
+def getFeatures(filePath,stepSize,lookBackSize,syllableUseMediansForThresholds,
+    syllableAdaptive,percentageThreshold,printStatus):
+
     if printStatus :
         print("[ START ] Working on:",filePath)
 
@@ -218,7 +294,7 @@ def getFeatures(filePath,stepSize,lookBackSize,percentageThreshold,printStatus):
 
     return features
 
-def main():
+def getFeaturesOnAllFilesInDirectory():
     dir = "../media/Participant_Audio/*.wav"
 
     # Keep track of running stats
@@ -232,6 +308,8 @@ def main():
         featureArray = getFeatures(filePath=path, #file
                                    stepSize=1, #how big to step in seconds
                                    lookBackSize=30,  #how big of interval to wait until looking for transcript, pitch/intensity features in seconds
+                                   syllableUseMediansForThresholds = True,
+                                   syllableAdaptive = False,
                                    percentageThreshold=0.001,  #percentage of loudest noise in band above which vocal activity is present
                                    printStatus=True
                                    )
@@ -245,6 +323,26 @@ def main():
         print("\t\t" + str(timeElapsed/60) + " minutes elapsed. Estimated time remaining: " + str(estimatedTimeRemaining/60))
 
         count += 1
+
+def main():
+    # getFeaturesOnAllFilesInDirectory()
+
+    dir = "../media/Participant_Audio/*.wav"
+
+    for filePath in sorted(glob.iglob(dir),reverse=False):
+
+        # Read in the file, extract data and metadata
+        audioData = wavio.read(filePath) # reads in audio file
+        numberOfChannels = len(audioData.data[0])
+        sampleRate = audioData.rate # usually 44100
+        width = audioData.sampwidth # bit depth is equal to width times 8
+        length = len(audioData.data) # gets number of sample in audio
+
+        # Make the audio data mono
+        data = numpy.mean(audioData.data,axis=1)
+
+        print(simpleVAD(data, sampleRate, 64, 16, "firstFrames", False))
+
 
 if __name__ == "__main__":
     main()
