@@ -23,7 +23,7 @@ def parse_time(time_string):
 def main():
     file_name = "./actual/normal_load.csv"
     data = import_file(file_name)
-    output = np.empty
+    output = np.empty(0)
     current_level = 0
     for index in range(0,len(data)):
         row = data[index]
@@ -33,7 +33,9 @@ def main():
         if index + 1 < len(data):
             next_time = parse_time(data[index + 1][0])
             for interpolated_time in range(current_time + 1, next_time):
-                np.append(output, current_level)
+                output = np.append(output, current_level)
+
+    print(output)
 
     np.save("./labels/" + os.path.basename(file_name)[:-4],output)
 
