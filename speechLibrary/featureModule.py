@@ -1,12 +1,46 @@
-import os, numpy, scipy, time, io, glob, librosa
-import scipy.signal # Extracts power spectrum
-import wavio # Converts wav to numpy array
-import matplotlib.pyplot as plt # Visualisation
+'''
+Created on Apr 23, 2019
+
+@author: Julian Fortune
+
+@Description: Functions for extracting features from audio data.
+'''
 import math
+import numpy
+import librosa
+import scipy.signal # Extracts power spectrum
 
-numpy.set_printoptions(threshold=numpy.nan)
+class FeatureSet:
 
-### Utilities
+    # TODO: Redo to use classic lists and convert at very end
+
+    def __init__(self):
+        self.syllablesPerSecond = numpy.zeros(shape=0)
+        self.meanVoiceActivity = numpy.zeros(shape=0)
+        self.stDevVoiceActivity = numpy.zeros(shape=0)
+        self.meanPitch = numpy.zeros(shape=0)
+        self.stDevPitch = numpy.zeros(shape=0)
+        self.meanIntensity = numpy.zeros(shape=0)
+        self.stDevIntensity = numpy.zeros(shape=0)
+
+    def appendAllZeros(self):
+        self.syllablesPerSecond = numpy.append(self.syllablesPerSecond, 0)
+        self.meanVoiceActivity = numpy.append(self.meanVoiceActivity, 0)
+        self.stDevVoiceActivity = numpy.append(self.stDevVoiceActivity, 0)
+        self.meanPitch = numpy.append(self.meanPitch, 0)
+        self.stDevPitch = numpy.append(self.stDevPitch, 0)
+        self.meanIntensity = numpy.append(self.meanIntensity, 0)
+        self.stDevIntensity = numpy.append(self.stDevIntensity, 0)
+
+    def append(self, secondFeatureSet):
+        self.syllablesPerSecond = numpy.append(self.syllablesPerSecond, secondFeatureSet.syllablesPerSecond)
+        self.meanVoiceActivity = numpy.append(self.meanVoiceActivity, secondFeatureSet.meanVoiceActivity)
+        self.stDevVoiceActivity = numpy.append(self.stDevVoiceActivity, secondFeatureSet.stDevVoiceActivity)
+        self.meanPitch = numpy.append(self.meanPitch, secondFeatureSet.meanPitch)
+        self.stDevPitch = numpy.append(self.stDevPitch, secondFeatureSet.stDevPitch)
+        self.meanIntensity = numpy.append(self.meanIntensity, secondFeatureSet.meanIntensity)
+        self.stDevIntensity = numpy.append(self.stDevIntensity, secondFeatureSet.stDevIntensity)
+
 
 # | Gets power of sound and returns numpy arrays
 def getPowerSpectrum(data,sampleRate,windowSize):
@@ -96,7 +130,7 @@ def getVoiceActivityFeatures(length,sampleRate,windowSize,syllables,hop):
     voiceActivityStDev = numpy.std(voiceActivity)
     return averageVoiceActivity, voiceActivityStDev
 
-def simpleVAD(data, sampleRate, frameSize, hopSize, medianInitialThresholds, adaptiveThresholds):
+def adaptiveVAD(data, sampleRate, frameSize, hopSize, medianInitialThresholds, adaptiveThresholds):
         ### Constants
         frame = int(sampleRate / 1000 * frameSize) # samples
         hop = int(sampleRate / 1000 * hopSize) # samples
@@ -194,155 +228,3 @@ def getPitchFeatures(data,sampleRate,windowSize):
     stDev = numpy.std(loudestPitch)
 
     return average, stDev
-
-# | Extracts all features and returns array in accordance with Jamison's drawing
-# | Parameters:
-# |   - filePath: path to file to process
-# |   - stepSize: size of step in seconds
-# |   - lookBackSize: size of window for looking back on longterm features in seconds
-# |   - percentageThreshold: percentage of loudest noise in band above which vocal activity is present
-# |   - printStatus: if True will print out as each second is processed, else no print
-# | Returns:
-# |   - Numpy array with features
-def getFeatures(filePath,stepSize,lookBackSize,syllableUseMediansForThresholds,
-    syllableAdaptive,percentageThreshold,printStatus):
-
-    if printStatus :
-        print("[ START ] Working on:",filePath)
-
-    # Read in the file, extract data and metadata
-    audioData = wavio.read(filePath) # reads in audio file
-    numberOfChannels = len(audioData.data[0])
-    sampleRate = audioData.rate # usually 44100
-    width = audioData.sampwidth # bit depth is equal to width times 8
-    length = len(audioData.data) # gets number of sample in audio
-
-    # Make the audio data mono
-    data = numpy.mean(audioData.data,axis=1)
-
-    # Set up arrays for features
-    seconds = numpy.zeros(shape=0)
-    syllablesPerSecond = numpy.zeros(shape=0)
-    meanVoiceActivity = numpy.zeros(shape=0)
-    stDevVoiceActivity = numpy.zeros(shape=0)
-    meanPitch = numpy.zeros(shape=0)
-    stDevPitch = numpy.zeros(shape=0)
-    meanIntensity = numpy.zeros(shape=0)
-    stDevIntensity = numpy.zeros(shape=0)
-
-    step = 0
-    sampleStepSize = int(stepSize * sampleRate)
-    sampleLookBackSize = int(lookBackSize * sampleRate)
-    while step < length:
-        if printStatus:
-            print("[",str(step/length*100)[:4],"% ] Second",int(step/sampleRate))
-
-        # keep track of what second we're in
-        seconds = numpy.append(seconds,step/sampleRate)
-
-        # look backward to calculate features over long term
-        if step + sampleStepSize - sampleLookBackSize > 0:
-
-            lookBackChunk = data[step + sampleStepSize - sampleLookBackSize:step + sampleStepSize]
-
-            ### WORDS PER MINUTE
-            frameSizeMS = 64
-            hopSizeMS = 16
-            peakMinDistance = 5
-            peakMinWidth = 2
-            zcrThreshold = 0.06
-            dominantFreqThreshold = 200
-            dominantFreqTolerance = 8
-
-            syllables = getSyllables(lookBackChunk, sampleRate, frameSizeMS, hopSizeMS, peakMinDistance, peakMinWidth, zcrThreshold, dominantFreqThreshold, dominantFreqTolerance)
-            currentSyllablesPerSecond = len(syllables)/lookBackSize
-            syllablesPerSecond = numpy.append(syllablesPerSecond,currentSyllablesPerSecond)
-
-            ### VAD
-            average, stDev = getVoiceActivityFeatures(len(lookBackChunk),sampleRate,1,syllables,hopSizeMS)
-            meanVoiceActivity = numpy.append(meanVoiceActivity,average)
-            stDevVoiceActivity = numpy.append(stDevVoiceActivity,stDev)
-
-            ### AVERAGE PITCH
-            average, stDev = getPitchFeatures(lookBackChunk,sampleRate,1)
-            meanPitch = numpy.append(meanPitch, average)
-            stDevPitch = numpy.append(stDevPitch, stDev)
-
-            ### INTENSITY FEATURES
-            average, stDev = getIntensityFeatures(lookBackChunk)
-            meanIntensity = numpy.append(meanIntensity, average)
-            stDevIntensity = numpy.append(stDevIntensity, stDev)
-
-        # Fills arrays with zeros until step is larger than lookBackSize
-        else:
-            syllablesPerSecond = numpy.append(syllablesPerSecond, 0)
-            meanVoiceActivity = numpy.append(meanVoiceActivity, 0)
-            stDevVoiceActivity = numpy.append(stDevVoiceActivity, 0)
-            meanPitch = numpy.append(meanPitch, 0)
-            stDevPitch = numpy.append(stDevPitch, 0)
-            meanIntensity = numpy.append(meanIntensity, 0)
-            stDevIntensity = numpy.append(stDevIntensity, 0)
-
-        # Increment to next step
-        step += sampleStepSize
-
-    # Pulls all the feautures together in one array
-    features = numpy.vstack([seconds,syllablesPerSecond,meanVoiceActivity,stDevVoiceActivity,meanPitch,stDevPitch,meanIntensity,stDevIntensity])
-
-    if printStatus :
-        print("[ DONE ] Finished processing",filePath,"!")
-
-    return features
-
-def getFeaturesOnAllFilesInDirectory():
-    dir = "../media/Participant_Audio/*.wav"
-
-    # Keep track of running stats
-    startTime = time.time()
-    count = 1
-
-    for path in sorted(glob.iglob(dir),reverse=False):
-        # Communicate progress
-        print("[ " + str(count) + "/" + str(len(sorted(glob.iglob(dir)))) + " ] \tStarting:",path)
-
-        featureArray = getFeatures(filePath=path, #file
-                                   stepSize=1, #how big to step in seconds
-                                   lookBackSize=30,  #how big of interval to wait until looking for transcript, pitch/intensity features in seconds
-                                   syllableUseMediansForThresholds = True,
-                                   syllableAdaptive = False,
-                                   percentageThreshold=0.001,  #percentage of loudest noise in band above which vocal activity is present
-                                   printStatus=True
-                                   )
-
-        # Save the numpy array
-        numpy.save("./features/" + os.path.basename(path)[:-4],featureArray)
-
-        # Crunch some numbers and communicate to the user
-        timeElapsed = time.time() - startTime
-        estimatedTimeRemaining = timeElapsed/count * (len(sorted(glob.iglob(dir))) - count)
-        print("\t\t" + str(timeElapsed/60) + " minutes elapsed. Estimated time remaining: " + str(estimatedTimeRemaining/60))
-
-        count += 1
-
-def main():
-    # getFeaturesOnAllFilesInDirectory()
-
-    dir = "../media/Participant_Audio/*.wav"
-
-    for filePath in sorted(glob.iglob(dir),reverse=False):
-
-        # Read in the file, extract data and metadata
-        audioData = wavio.read(filePath) # reads in audio file
-        numberOfChannels = len(audioData.data[0])
-        sampleRate = audioData.rate # usually 44100
-        width = audioData.sampwidth # bit depth is equal to width times 8
-        length = len(audioData.data) # gets number of sample in audio
-
-        # Make the audio data mono
-        data = numpy.mean(audioData.data,axis=1)
-
-        print(simpleVAD(data, sampleRate, 64, 16, "firstFrames", False))
-
-
-if __name__ == "__main__":
-    main()
