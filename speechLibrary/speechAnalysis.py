@@ -32,13 +32,23 @@ class SpeechAnalyzer:
         self.lookBackSize = 30  #how big of interval to wait until looking for transcript, pitch/intensity features in seconds
 
         # Syllable detection parameters
-        self.syllableFrameSizeMS = 64
-        self.syllableHopSizeMS = 16
+        self.syllableWindowSize = 64 # In milliseconds
+        self.syllableStepSize = 16 # In milliseconds
         self.syllablePeakMinDistance = 5
         self.syllablePeakMinWidth = 2
         self.syllableZcrThreshold = 0.06
         self.syllableDominantFreqThreshold = 200
         self.syllableDominantFreqTolerance = 8
+
+        # Voice activity Parameters
+        self.voiceActivityIsAdaptive = True
+        # From "A Simple but efficient..."
+        self.voiceActivityWindowSize = 10 # In milliseconds
+        self.voiceActivityStepSize = 10 # In milliseconds
+        self.voiceActivityZCRThreshold = 0.06
+        self.voiceActivityEnergyThreshold = 40
+        self.voiceActivityFreqThreshold = 18
+        self.voiceActivityFreqTolerance = 8
 
         # Recording parameters
         self.recordingDeviceIndex = -1
@@ -51,25 +61,29 @@ class SpeechAnalyzer:
         features = featureModule.FeatureSet()
 
         ### WORDS PER MINUTE
-        syllables = featureModule.getSyllables(audio.data,
-                                               audio.sampleRate,
-                                               self.syllableFrameSizeMS,
-                                               self.syllableHopSizeMS,
-                                               self.syllablePeakMinDistance,
-                                               self.syllablePeakMinWidth,
-                                               self.syllableZcrThreshold,
-                                               self.syllableDominantFreqThreshold,
-                                               self.syllableDominantFreqTolerance)
+        syllables = featureModule.getSyllables(data=audio.data,
+                                               sampleRate=audio.sampleRate,
+                                               windowSize=self.syllableWindowSize,
+                                               stepSize=self.syllableStepSize,
+                                               peakMinDistance=self.syllablePeakMinDistance,
+                                               peakMinWidth=self.syllablePeakMinWidth,
+                                               zcrThreshold=self.syllableZcrThreshold,
+                                               dominantFreqThreshold=self.syllableDominantFreqThreshold,
+                                               dominantFreqTolerance=self.syllableDominantFreqTolerance)
 
         currentSyllablesPerSecond = len(syllables)/self.lookBackSize
         features.syllablesPerSecond = numpy.append(features.syllablesPerSecond, currentSyllablesPerSecond)
 
         ### VAD
-        average, stDev = featureModule.getVoiceActivityFeatures(len(audio.data),
-                                                                audio.sampleRate,
-                                                                1,
-                                                                syllables,
-                                                                self.syllableHopSizeMS)
+        average, stDev = featureModule.getVoiceActivityFeatures(data=audio.data,
+                                                                sampleRate=audio.sampleRate,
+                                                                windowSizeInMS=self.voiceActivityWindowSize,
+                                                                stepSizeInMS=self.voiceActivityStepSize,
+                                                                useAdaptiveThresholds=self.voiceActivityIsAdaptive,
+                                                                zcrThreshold=self.voiceActivityZCRThreshold,
+                                                                energyPrimaryThreshold=self.voiceActivityEnergyThreshold,
+                                                                dominantFreqThreshold=self.voiceActivityFreqThreshold,
+                                                                dominantFreqTolerance=self.voiceActivityFreqTolerance)
 
         features.meanVoiceActivity = numpy.append(features.meanVoiceActivity,average)
         features.stDevVoiceActivity = numpy.append(features.stDevVoiceActivity,stDev)
@@ -235,6 +249,7 @@ class SpeechAnalyzer:
                     print("\u001b[31m• Live\u001b[0m", str((time.time() - startTime))[:5], "elapsed.",
                           "Mean pitch:", features.meanPitch[0],
                           "Voice activity:", features.meanVoiceActivity[0],
+                          "Speech Rate:", features.syllablesPerSecond[0],
                           end="      \r")
 
                     # Reduce the size of the audio data array to move the beggining

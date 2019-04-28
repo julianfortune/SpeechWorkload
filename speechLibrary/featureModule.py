@@ -62,10 +62,10 @@ def aboveThresholdWithinTolerance(data,indexInQuestion,threshold,tolerance):
     return False
 
 # | Returns the indices of syllables in audio data
-def getSyllables(data, sampleRate, frameSize, hopSize, peakMinDistance, peakMinWidth, zcrThreshold, dominantFreqThreshold, dominantFreqTolerance):
+def getSyllables(data, sampleRate, windowSize, stepSize, peakMinDistance, peakMinWidth, zcrThreshold, dominantFreqThreshold, dominantFreqTolerance):
     ### Constants
-    frame = int(sampleRate / 1000 * frameSize) # samples
-    hop = int(sampleRate / 1000 * hopSize) # samples
+    frame = int(sampleRate / 1000 * windowSize) # samples
+    hop = int(sampleRate / 1000 * stepSize) # samples
 
     ### Dominant frequency analysis
     dominantFrequency = []
@@ -106,100 +106,68 @@ def getSyllables(data, sampleRate, frameSize, hopSize, peakMinDistance, peakMinW
 
     return validPeaks
 
-# |
-def getVoiceActivityFromSyllables(start,end,syllables,sampleRate,hop):
-    for index in syllables:
-        sampleIndex = index * sampleRate / 1000 * 16
-        if start <= sampleIndex and sampleIndex < end:
-            return 1
-    return 0
+# | Returns the average voice activity (0 <= v <= 1) using an adaptive algorithm.
+def getVoiceActivityFeatures(data, sampleRate, windowSizeInMS, stepSizeInMS, useAdaptiveThresholds, zcrThreshold, energyPrimaryThreshold, dominantFreqThreshold, dominantFreqTolerance):
+    ### Constants
+    windowSize = int(sampleRate / 1000 * windowSizeInMS) # samples
+    stepSize = int(sampleRate / 1000 * stepSizeInMS) # samples
 
-# | Returns the average voice activity (0 <= v <= 1)
-def getVoiceActivityFeatures(length,sampleRate,windowSize,syllables,hop):
-    sampleWindowSize = windowSize * sampleRate
-    voiceActivity = numpy.zeros(shape=0)
+    ### Dominant frequency analysis
+    dominantFrequency = []
+    currentWindowSize = windowSize
 
-    step = 0
-    while step < length:
-        voiceActivity = numpy.append(voiceActivity,getVoiceActivityFromSyllables(step, step + sampleWindowSize,syllables,sampleRate,hop))
+    for i in range(math.ceil(len(data)/stepSize)):
+        start = i*stepSize
+        end = start+windowSize
+        if end > len(data):
+            end = len(data)
+            currentWindowSize = len(data[start:end])
+        freq, ps = getPowerSpectrum(data[start:end],sampleRate,currentWindowSize)
+        dominantFrequency.append(freq[numpy.argmax(ps)])
 
-        # Increment to next step
-        step += sampleWindowSize
+    ### Energy
+    energy = librosa.feature.rmse(data, frame_length=windowSize, hop_length=stepSize)[0]
 
-    averageVoiceActivity = numpy.mean(voiceActivity)
-    voiceActivityStDev = numpy.std(voiceActivity)
-    return averageVoiceActivity, voiceActivityStDev
+    ### ZCR
+    zcr = librosa.feature.zero_crossing_rate(data, frame_length=windowSize, hop_length=stepSize)[0]
 
-def adaptiveVAD(data, sampleRate, frameSize, hopSize, medianInitialThresholds, adaptiveThresholds):
-        ### Constants
-        frame = int(sampleRate / 1000 * frameSize) # samples
-        hop = int(sampleRate / 1000 * hopSize) # samples
+    if useAdaptiveThresholds:
+        minEnergy = numpy.mean(energy[0:30])
+        energyThreshold = energyPrimaryThreshold * math.log(minEnergy)
+    else:
+        energyThreshold = energyPrimaryThreshold
 
-        ### Dominant frequency analysis
-        dominantFrequency = []
-        windowSize = frame
+    ### Going through each frame
+    voiceActivity = []
+    silenceCount = 0
 
-        for i in range(int(len(data)/hop) + 1): #sketchy but works; TODO fix
-            start = i*hop
-            end = start+frame
-            if end > len(data):
-                end = len(data)
-                windowSize = len(data[start:end])
-            freq, ps = getPowerSpectrum(data[start:end],sampleRate,windowSize)
-            dominantFrequency.append(freq[numpy.argmax(ps)])
-
-        ### Energy
-        energy = librosa.feature.rmse(data, frame_length=frame, hop_length=hop)[0]
-
-        ### ZCR
-        zcr = librosa.feature.zero_crossing_rate(data, frame_length=frame, hop_length=hop)[0]
-
-        ###Thresholds
-        dominantFreqTolerance = 8
-
-        if medianInitialThresholds == True:
-            zcrThreshold = numpy.median(zcr)
-            energyPrimaryThreshold = numpy.median(energy)
-            dominantFreqThreshold = numpy.median(dominantFrequency)
-        else:
-            zcrThreshold = 0.06
-            energyPrimaryThreshold = 40
-            dominantFreqThreshold = 18
-
-        if adaptiveThresholds:
-            minEnergy = numpy.mean(energy[0:30])
-            energyThreshold = energyPrimaryThreshold * math.log(minEnergy)
-        else:
-            nergyThreshold = energyPrimaryThreshold
-
-        ### Going through each frame
-        voiceActivity = []
-        silenceCount = 0
-
-        if len(zcr) != len(energy) or len(energy) != len(dominantFrequency):
-            print("Error! Lengths differ!")
-            print("zcr: ", len(zcr), " energy: ", len(energy), " dominantFreq: ", len(dominantFrequency))
-            return voiceActivity
-
-        for i in range(0,len(energy)):
-            currentActivity = 0
-
-            if  zcr[i] < zcrThreshold and energy[i] > energyThreshold and aboveThresholdWithinTolerance(dominantFrequency,
-                                                                                                           i,
-                                                                                                           dominantFreqThreshold,
-                                                                                                           dominantFreqTolerance):
-
-                currentActivity = 1 # Voice acitivty present
-            else:
-                silenceCount += 1
-
-            voiceActivity = numpy.append(voiceActivity, currentActivity) # No voice acitivty present
-
-            if adaptiveThresholds:
-                minEnergy = ( (silenceCount * minEnergy) + energy(i) ) / ( silenceCount + 1 )
-                energyThreshold = energyPrimaryThreshold * math.log(minEnergy)
-
+    if len(zcr) != len(energy) or len(energy) != len(dominantFrequency):
+        print("Error! Lengths differ!")
+        print("zcr: ", len(zcr), " energy: ", len(energy), " dominantFreq: ", len(dominantFrequency))
         return voiceActivity
+
+    for i in range(0,len(energy)):
+        currentActivity = 0
+
+        if  zcr[i] < zcrThreshold and energy[i] > energyThreshold and aboveThresholdWithinTolerance(dominantFrequency,
+                                                                                                    i,
+                                                                                                    dominantFreqThreshold,
+                                                                                                    dominantFreqTolerance):
+
+            currentActivity = 1 # Voice acitivty present
+        else:
+            silenceCount += 1
+
+        voiceActivity = numpy.append(voiceActivity, currentActivity) # No voice acitivty present
+
+        if useAdaptiveThresholds:
+            minEnergy = ( (silenceCount * minEnergy) + energy[i] ) / ( silenceCount + 1 )
+            energyThreshold = energyPrimaryThreshold * math.log(minEnergy)
+
+    # Get stats on voice activity
+    average = numpy.mean(voiceActivity)
+    stDev = numpy.std(voiceActivity)
+    return average, stDev
 
 # | Computes the absolute value of the raw data values then calculates
 # | the mean, max, min, and standard deviation of those data values
