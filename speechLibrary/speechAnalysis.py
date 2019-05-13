@@ -168,21 +168,19 @@ class SpeechAnalyzer:
 
         return featureArray
 
-    def getFeaturesOnAllFilesInDirectory(self):
-        dir = "../media/Participant_Audio/*.wav"
-
+    def createFeatureFilesFromDirectory(self, inDirectory, outDirectory):
         # Keep track of running stats
         startTime = time.time()
         count = 1
 
-        for path in sorted(glob.iglob(dir),reverse=False):
+        for path in sorted(glob.iglob(inDirectory),reverse=False):
             # Communicate progress
-            print("[ " + str(count) + "/" + str(len(sorted(glob.iglob(dir)))) + " ] \tStarting:",path)
+            print("[ " + str(count) + "/" + str(len(sorted(glob.iglob(inDirectory)))) + " ] \tStarting:",path)
 
             featureArray = getFeaturesFromFile(path)
 
             # Save the numpy array
-            numpy.save("./test_features/" + os.path.basename(path)[:-4],featureArray)
+            numpy.save(outDirectory + os.path.basename(path)[:-4],featureArray)
 
             # Crunch some numbers and communicate to the user
             timeElapsed = time.time() - startTime
@@ -192,13 +190,18 @@ class SpeechAnalyzer:
             count += 1
 
     def getFeaturesFromLiveInput(self):
+        # Controls the microphone and live input
         audioController = pyaudio.PyAudio()
 
+        # Check if microphone paramter is set, default is -1
         microphoneIndex = self.recordingDeviceIndex
 
+        # Check microphone paramter is valid
         if microphoneIndex < 0 or microphoneIndex >= audioController.get_device_count():
+            # Use helper function to select the device
             microphoneIndex = audioModule.pickMicrophone(audioController)
 
+        # Get the chosen device's sample rate
         sampleRate = int(audioController.get_device_info_by_index(microphoneIndex)["defaultSampleRate"])
 
         input("Press 'Enter' to start recording. Use keyboard interrupt to stop.")
@@ -212,6 +215,7 @@ class SpeechAnalyzer:
 
         print("\n\u001b[31m• Live\u001b[0m\r", end="\r")
 
+        # Setup before recording starts
         data = numpy.zeros(shape=0)
 
         windowSampleSize = int(sampleRate * self.lookBackSize)
@@ -234,7 +238,6 @@ class SpeechAnalyzer:
 
                 # Once enough time has passed to include an entire window
                 if data.size >= windowSampleSize:
-
                     # Chop out a window sized section of data
                     currentWindowSelection = data[0:windowSampleSize]
 
@@ -258,7 +261,7 @@ class SpeechAnalyzer:
 
         # User stops with ctrl + c
         except KeyboardInterrupt:
-            print("\rStopped!                                   ")
+            print("\rStopped!                                          ")
 
         # Clean up audio session
         audioStream.stop_stream()

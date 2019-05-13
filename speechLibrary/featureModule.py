@@ -12,7 +12,8 @@ import scipy.signal # Extracts power spectrum
 
 class FeatureSet:
 
-    # TODO: Redo to use classic lists and convert at very end
+    # TODO: Redo to use classic lists and convert at very end to safe on
+    # re-allocation/copying time
 
     def __init__(self):
         self.syllablesPerSecond = numpy.zeros(shape=0)
@@ -150,9 +151,9 @@ def getVoiceActivityFeatures(data, sampleRate, windowSizeInMS, stepSizeInMS, use
         currentActivity = 0
 
         if  zcr[i] < zcrThreshold and energy[i] > energyThreshold and aboveThresholdWithinTolerance(dominantFrequency,
-                                                                                                    i,
-                                                                                                    dominantFreqThreshold,
-                                                                                                    dominantFreqTolerance):
+                                      i,
+                                      dominantFreqThreshold,
+                                      dominantFreqTolerance):
 
             currentActivity = 1 # Voice acitivty present
         else:
@@ -174,8 +175,6 @@ def getVoiceActivityFeatures(data, sampleRate, windowSizeInMS, stepSizeInMS, use
 def getIntensityFeatures(data):
     absVal = numpy.absolute(data)
     average = numpy.mean(absVal)
-    max = numpy.amax(absVal)
-    min = numpy.amin(absVal)
     stDev = numpy.std(absVal)
     return average, stDev
 

@@ -50,7 +50,7 @@ class Audio:
             self.data = numpy.mean(self.data,axis=1)
             self.numberOfChannels = 1
         else:
-            print("ALREADY MONO")
+            print("Error: Sound Already Mono")
 
     def description(self):
         print("Audio data - ", self.sampleRate, "samples/second,", self.numberOfChannels, "channels,", self.length, "seconds.")
