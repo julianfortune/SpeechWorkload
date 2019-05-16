@@ -2,13 +2,31 @@ import parselmouth
 import numpy as np
 import matplotlib.pyplot as plt
 
+import sys, time
+
 import wavio
 import math
 import librosa
 
-windowSize = .1
+np.set_printoptions(threshold=sys.maxsize)
 
-filePath = "../media/Participant_Audio_30_Sec_Chunks/p13_ol_chunk10.wav"
+start = time.time()
+
+# Parameters of the features
+
+utteranceWindowSize = 30 # milliseconds
+utteranceStepSize = utteranceWindowSize/2 # milliseconds
+
+utteranceMinimumLength = 200 # milliseconds
+utteranceMaximumVariance = 40
+utteranceEnergyThreshold = 60
+
+
+# Audio file i/o
+
+file = "p1_ol.wav"
+
+filePath = "../media/Participant_Audio/" + file
 
 inputSound = parselmouth.Sound(filePath)
 
@@ -16,49 +34,72 @@ audio = wavio.read(filePath) # reads in audio file
 sampleRate = audio.rate
 data = np.mean(audio.data,axis=1)
 
-power = np.absolute(data)
+print("Loaded file")
+print(time.time() - start)
 
-formantData = inputSound.to_formant_burg(window_length=windowSize, max_formants=2)
-pitch = inputSound.to_pitch_ac()
+def getFilledPauses(data, windowSize, stepSize, minumumLength, maximumVariance, energyThreshold):
 
-pitch_values = pitch.selected_array['frequency']
-pitch_values[pitch_values==0] = np.nan
+    # Helper parameter set up
 
-pitchTimes = pitch.t_bins()[:, :-1]
+    # Everything needs to be based on samples to prevent rounding issues with RMSE
+    sampleWindowSize = int(windowSize*sampleRate/1000)
+    sampleStepSize = int(stepSize*sampleRate/1000)
 
-times = formantData.t_bins()[:, :-1][:,0]
+    times = np.arange(0, len(data)/sampleRate, sampleStepSize/sampleRate) # seconds
 
-firstFormant = []
-secondFormant = []
-intensity = []
+    print("Getting features")
+    print(time.time() - start)
 
-for timeStamp in times:
-    firstFormant.append(formantData.get_value_at_time(1, timeStamp))
-    secondFormant.append(formantData.get_value_at_time(2, timeStamp))
+    # --- Core feature extraction ---
 
-    frame = int(sampleRate * timeStamp)
-    intensity.append(power[frame])
+    # Formant extraction
 
-firstFormant = np.array(firstFormant)
-secondFormant = np.array(secondFormant)
-intensity = np.array(intensity)
+    formantData = inputSound.to_formant_burg(window_length=sampleWindowSize/sampleRate, time_step=sampleStepSize/sampleRate)
 
-sampleWindowSize = int(windowSize*sampleRate)
-sampleStepSize = int(windowSize*sampleRate/4)
+    firstFormant = []
+    secondFormant = []
 
-energy = librosa.feature.rmse(data, frame_length=sampleWindowSize, hop_length=sampleStepSize)[0]
+    for timeStamp in times:
+        firstFormantValue = formantData.get_value_at_time(1, timeStamp)
+        secondFormantValue = formantData.get_value_at_time(2, timeStamp)
 
-length = math.ceil(data.size/sampleRate)
+        firstFormant.append(firstFormantValue)
+        secondFormant.append(secondFormantValue)
 
-energyTimes = np.arange(0, length + windowSize/4, windowSize/4)
+    firstFormant = np.array(firstFormant)
+    secondFormant = np.array(secondFormant)
 
-print(energyTimes)
+    # Energy
 
-# plt.plot(times, firstFormant, times, secondFormant, energyTimes, energy, pitchTimes, pitch_values*10, 'ro')
-# plt.show()
+    energy = librosa.feature.rmse(data, frame_length=sampleWindowSize, hop_length=sampleStepSize)[0][:len(times)]
 
-diffOffset = np.empty(firstFormant.size)
-diffOffset.fill(700)
+    print("Getting filled pauses")
+    print(time.time() - start)
 
-plt.plot(times, firstFormant, times, secondFormant, times, np.abs(firstFormant - secondFormant) - diffOffset)
-plt.show()
+    # Filled pauses detection
+
+    filledPauses = np.empty(len(times))
+    filledPauses.fill(np.nan)
+
+    frameWindowSize = int(minumumLength / 1000 * 44100 / sampleStepSize)
+
+    fillerUtteranceInitiated = False
+
+    for frame in range(0, len(times)-frameWindowSize):
+        firstVariance = np.std(firstFormant[frame:frame+frameWindowSize])
+        secondVariance = np.std(secondFormant[frame:frame+frameWindowSize])
+        averageEnergy = np.mean(energy[frame:frame+frameWindowSize])
+
+        if firstVariance <= maximumVariance and secondVariance <= maximumVariance and averageEnergy > energyThreshold:
+            if fillerUtteranceInitiated == False:
+                filledPauses[frame] = 1
+                fillerUtteranceInitiated = True
+        else:
+            fillerUtteranceInitiated = False
+
+    plt.plot(times, firstFormant, times, secondFormant, times, energy, times, filledPauses, 'ro')
+    plt.title(file)
+    plt.show()
+
+
+getFilledPauses(data, utteranceWindowSize, utteranceStepSize, utteranceMinimumLength, utteranceMaximumVariance, utteranceEnergyThreshold)
