@@ -8,7 +8,7 @@ Created on Apr 23, 2019
 import wavio
 import wave
 import pyaudio
-import numpy
+import numpy as np
 
 class Audio:
 
@@ -16,10 +16,9 @@ class Audio:
 
     # Convenience constructor from audio file or data
     def __init__(self, filePath=None, data=None):
-        self.data = numpy.zeros(shape=0)
+        self.data = np.zeros(shape=0)
         self.numberOfChannels = 0
         self.sampleRate = 0
-        self.width = 0
         self.length = 0
 
         if isinstance(filePath, str):
@@ -28,10 +27,9 @@ class Audio:
             self.data = audioData.data
             self.numberOfChannels = len(audioData.data[0])
             self.sampleRate = audioData.rate # usually 44100
-            self.width = audioData.sampwidth # bit depth is equal to width times 8
             self.length = len(audioData.data) # gets number of sample in audio
 
-        if isinstance(data, numpy.ndarray):
+        if isinstance(data, np.ndarray):
             self.data = data
             self.length = len(data)
 
@@ -47,7 +45,7 @@ class Audio:
     # Make the audio data mono
     def makeMono(self):
         if self.numberOfChannels > 1:
-            self.data = numpy.mean(self.data,axis=1)
+            self.data = np.mean(self.data,axis=1)
             self.numberOfChannels = 1
         else:
             print("Error: Sound Already Mono")

@@ -6,45 +6,49 @@ Created on Apr 23, 2019
 @Description: Functions for extracting features from audio data.
 '''
 import math
-import numpy
+import numpy as np
 import librosa
 import scipy.signal # Extracts power spectrum
+import parselmouth # Formants
 
 class FeatureSet:
 
-    # TODO: Redo to use classic lists and convert at very end to safe on
+    # TODO: Redo to use classic lists and convert at very end to save on
     # re-allocation/copying time
 
     def __init__(self):
-        self.syllablesPerSecond = numpy.zeros(shape=0)
-        self.meanVoiceActivity = numpy.zeros(shape=0)
-        self.stDevVoiceActivity = numpy.zeros(shape=0)
-        self.meanPitch = numpy.zeros(shape=0)
-        self.stDevPitch = numpy.zeros(shape=0)
-        self.meanIntensity = numpy.zeros(shape=0)
-        self.stDevIntensity = numpy.zeros(shape=0)
+        self.syllablesPerSecond = np.zeros(shape=0)
+        self.meanVoiceActivity = np.zeros(shape=0)
+        self.stDevVoiceActivity = np.zeros(shape=0)
+        self.meanPitch = np.zeros(shape=0)
+        self.stDevPitch = np.zeros(shape=0)
+        self.meanIntensity = np.zeros(shape=0)
+        self.stDevIntensity = np.zeros(shape=0)
 
     def appendAllZeros(self):
-        self.syllablesPerSecond = numpy.append(self.syllablesPerSecond, 0)
-        self.meanVoiceActivity = numpy.append(self.meanVoiceActivity, 0)
-        self.stDevVoiceActivity = numpy.append(self.stDevVoiceActivity, 0)
-        self.meanPitch = numpy.append(self.meanPitch, 0)
-        self.stDevPitch = numpy.append(self.stDevPitch, 0)
-        self.meanIntensity = numpy.append(self.meanIntensity, 0)
-        self.stDevIntensity = numpy.append(self.stDevIntensity, 0)
+        self.syllablesPerSecond = np.append(self.syllablesPerSecond, 0)
+        self.meanVoiceActivity = np.append(self.meanVoiceActivity, 0)
+        self.stDevVoiceActivity = np.append(self.stDevVoiceActivity, 0)
+        self.meanPitch = np.append(self.meanPitch, 0)
+        self.stDevPitch = np.append(self.stDevPitch, 0)
+        self.meanIntensity = np.append(self.meanIntensity, 0)
+        self.stDevIntensity = np.append(self.stDevIntensity, 0)
 
     def append(self, secondFeatureSet):
-        self.syllablesPerSecond = numpy.append(self.syllablesPerSecond, secondFeatureSet.syllablesPerSecond)
-        self.meanVoiceActivity = numpy.append(self.meanVoiceActivity, secondFeatureSet.meanVoiceActivity)
-        self.stDevVoiceActivity = numpy.append(self.stDevVoiceActivity, secondFeatureSet.stDevVoiceActivity)
-        self.meanPitch = numpy.append(self.meanPitch, secondFeatureSet.meanPitch)
-        self.stDevPitch = numpy.append(self.stDevPitch, secondFeatureSet.stDevPitch)
-        self.meanIntensity = numpy.append(self.meanIntensity, secondFeatureSet.meanIntensity)
-        self.stDevIntensity = numpy.append(self.stDevIntensity, secondFeatureSet.stDevIntensity)
+        self.syllablesPerSecond = np.append(self.syllablesPerSecond, secondFeatureSet.syllablesPerSecond)
+        self.meanVoiceActivity = np.append(self.meanVoiceActivity, secondFeatureSet.meanVoiceActivity)
+        self.stDevVoiceActivity = np.append(self.stDevVoiceActivity, secondFeatureSet.stDevVoiceActivity)
+        self.meanPitch = np.append(self.meanPitch, secondFeatureSet.meanPitch)
+        self.stDevPitch = np.append(self.stDevPitch, secondFeatureSet.stDevPitch)
+        self.meanIntensity = np.append(self.meanIntensity, secondFeatureSet.meanIntensity)
+        self.stDevIntensity = np.append(self.stDevIntensity, secondFeatureSet.stDevIntensity)
 
-
-# | Gets power of sound and returns numpy arrays
+# | Gets power of sound and returns np arrays
 def getPowerSpectrum(data,sampleRate,windowSize):
+
+    print("len(data): ", len(data))
+    print("windowSize: ", windowSize)
+
     freqs,ps = scipy.signal.welch(data,
                                   sampleRate,
                                   window='hanning',   # Apply a Hanning window
@@ -79,13 +83,13 @@ def getSyllables(data, sampleRate, windowSize, stepSize, peakMinDistance, peakMi
             end = len(data)
             windowSize = len(data[start:end])
         freq, ps = getPowerSpectrum(data[start:end],sampleRate,windowSize)
-        dominantFrequency.append(freq[numpy.argmax(ps)])
+        dominantFrequency.append(freq[np.argmax(ps)])
 
     ### Energy
     energy = librosa.feature.rmse(data, frame_length=frame, hop_length=hop)[0]
 
     ### Threshold
-    energyMinThreshold = numpy.median(energy) * 2
+    energyMinThreshold = np.median(energy) * 2
 
     ### Peaks
     peaks, _ = scipy.signal.find_peaks(energy,
@@ -103,28 +107,43 @@ def getSyllables(data, sampleRate, windowSize, stepSize, peakMinDistance, peakMi
                                                                           peaks[i],
                                                                           dominantFreqThreshold,
                                                                           dominantFreqTolerance):
-            validPeaks = numpy.append(validPeaks, peaks[i])
+            validPeaks = np.append(validPeaks, peaks[i])
 
     return validPeaks
 
 # | Returns the average voice activity (0 <= v <= 1) using an adaptive algorithm.
-def getVoiceActivityFeatures(data, sampleRate, windowSizeInMS, stepSizeInMS, useAdaptiveThresholds, zcrThreshold, energyPrimaryThreshold, dominantFreqThreshold, dominantFreqTolerance):
+def getVoiceActivity(data, sampleRate, windowSizeInMS, stepSizeInMS, useAdaptiveThresholds, zcrThreshold, energyPrimaryThreshold, dominantFreqThreshold, dominantFreqTolerance):
     ### Constants
     windowSize = int(sampleRate / 1000 * windowSizeInMS) # samples
     stepSize = int(sampleRate / 1000 * stepSizeInMS) # samples
+
+    print("windowSize: ", windowSize)
+    print("stepSize: ", stepSize)
+    print("len(data): ", len(data))
 
     ### Dominant frequency analysis
     dominantFrequency = []
     currentWindowSize = windowSize
 
     for i in range(math.ceil(len(data)/stepSize)):
+        print("i: ", i)
         start = i*stepSize
         end = start+windowSize
+
+        print("start: ", start)
+        print("end: ", end)
+
         if end > len(data):
             end = len(data)
             currentWindowSize = len(data[start:end])
         freq, ps = getPowerSpectrum(data[start:end],sampleRate,currentWindowSize)
-        dominantFrequency.append(freq[numpy.argmax(ps)])
+
+        print("len(data[start:end]): ", len(data[start:end]))
+
+        print("np.argmax(ps): ", np.argmax(ps))
+        print("len(freq): ", len(freq))
+
+        dominantFrequency.append(freq[np.argmax(ps)])
 
     ### Energy
     energy = librosa.feature.rmse(data, frame_length=windowSize, hop_length=stepSize)[0]
@@ -133,7 +152,7 @@ def getVoiceActivityFeatures(data, sampleRate, windowSizeInMS, stepSizeInMS, use
     zcr = librosa.feature.zero_crossing_rate(data, frame_length=windowSize, hop_length=stepSize)[0]
 
     if useAdaptiveThresholds:
-        minEnergy = numpy.mean(energy[0:30])
+        minEnergy = np.mean(energy[0:30])
         energyThreshold = energyPrimaryThreshold * math.log(minEnergy)
     else:
         energyThreshold = energyPrimaryThreshold
@@ -159,39 +178,126 @@ def getVoiceActivityFeatures(data, sampleRate, windowSizeInMS, stepSizeInMS, use
         else:
             silenceCount += 1
 
-        voiceActivity = numpy.append(voiceActivity, currentActivity) # No voice acitivty present
+        voiceActivity = np.append(voiceActivity, currentActivity) # No voice acitivty present
 
         if useAdaptiveThresholds:
             minEnergy = ( (silenceCount * minEnergy) + energy[i] ) / ( silenceCount + 1 )
             energyThreshold = energyPrimaryThreshold * math.log(minEnergy)
 
+    return voiceActivity
+
+# | Returns the average voice activity (0 <= v <= 1) using an adaptive algorithm.
+def getVoiceActivityFeatures(data, sampleRate, windowSizeInMS, stepSizeInMS, useAdaptiveThresholds, zcrThreshold, energyPrimaryThreshold, dominantFreqThreshold, dominantFreqTolerance):
+    # Voice activity
+    voiceActivity = getVoiceActivity(data, sampleRate, windowSizeInMS, stepSizeInMS, useAdaptiveThresholds, zcrThreshold, energyPrimaryThreshold, dominantFreqThreshold, dominantFreqTolerance)
+
     # Get stats on voice activity
-    average = numpy.mean(voiceActivity)
-    stDev = numpy.std(voiceActivity)
+    average = np.mean(voiceActivity)
+    stDev = np.std(voiceActivity)
     return average, stDev
 
 # | Computes the absolute value of the raw data values then calculates
 # | the mean, max, min, and standard deviation of those data values
 def getIntensityFeatures(data):
-    absVal = numpy.absolute(data)
-    average = numpy.mean(absVal)
-    stDev = numpy.std(absVal)
+    absVal = np.absolute(data)
+    average = np.mean(absVal)
+    stDev = np.std(absVal)
     return average, stDev
 
 # | Computes welch looking back and for number of sampleRate in length of data
 # | and returns the average of the loudest pitch in each window
-def getPitchFeatures(data,sampleRate,windowSize):
-    sampleWindowSize = windowSize * sampleRate # windowSize in seconds
-    loudestPitch = numpy.zeros(shape=0)
+def getPitchFeatures(data, sampleRate, windowSize):
+    sampleWindowSize = windowSize / 1000 * sampleRate
+    loudestPitch = np.zeros(shape=0)
 
     step = 0
     while step < len(data):
         freqs, ps = getPowerSpectrum(data[step:step + sampleWindowSize],sampleRate,sampleRate)
-        loudestPitch = numpy.append(loudestPitch, numpy.argmax(ps))
+        loudestPitch = np.append(loudestPitch, np.argmax(ps))
 
         # Increment to next step
         step += sampleWindowSize
-    average = numpy.mean(loudestPitch)
-    stDev = numpy.std(loudestPitch)
+    average = np.mean(loudestPitch)
+    stDev = np.std(loudestPitch)
 
     return average, stDev
+
+# | Returns the first two formant from a piece of audio.
+def getFormants(data, sampleRate, windowSize, stepSize):
+    # Convert to the parselmouth custom sound type (req'd for formant function)
+    parselSound = parselmouth.Sound(values=data, sampling_frequency=sampleRate)
+
+    # Produce a formant object from this data
+    formantData = parselSound.to_formant_burg(window_length=windowSize, time_step=stepSize)
+
+    # API for parselmouth doesn't explain how to extract the formatData without querying for everything manually.
+    firstFormant = []
+    secondFormant = []
+
+    # Used for plots
+    times = np.arange(0, len(data)/sampleRate, stepSize) # seconds
+
+    for timeStamp in times:
+        firstFormantValue = formantData.get_value_at_time(1, timeStamp)
+        secondFormantValue = formantData.get_value_at_time(2, timeStamp)
+
+        firstFormant.append(firstFormantValue)
+        secondFormant.append(secondFormantValue)
+
+    firstFormant = np.array(firstFormant)
+    secondFormant = np.array(secondFormant)
+
+    return firstFormant, secondFormant
+
+# | Returns a np array for each frame with 1 for filled pause, 0 for no filled pause
+# | and an array of timesstamps where filled pauses were detected
+def getFilledPauses(data, sampleRate, windowSize, stepSize, minumumLength, maximumVariance, energyThreshold, voiceActivity, voiceActivityStepSize):
+    # Everything needs to be based on samples to prevent rounding issues with RMSE
+    sampleWindowSize = int(windowSize*sampleRate/1000)
+    sampleStepSize = int(stepSize*sampleRate/1000)
+
+    # The number of steps in energy and formant arrays
+    numberOfSteps = round((len(data)/sampleRate) / (sampleStepSize/sampleRate))
+
+    # Formant extraction
+    firstFormant, secondFormant = getFormants(data, sampleRate, sampleWindowSize/sampleRate, sampleStepSize/sampleRate)
+
+    # Energy
+    energy = librosa.feature.rmse(data, frame_length=sampleWindowSize, hop_length=sampleStepSize)[0]
+
+    # Filled pauses detection
+    filledPauses = np.zeros(numberOfSteps)
+    timeStamps = []
+
+    # Used for plots
+    times = np.arange(0, len(data)/sampleRate, sampleStepSize/sampleRate) # seconds
+
+    # The number of steps in the feature arrays that make up a single window for checking for utterances.
+    utteranceWindowSize = int(minumumLength / 1000 * 44100 / sampleStepSize)
+
+    fillerUtteranceInitiated = False
+
+    # Step through each data point in formant and energy arrays and check for
+    # filler utterances over the next 'minimumLength' size window of features.
+    for step in range(0, numberOfSteps-utteranceWindowSize):
+        start = step
+        end = step+utteranceWindowSize
+
+        firstFormantVariance = np.std(firstFormant[start:end])
+        secondFormantVariance = np.std(secondFormant[start:end])
+        averageEnergy = np.mean(energy[start:end])
+
+        voiceActivityStart = int(start*stepSize/voiceActivityStepSize)
+        voiceActivityEnd = int(end*stepSize/voiceActivityStepSize)
+        voicePresence = np.mean(voiceActivity[voiceActivityStart:voiceActivityEnd])
+
+        if firstFormantVariance <= maximumVariance and secondFormantVariance <= maximumVariance and averageEnergy > energyThreshold and voicePresence > 0.1:
+            # Prevent an utterance from being detected many times
+            if fillerUtteranceInitiated == False:
+                filledPauses[step] = 1
+                fillerUtteranceInitiated = True
+                timeStamps.append(times[step])
+        else:
+            fillerUtteranceInitiated = False
+
+    return filledPauses, np.array(timeStamps)
