@@ -45,10 +45,6 @@ class FeatureSet:
 
 # | Gets power of sound and returns np arrays
 def getPowerSpectrum(data,sampleRate,windowSize):
-
-    print("len(data): ", len(data))
-    print("windowSize: ", windowSize)
-
     freqs,ps = scipy.signal.welch(data,
                                   sampleRate,
                                   window='hanning',   # Apply a Hanning window
@@ -117,32 +113,18 @@ def getVoiceActivity(data, sampleRate, windowSizeInMS, stepSizeInMS, useAdaptive
     windowSize = int(sampleRate / 1000 * windowSizeInMS) # samples
     stepSize = int(sampleRate / 1000 * stepSizeInMS) # samples
 
-    print("windowSize: ", windowSize)
-    print("stepSize: ", stepSize)
-    print("len(data): ", len(data))
-
     ### Dominant frequency analysis
     dominantFrequency = []
     currentWindowSize = windowSize
 
     for i in range(math.ceil(len(data)/stepSize)):
-        print("i: ", i)
         start = i*stepSize
         end = start+windowSize
-
-        print("start: ", start)
-        print("end: ", end)
 
         if end > len(data):
             end = len(data)
             currentWindowSize = len(data[start:end])
         freq, ps = getPowerSpectrum(data[start:end],sampleRate,currentWindowSize)
-
-        print("len(data[start:end]): ", len(data[start:end]))
-
-        print("np.argmax(ps): ", np.argmax(ps))
-        print("len(freq): ", len(freq))
-
         dominantFrequency.append(freq[np.argmax(ps)])
 
     ### Energy

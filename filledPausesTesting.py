@@ -33,8 +33,11 @@ def main():
         name = os.path.basename(filePath)[:-4]
 
         audio = audioModule.Audio(filePath=filePath)
+        audio.makeMono()
 
         voiceActivity = speechAnalyzer.getVoiceActivityFromAudio(audio)
+        # Necessary for adjusting indeces to line up voice activity with other array
+        voiceActivityStepSize = speechAnalyzer.voiceActivityStepSize
 
         filledPauses, times = featureModule.getFilledPauses(audio.data, audio.sampleRate, utteranceWindowSize, utteranceStepSize, utteranceMinimumLength, utteranceMaximumVariance, utteranceEnergyThreshold, voiceActivity, voiceActivityStepSize)
 
