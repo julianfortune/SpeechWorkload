@@ -6,6 +6,6 @@ analyzer = speechAnalysis.SpeechAnalyzer()
 
 analyzer.printStatus = True
 
-featureArray = analyzer.getFeaturesFromFile("../media/Participant_Audio/p1_ol.wav")
+featureArray = analyzer.getFeaturesFromFileUsingWindowing("../media/Participant_Audio/p1_nl.wav")
 
-numpy.save("./test_features/p1_ol", featureArray)
+numpy.save("./features/p1_nl", featureArray)

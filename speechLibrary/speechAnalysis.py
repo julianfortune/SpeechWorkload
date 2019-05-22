@@ -73,15 +73,27 @@ class SpeechAnalyzer:
         return syllables
 
     def getVoiceActivityFromAudio(self, audio):
-        average, stDev = featureModule.getVoiceActivityFeatures(data=audio.data,
-                                                                sampleRate=audio.sampleRate,
-                                                                windowSizeInMS=self.voiceActivityWindowSize,
-                                                                stepSizeInMS=self.voiceActivityStepSize,
-                                                                useAdaptiveThresholds=self.voiceActivityIsAdaptive,
-                                                                zcrThreshold=self.voiceActivityZCRThreshold,
-                                                                energyPrimaryThreshold=self.voiceActivityEnergyThreshold,
-                                                                dominantFreqThreshold=self.voiceActivityFreqThreshold,
-                                                                dominantFreqTolerance=self.voiceActivityFreqTolerance)
+        voiceActivity = featureModule.getVoiceActivity(data=audio.data,
+                                                       sampleRate=audio.sampleRate,
+                                                       windowSizeInMS=self.voiceActivityWindowSize,
+                                                       stepSizeInMS=self.voiceActivityStepSize,
+                                                       useAdaptiveThresholds=self.voiceActivityIsAdaptive,
+                                                       zcrThreshold=self.voiceActivityZCRThreshold,
+                                                       energyPrimaryThreshold=self.voiceActivityEnergyThreshold,
+                                                       dominantFreqThreshold=self.voiceActivityFreqThreshold,
+                                                       dominantFreqTolerance=self.voiceActivityFreqTolerance)
+        return voiceActivity
+
+    def getVoiceActivityStatisticsFromAudio(self, audio):
+        average, stDev = featureModule.getVoiceActivityStatistics(data=audio.data,
+                                                                  sampleRate=audio.sampleRate,
+                                                                  windowSizeInMS=self.voiceActivityWindowSize,
+                                                                  stepSizeInMS=self.voiceActivityStepSize,
+                                                                  useAdaptiveThresholds=self.voiceActivityIsAdaptive,
+                                                                  zcrThreshold=self.voiceActivityZCRThreshold,
+                                                                  energyPrimaryThreshold=self.voiceActivityEnergyThreshold,
+                                                                  dominantFreqThreshold=self.voiceActivityFreqThreshold,
+                                                                  dominantFreqTolerance=self.voiceActivityFreqTolerance)
         return average, stDev
 
     def getPitchFromAudio(self, audio):
@@ -94,24 +106,24 @@ class SpeechAnalyzer:
         features = featureModule.FeatureSet()
 
         ### WORDS PER MINUTE
-        syllables = getSyllablesFromAudio(audio)
+        syllables = self.getSyllablesFromAudio(audio)
         currentSyllablesPerSecond = len(syllables)/self.lookBackSize
         features.syllablesPerSecond = np.append(features.syllablesPerSecond, currentSyllablesPerSecond)
 
         ### VAD
-        average, stDev = getVoiceActivityFromAudio(audio)
+        average, stDev = self.getVoiceActivityStatisticsFromAudio(audio)
         features.meanVoiceActivity = np.append(features.meanVoiceActivity,average)
         features.stDevVoiceActivity = np.append(features.stDevVoiceActivity,stDev)
 
         ### PITCH
-        average, stDev = featureModule.getPitchFeatures(audio.data,
-                                                        audio.sampleRate,
-                                                        1)
+        average, stDev = featureModule.getPitchStatistics(audio.data,
+                                                         audio.sampleRate,
+                                                         self.pitchWindowSize)
         features.meanPitch = np.append(features.meanPitch, average)
         features.stDevPitch = np.append(features.stDevPitch, stDev)
 
         ### INTENSITY
-        average, stDev = featureModule.getIntensityFeatures(audio.data)
+        average, stDev = featureModule.getIntensityStatistics(audio.data)
         features.meanIntensity = np.append(features.meanIntensity, average)
         features.stDevIntensity = np.append(features.stDevIntensity, stDev)
 

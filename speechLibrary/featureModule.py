@@ -169,7 +169,7 @@ def getVoiceActivity(data, sampleRate, windowSizeInMS, stepSizeInMS, useAdaptive
     return voiceActivity
 
 # | Returns the average voice activity (0 <= v <= 1) using an adaptive algorithm.
-def getVoiceActivityFeatures(data, sampleRate, windowSizeInMS, stepSizeInMS, useAdaptiveThresholds, zcrThreshold, energyPrimaryThreshold, dominantFreqThreshold, dominantFreqTolerance):
+def getVoiceActivityStatistics(data, sampleRate, windowSizeInMS, stepSizeInMS, useAdaptiveThresholds, zcrThreshold, energyPrimaryThreshold, dominantFreqThreshold, dominantFreqTolerance):
     # Voice activity
     voiceActivity = getVoiceActivity(data, sampleRate, windowSizeInMS, stepSizeInMS, useAdaptiveThresholds, zcrThreshold, energyPrimaryThreshold, dominantFreqThreshold, dominantFreqTolerance)
 
@@ -180,7 +180,7 @@ def getVoiceActivityFeatures(data, sampleRate, windowSizeInMS, stepSizeInMS, use
 
 # | Computes the absolute value of the raw data values then calculates
 # | the mean, max, min, and standard deviation of those data values
-def getIntensityFeatures(data):
+def getIntensityStatistics(data):
     absVal = np.absolute(data)
     average = np.mean(absVal)
     stDev = np.std(absVal)
@@ -188,8 +188,8 @@ def getIntensityFeatures(data):
 
 # | Computes welch looking back and for number of sampleRate in length of data
 # | and returns the average of the loudest pitch in each window
-def getPitchFeatures(data, sampleRate, windowSize):
-    sampleWindowSize = windowSize / 1000 * sampleRate
+def getPitchStatistics(data, sampleRate, windowSize):
+    sampleWindowSize = int(windowSize / 1000 * sampleRate)
     loudestPitch = np.zeros(shape=0)
 
     step = 0
