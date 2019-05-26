@@ -35,7 +35,8 @@ def main():
         participant = name.split("_")[0]
         condition = name.split("_")[1]
 
-        os.mkdir(outputDir + name)
+        # # Make fresh directories
+        # os.mkdir(outputDir + name)
 
         audio = audioModule.Audio(filePath=filePath)
         audio.makeMono()
