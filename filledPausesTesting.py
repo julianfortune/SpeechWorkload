@@ -21,7 +21,7 @@ def main():
     utteranceEnergyThreshold = 60
 
     audioDirectory = "../media/Participant_Audio_First_five/*.wav"
-    outputDir = "./filledPausesVoiceActivity/"
+    outputDir = "./filledPauses/"
 
     filledPausesAllParticipants = [["participant", "condition", "time", "judgement"]]
 
@@ -32,21 +32,19 @@ def main():
         # Audio file i/o
         name = os.path.basename(filePath)[:-4]
 
+        participant = name.split("_")[0]
+        condition = name.split("_")[1]
+
+        os.mkdir(outputDir + name)
+
         audio = audioModule.Audio(filePath=filePath)
         audio.makeMono()
 
-        voiceActivity = speechAnalyzer.getVoiceActivityFromAudio(audio)
-        # Necessary for adjusting indeces to line up voice activity with other array
-        voiceActivityStepSize = speechAnalyzer.voiceActivityStepSize
-
-        filledPauses, times = featureModule.getFilledPauses(audio.data, audio.sampleRate, utteranceWindowSize, utteranceStepSize, utteranceMinimumLength, utteranceMaximumVariance, utteranceEnergyThreshold, voiceActivity, voiceActivityStepSize)
+        filledPauses, timeStamps, times, f1, f2, energy = featureModule.getFilledPauses(audio.data, audio.sampleRate, utteranceWindowSize, utteranceStepSize, utteranceMinimumLength, utteranceMaximumVariance, utteranceEnergyThreshold)
 
         audio = AudioSegment.from_wav(filePath)
 
-        for time in times:
-            participant = name.split("_")[0]
-            condition = name.split("_")[1]
-
+        for time in timeStamps:
             filledPausesAllParticipants.append([participant, condition, str(round(time, 2)), ""])
 
             ### Output files — pydub is in ms
@@ -67,6 +65,16 @@ def main():
 
             # write to disk
             segment.export(outputPath + "[extra].wav", format="wav")
+
+            plt.figure()
+
+            start = int(start/utteranceStepSize)
+            end = int(end/utteranceStepSize)
+
+            plt.plot(times[start:end], f1[start:end], times[start:end], f2[start:end], times[start:end], energy[start:end], time, 0, 'ro')
+
+            plt.savefig(outputPath + "[extra].png")
+            plt.close()
         # --
 
         print("Done with ", name)

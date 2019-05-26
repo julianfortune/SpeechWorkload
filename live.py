@@ -1,7 +1,4 @@
 from speechLibrary import speechAnalysis
-import numpy
-import wavio
-import wave
 
 analyzer = speechAnalysis.SpeechAnalyzer()
 

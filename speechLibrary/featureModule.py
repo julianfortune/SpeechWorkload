@@ -233,7 +233,7 @@ def getFormants(data, sampleRate, windowSize, stepSize):
 
 # | Returns a np array for each frame with 1 for filled pause, 0 for no filled pause
 # | and an array of timesstamps where filled pauses were detected
-def getFilledPauses(data, sampleRate, windowSize, stepSize, minumumLength, maximumVariance, energyThreshold, voiceActivity, voiceActivityStepSize):
+def getFilledPauses(data, sampleRate, windowSize, stepSize, minumumLength, maximumVariance, energyThreshold):
     # Everything needs to be based on samples to prevent rounding issues with RMSE
     sampleWindowSize = int(windowSize*sampleRate/1000)
     sampleStepSize = int(stepSize*sampleRate/1000)
@@ -269,11 +269,7 @@ def getFilledPauses(data, sampleRate, windowSize, stepSize, minumumLength, maxim
         secondFormantVariance = np.std(secondFormant[start:end])
         averageEnergy = np.mean(energy[start:end])
 
-        voiceActivityStart = int(start*stepSize/voiceActivityStepSize)
-        voiceActivityEnd = int(end*stepSize/voiceActivityStepSize)
-        voicePresence = np.mean(voiceActivity[voiceActivityStart:voiceActivityEnd])
-
-        if firstFormantVariance <= maximumVariance and secondFormantVariance <= maximumVariance and averageEnergy > energyThreshold and voicePresence > 0.1:
+        if firstFormantVariance <= maximumVariance and secondFormantVariance <= maximumVariance and averageEnergy > energyThreshold:
             # Prevent an utterance from being detected many times
             if fillerUtteranceInitiated == False:
                 filledPauses[step] = 1
@@ -282,4 +278,4 @@ def getFilledPauses(data, sampleRate, windowSize, stepSize, minumumLength, maxim
         else:
             fillerUtteranceInitiated = False
 
-    return filledPauses, np.array(timeStamps)
+    return filledPauses, np.array(timeStamps), times, firstFormant, secondFormant, energy
