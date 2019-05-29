@@ -41,7 +41,7 @@ def main():
         audio = audioModule.Audio(filePath=filePath)
         audio.makeMono()
 
-        filledPauses, timeStamps, times, f1, f2, energy = featureModule.getFilledPauses(audio.data, audio.sampleRate, utteranceWindowSize, utteranceStepSize, utteranceMinimumLength, utteranceMaximumVariance, utteranceEnergyThreshold)
+        filledPauses, timeStamps, times, f1, f2, energy, lengths = featureModule.getFilledPauses(audio.data, audio.sampleRate, utteranceWindowSize, utteranceStepSize, utteranceMinimumLength, utteranceMaximumVariance, utteranceEnergyThreshold)
 
         audio = AudioSegment.from_wav(filePath)
 

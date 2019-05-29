@@ -250,6 +250,7 @@ def getFilledPauses(data, sampleRate, windowSize, stepSize, minumumLength, maxim
     # Filled pauses detection
     filledPauses = np.zeros(numberOfSteps)
     timeStamps = []
+    lengths = []
 
     # Used for plots
     times = np.arange(0, len(data)/sampleRate, sampleStepSize/sampleRate) # seconds
@@ -258,6 +259,7 @@ def getFilledPauses(data, sampleRate, windowSize, stepSize, minumumLength, maxim
     utteranceWindowSize = int(minumumLength / 1000 * 44100 / sampleStepSize)
 
     fillerUtteranceInitiated = False
+    startOfFiller = 0
 
     # Step through each data point in formant and energy arrays and check for
     # filler utterances over the next 'minimumLength' size window of features.
@@ -275,7 +277,11 @@ def getFilledPauses(data, sampleRate, windowSize, stepSize, minumumLength, maxim
                 filledPauses[step] = 1
                 fillerUtteranceInitiated = True
                 timeStamps.append(times[step])
+
+                startOfFiller = times[step]
         else:
+            if fillerUtteranceInitiated == True:
+                lengths.append(times[step] - startOfFiller + (minumumLength/1000) )
             fillerUtteranceInitiated = False
 
-    return filledPauses, np.array(timeStamps), times, firstFormant, secondFormant, energy
+    return filledPauses, np.array(timeStamps), times, firstFormant, secondFormant, energy, lengths
