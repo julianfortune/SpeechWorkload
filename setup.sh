@@ -19,3 +19,8 @@ pip3 install pyaudio
 # Learning
 pip3 install tensorflow
 pip3 install tflearn
+
+# Issues
+# If you see `ImportError: cannot import name 'quote'` make sure `parselmouth`
+# is not installed using `pip3 uninstall parselmouth`.
+# https://github.com/YannickJadoul/Parselmouth/issues/10
