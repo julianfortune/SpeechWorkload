@@ -1,0 +1,251 @@
+wav_filename,wav_length,transcript
+/scratch/customtraining/data-ignore-v1/train/samples/sample-1.wav,36864,ignore uh ignore ignore ignore 
+/scratch/customtraining/data-ignore-v1/train/samples/sample-2.wav,41984,ignore ignore uh ignore ignore 
+/scratch/customtraining/data-ignore-v1/train/samples/sample-3.wav,58368,ignore um ignore ignore ignore ignore ignore 
+/scratch/customtraining/data-ignore-v1/train/samples/sample-4.wav,53248,ignore ignore ignore ignore ignore ignore uh ignore ignore ignore ignore 
+/scratch/customtraining/data-ignore-v1/train/samples/sample-5.wav,69632,ignore ignore ignore ignore um ignore ignore ignore ignore ignore ignore ignore ignore 
+/scratch/customtraining/data-ignore-v1/train/samples/sample-6.wav,45056,ignore uh ignore ignore ignore ignore 
+/scratch/customtraining/data-ignore-v1/train/samples/sample-7.wav,47104,ignore uh ignore ignore ignore ignore ignore ignore ignore 
+/scratch/customtraining/data-ignore-v1/train/samples/sample-8.wav,65536,ignore ignore ignore ignore ignore ignore ignore uh ignore ignore 
+/scratch/customtraining/data-ignore-v1/train/samples/sample-9.wav,55296,ignore ignore uh ignore ignore ignore ignore ignore ignore 
+/scratch/customtraining/data-ignore-v1/train/samples/sample-10.wav,45056,um ignore ignore ignore ignore ignore ignore 
+/scratch/customtraining/data-ignore-v1/train/samples/sample-11.wav,63488,ignore ignore ignore ignore ignore um ignore ignore ignore ignore ignore 
+/scratch/customtraining/data-ignore-v1/train/samples/sample-12.wav,64512,ignore ignore ignore uh ignore ignore ignore ignore ignore ignore ignore ignore 
+/scratch/customtraining/data-ignore-v1/train/samples/sample-13.wav,77824,ignore ignore ignore ignore uh ignore ignore ignore ignore ignore ignore ignore ignore ignore ignore ignore 
+/scratch/customtraining/data-ignore-v1/train/samples/sample-14.wav,69632,ignore ignore uh ignore ignore ignore ignore ignore ignore 
+/scratch/customtraining/data-ignore-v1/train/samples/sample-15.wav,58368,ignore ignore um ignore ignore ignore ignore ignore ignore 
+/scratch/customtraining/data-ignore-v1/train/samples/sample-16.wav,37888,ignore uh ignore ignore ignore ignore 
+/scratch/customtraining/data-ignore-v1/train/samples/sample-17.wav,63488,ignore ignore ignore uh ignore ignore ignore ignore ignore ignore 
+/scratch/customtraining/data-ignore-v1/train/samples/sample-18.wav,56320,ignore ignore ignore ignore uh ignore ignore ignore ignore 
+/scratch/customtraining/data-ignore-v1/train/samples/sample-19.wav,59392,ignore ignore ignore um ignore ignore ignore ignore ignore 
+/scratch/customtraining/data-ignore-v1/train/samples/sample-20.wav,82944,ignore ignore ignore ignore um ignore ignore ignore ignore ignore ignore 
+/scratch/customtraining/data-ignore-v1/train/samples/sample-21.wav,48128,ignore ignore ignore uh ignore 
+/scratch/customtraining/data-ignore-v1/train/samples/sample-22.wav,79872,ignore ignore uh ignore ignore ignore ignore ignore ignore ignore ignore 
+/scratch/customtraining/data-ignore-v1/train/samples/sample-23.wav,67584,ignore ignore ignore ignore um ignore 
+/scratch/customtraining/data-ignore-v1/train/samples/sample-24.wav,58368,ignore ignore ignore ignore uh ignore ignore 
+/scratch/customtraining/data-ignore-v1/train/samples/sample-25.wav,78848,ignore ignore ignore ignore ignore uh ignore ignore ignore ignore ignore ignore ignore ignore 
+/scratch/customtraining/data-ignore-v1/train/samples/sample-26.wav,52224,ignore uh ignore ignore ignore ignore ignore ignore 
+/scratch/customtraining/data-ignore-v1/train/samples/sample-27.wav,94208,ignore ignore ignore ignore ignore ignore ignore uh ignore ignore ignore ignore ignore ignore ignore 
+/scratch/customtraining/data-ignore-v1/train/samples/sample-28.wav,62464,ignore ignore ignore um ignore ignore ignore ignore ignore ignore 
+/scratch/customtraining/data-ignore-v1/train/samples/sample-29.wav,59392,ignore ignore ignore ignore um ignore ignore 
+/scratch/customtraining/data-ignore-v1/train/samples/sample-30.wav,56320,ignore ignore ignore ignore ignore um ignore ignore 
+/scratch/customtraining/data-ignore-v1/train/samples/sample-31.wav,40960,ignore um ignore ignore ignore 
+/scratch/customtraining/data-ignore-v1/train/samples/sample-32.wav,40960,ignore um ignore ignore ignore ignore 
+/scratch/customtraining/data-ignore-v1/train/samples/sample-33.wav,41984,ignore uh ignore ignore ignore ignore 
+/scratch/customtraining/data-ignore-v1/train/samples/sample-34.wav,69632,ignore ignore ignore ignore ignore ignore ignore ignore ignore ignore uh ignore 
+/scratch/customtraining/data-ignore-v1/train/samples/sample-35.wav,56320,ignore ignore uh ignore ignore ignore ignore ignore ignore ignore ignore 
+/scratch/customtraining/data-ignore-v2/train/samples/sample-36.wav,22528,ignore um ignore ignore ignore ignore 
+/scratch/customtraining/data-ignore-v2/train/samples/sample-37.wav,56320,ignore ignore ignore uh ignore ignore 
+/scratch/customtraining/data-ignore-v2/train/samples/sample-38.wav,55296,ignore ignore um ignore ignore ignore ignore 
+/scratch/customtraining/data-ignore-v2/train/samples/sample-39.wav,65536,ignore ignore ignore ignore uh ignore ignore ignore ignore ignore ignore 
+/scratch/customtraining/data-ignore-v2/train/samples/sample-40.wav,55296,ignore ignore um ignore ignore 
+/scratch/customtraining/data-ignore-v2/train/samples/sample-41.wav,45056,ignore ignore uh ignore ignore ignore ignore 
+/scratch/customtraining/data-ignore-v2/train/samples/sample-42.wav,43008,ignore uh ignore ignore ignore ignore ignore ignore ignore ignore 
+/scratch/customtraining/data-ignore-v2/train/samples/sample-43.wav,99328,ignore ignore um ignore ignore ignore ignore ignore ignore ignore ignore ignore ignore ignore ignore ignore 
+/scratch/customtraining/data-ignore-v2/train/samples/sample-44.wav,74752,ignore uh ignore ignore ignore ignore ignore ignore um ignore ignore ignore 
+/scratch/customtraining/data-ignore-v2/train/samples/sample-45.wav,61440,ignore ignore ignore uh ignore ignore ignore ignore ignore ignore 
+/scratch/customtraining/data-ignore-v2/train/samples/sample-46.wav,26624,uh ignore ignore ignore 
+/scratch/customtraining/data-ignore-v2/train/samples/sample-47.wav,55296,ignore um ignore ignore ignore ignore ignore 
+/scratch/customtraining/data-ignore-v2/train/samples/sample-48.wav,64512,ignore ignore ignore ignore ignore ignore ignore ignore um ignore ignore ignore 
+/scratch/customtraining/data-ignore-v2/train/samples/sample-49.wav,45056,ignore ignore uh ignore ignore ignore ignore ignore ignore 
+/scratch/customtraining/data-ignore-v2/train/samples/sample-50.wav,49152,ignore ignore ignore ignore ignore uh ignore 
+/scratch/customtraining/data-ignore-v2/train/samples/sample-51.wav,77824,ignore ignore ignore um ignore ignore ignore ignore 
+/scratch/customtraining/data-ignore-v2/train/samples/sample-52.wav,57344,ignore um ignore ignore ignore ignore 
+/scratch/customtraining/data-ignore-v2/train/samples/sample-53.wav,64512,ignore ignore ignore ignore uh ignore ignore ignore ignore 
+/scratch/customtraining/data-ignore-v2/train/samples/sample-54.wav,75776,ignore ignore ignore ignore ignore uh ignore 
+/scratch/customtraining/data-ignore-v2/train/samples/sample-55.wav,111616,ignore ignore ignore ignore um ignore ignore ignore ignore ignore ignore 
+/scratch/customtraining/data-ignore-v2/train/samples/sample-56.wav,92160,ignore ignore ignore ignore ignore ignore ignore ignore ignore ignore ignore uh ignore 
+/scratch/customtraining/data-ignore-v2/train/samples/sample-57.wav,70656,ignore ignore ignore um ignore ignore ignore ignore ignore ignore ignore 
+/scratch/customtraining/data-ignore-v2/train/samples/sample-58.wav,59392,ignore ignore ignore ignore uh ignore 
+/scratch/customtraining/data-ignore-v2/train/samples/sample-59.wav,54272,ignore uh ignore ignore ignore ignore 
+/scratch/customtraining/data-ignore-v2/train/samples/sample-60.wav,74752,ignore ignore um ignore ignore ignore ignore 
+/scratch/customtraining/data-ignore-v2/train/samples/sample-61.wav,96256,ignore ignore ignore ignore ignore ignore ignore uh ignore ignore ignore ignore ignore ignore ignore ignore ignore 
+/scratch/customtraining/data-ignore-v2/train/samples/sample-62.wav,51200,ignore ignore ignore um ignore ignore ignore 
+/scratch/customtraining/data-ignore-v2/train/samples/sample-63.wav,93184,ignore ignore um ignore ignore ignore ignore ignore ignore ignore ignore ignore ignore 
+/scratch/customtraining/data-ignore-v2/train/samples/sample-64.wav,113664,ignore ignore ignore ignore ignore ignore uh ignore ignore ignore ignore ignore 
+/scratch/customtraining/data-ignore-v2/train/samples/sample-65.wav,63488,ignore ignore ignore ignore um 
+/scratch/customtraining/data-ignore-v2/train/samples/sample-66.wav,108544,ignore ignore ignore ignore uh ignore ignore ignore ignore ignore ignore ignore ignore ignore ignore ignore 
+/scratch/customtraining/data-ignore-v2/train/samples/sample-67.wav,71680,ignore ignore ignore ignore ignore ignore ignore uh ignore ignore ignore ignore ignore ignore 
+/scratch/customtraining/data-ignore-v2/train/samples/sample-68.wav,70656,ignore ignore ignore ignore ignore um ignore 
+/scratch/customtraining/data-ignore-v2/train/samples/sample-69.wav,70656,ignore um ignore ignore ignore ignore ignore ignore 
+/scratch/customtraining/data-ignore-v2/train/samples/sample-70.wav,59392,ignore ignore ignore ignore ignore ignore ignore uh ignore 
+/scratch/customtraining/data-ignore-v2/train/samples/sample-71.wav,77824,ignore ignore ignore uh ignore ignore ignore ignore ignore ignore ignore ignore ignore ignore ignore 
+/scratch/customtraining/data-ignore-v2/train/samples/sample-72.wav,111616,ignore ignore ignore ignore ignore ignore ignore ignore ignore ignore ignore uh ignore ignore ignore 
+/scratch/customtraining/data-ignore-v2/train/samples/sample-73.wav,82944,ignore ignore ignore ignore ignore ignore um ignore ignore ignore ignore 
+/scratch/customtraining/data-ignore-v2/train/samples/sample-74.wav,54272,ignore ignore uh ignore ignore ignore ignore ignore 
+/scratch/customtraining/data-ignore-v2/train/samples/sample-75.wav,61440,ignore ignore ignore ignore ignore ignore um ignore 
+/scratch/customtraining/data-ignore-v2/train/samples/sample-76.wav,110592,ignore ignore ignore ignore ignore ignore ignore ignore ignore ignore ignore ignore uh ignore ignore ignore ignore ignore ignore ignore ignore ignore 
+/scratch/customtraining/data-ignore-v2/train/samples/sample-77.wav,70656,ignore ignore ignore ignore ignore ignore ignore ignore ignore ignore uh ignore 
+/scratch/customtraining/data-ignore-v2/train/samples/sample-78.wav,82944,ignore ignore ignore ignore ignore ignore ignore ignore um ignore ignore ignore ignore 
+/scratch/customtraining/data-ignore-v2/train/samples/sample-79.wav,92160,ignore ignore ignore uh ignore ignore ignore ignore ignore ignore ignore ignore ignore ignore 
+/scratch/customtraining/data-ignore-v2/train/samples/sample-80.wav,74752,ignore ignore ignore ignore ignore ignore ignore ignore um ignore 
+/scratch/customtraining/data-ignore-v2/train/samples/sample-81.wav,71680,ignore ignore ignore ignore ignore ignore ignore ignore ignore ignore uh ignore 
+/scratch/customtraining/data-ignore-v2/train/samples/sample-82.wav,68608,ignore ignore ignore ignore ignore ignore ignore ignore uh ignore 
+/scratch/customtraining/data-ignore-v2/train/samples/sample-83.wav,96256,ignore ignore ignore ignore ignore um ignore ignore ignore ignore ignore ignore ignore 
+/scratch/customtraining/data-ignore-v2/train/samples/sample-84.wav,95232,ignore ignore ignore ignore ignore ignore ignore ignore ignore uh ignore ignore ignore ignore ignore ignore ignore 
+/scratch/customtraining/data-ignore-v2/train/samples/sample-85.wav,54272,ignore ignore ignore ignore uh ignore ignore ignore ignore 
+/scratch/customtraining/data-ignore-v2/train/samples/sample-86.wav,49152,uh ignore ignore ignore ignore ignore ignore 
+/scratch/customtraining/data-ignore-v2/train/samples/sample-87.wav,56320,ignore ignore ignore ignore ignore ignore um ignore ignore 
+/scratch/customtraining/data-ignore-v2/train/samples/sample-88.wav,50176,ignore ignore ignore ignore uh 
+/scratch/customtraining/data-ignore-v2/train/samples/sample-89.wav,45056,um ignore ignore ignore ignore 
+/scratch/customtraining/data-ignore-v2/train/samples/sample-90.wav,49152,uh ignore ignore ignore ignore ignore ignore 
+/scratch/customtraining/data-ignore-v2/train/samples/sample-91.wav,84992,ignore ignore ignore ignore ignore ignore um ignore ignore ignore ignore ignore ignore ignore ignore 
+/scratch/customtraining/data-ignore-v2/train/samples/sample-92.wav,53248,ignore ignore ignore ignore uh 
+/scratch/customtraining/data-ignore-v2/train/samples/sample-93.wav,75776,ignore ignore ignore ignore um ignore ignore ignore ignore ignore 
+/scratch/customtraining/data-ignore-v2/train/samples/sample-94.wav,90112,ignore ignore ignore ignore uh ignore ignore ignore ignore ignore ignore ignore ignore 
+/scratch/customtraining/data-ignore-v2/train/samples/sample-95.wav,51200,ignore ignore ignore ignore uh ignore 
+/scratch/customtraining/data-ignore-v2/train/samples/sample-96.wav,59392,ignore um ignore ignore ignore ignore ignore 
+/scratch/customtraining/data-ignore-v2/train/samples/sample-97.wav,98304,ignore ignore ignore ignore ignore ignore ignore ignore ignore ignore uh ignore 
+/scratch/customtraining/data-ignore-v2/train/samples/sample-98.wav,116736,ignore ignore ignore um uh ignore ignore ignore ignore ignore ignore ignore ignore ignore ignore uh ignore ignore 
+/scratch/customtraining/data-ignore-v2/train/samples/sample-99.wav,61440,ignore ignore ignore ignore ignore uh ignore ignore ignore ignore 
+/scratch/customtraining/data-ignore-v2/train/samples/sample-100.wav,84992,ignore ignore ignore ignore ignore ignore ignore ignore uh ignore ignore ignore ignore ignore ignore 
+/scratch/customtraining/data-ignore-v2/train/samples/sample-101.wav,102400,ignore ignore uh ignore ignore ignore ignore ignore ignore ignore ignore ignore 
+/scratch/customtraining/data-ignore-v2/train/samples/sample-102.wav,113664,ignore ignore uh ignore ignore ignore ignore ignore uh ignore ignore ignore 
+/scratch/customtraining/data-ignore-v2/train/samples/sample-103.wav,91136,ignore ignore ignore ignore ignore uh ignore ignore ignore ignore ignore ignore ignore ignore ignore 
+/scratch/customtraining/data-ignore-v2/train/samples/sample-104.wav,57344,ignore ignore um ignore ignore ignore 
+/scratch/customtraining/data-ignore-v2/train/samples/sample-105.wav,75776,ignore ignore ignore uh um ignore ignore ignore ignore ignore ignore 
+/scratch/customtraining/data-ignore-v2/train/samples/sample-106.wav,116736,ignore ignore ignore ignore ignore ignore ignore ignore ignore ignore ignore uh ignore ignore ignore uh ignore 
+/scratch/customtraining/data-ignore-v2/train/samples/sample-107.wav,84992,ignore um ignore ignore ignore ignore ignore ignore ignore ignore ignore 
+/scratch/customtraining/data-ignore-v2/train/samples/sample-108.wav,64512,ignore ignore uh ignore ignore um ignore 
+/scratch/customtraining/data-ignore-v2/train/samples/sample-109.wav,81920,ignore ignore ignore ignore um ignore um ignore ignore ignore ignore 
+/scratch/customtraining/data-ignore-v2/train/samples/sample-110.wav,50176,ignore ignore uh ignore ignore ignore 
+/scratch/customtraining/data-ignore-v2/train/samples/sample-111.wav,88064,ignore ignore ignore ignore ignore uh ignore ignore ignore uh ignore ignore ignore 
+/scratch/customtraining/data-ignore-v2/train/samples/sample-112.wav,81920,ignore ignore ignore um ignore ignore ignore ignore ignore ignore ignore 
+/scratch/customtraining/data-ignore-v2/train/samples/sample-113.wav,54272,ignore ignore ignore ignore uh ignore ignore ignore 
+/scratch/customtraining/data-ignore-v2/train/samples/sample-114.wav,102400,ignore ignore um ignore ignore ignore ignore ignore ignore ignore ignore ignore ignore ignore ignore ignore 
+/scratch/customtraining/data-ignore-v2/train/samples/sample-115.wav,101376,ignore ignore ignore ignore uh ignore ignore ignore ignore ignore ignore ignore ignore ignore ignore ignore ignore 
+/scratch/customtraining/data-ignore-v2/train/samples/sample-116.wav,105472,ignore ignore um ignore ignore ignore ignore ignore ignore ignore ignore ignore ignore ignore ignore ignore 
+/scratch/customtraining/data-ignore-v2/train/samples/sample-117.wav,66560,ignore ignore ignore ignore um ignore ignore ignore ignore 
+/scratch/customtraining/data-ignore-v2/train/samples/sample-118.wav,82944,ignore ignore ignore ignore ignore ignore uh ignore ignore ignore ignore 
+/scratch/customtraining/data-ignore-v2/train/samples/sample-119.wav,44032,ignore um ignore ignore ignore 
+/scratch/customtraining/data-ignore-v2/train/samples/sample-120.wav,81920,ignore ignore ignore ignore ignore um ignore ignore ignore ignore ignore 
+/scratch/customtraining/data-ignore-v2/train/samples/sample-121.wav,46080,ignore ignore ignore ignore um 
+/scratch/customtraining/data-ignore-v2/train/samples/sample-122.wav,84992,ignore ignore um ignore ignore ignore ignore ignore ignore ignore ignore 
+/scratch/customtraining/data-ignore-v2/train/samples/sample-123.wav,73728,uh ignore ignore ignore ignore ignore ignore ignore ignore um 
+/scratch/customtraining/data-ignore-v2/train/samples/sample-124.wav,62464,um ignore ignore ignore ignore ignore ignore ignore 
+/scratch/customtraining/data-ignore-v2/train/samples/sample-125.wav,64512,ignore uh ignore ignore ignore ignore ignore ignore ignore ignore 
+/scratch/customtraining/data-ignore-v2/train/samples/sample-126.wav,80896,um ignore ignore ignore ignore ignore ignore ignore ignore ignore ignore ignore ignore ignore 
+/scratch/customtraining/data-ignore-v2/train/samples/sample-127.wav,39936,um ignore ignore ignore ignore 
+/scratch/customtraining/data-ignore-v2/train/samples/sample-128.wav,93184,ignore ignore ignore ignore ignore ignore ignore ignore ignore ignore ignore um 
+/scratch/customtraining/data-ignore-v2/train/samples/sample-129.wav,77824,um ignore ignore ignore ignore ignore ignore ignore ignore ignore ignore 
+/scratch/customtraining/data-ignore-v2/train/samples/sample-130.wav,53248,ignore ignore ignore uh ignore ignore ignore 
+/scratch/customtraining/data-ignore-v2/train/samples/sample-131.wav,103424,ignore ignore ignore ignore ignore ignore ignore uh ignore ignore ignore ignore ignore ignore ignore 
+/scratch/customtraining/data-ignore-v2/train/samples/sample-132.wav,98304,ignore ignore ignore ignore ignore ignore um ignore ignore ignore ignore ignore ignore ignore ignore 
+/scratch/customtraining/data-ignore-v2/train/samples/sample-133.wav,55296,uh ignore ignore ignore ignore ignore ignore 
+/scratch/customtraining/data-ignore-v2/train/samples/sample-134.wav,76800,ignore um ignore ignore ignore ignore ignore ignore ignore ignore ignore ignore ignore 
+/scratch/customtraining/data-ignore-v2/train/samples/sample-135.wav,132096,ignore ignore ignore ignore ignore ignore ignore ignore ignore uh ignore ignore ignore ignore ignore ignore 
+/scratch/customtraining/data-ignore-v2/train/samples/sample-136.wav,57344,ignore uh ignore ignore ignore ignore ignore ignore 
+/scratch/customtraining/data-ignore-v2/train/samples/sample-137.wav,43008,ignore uh ignore ignore ignore 
+/scratch/customtraining/data-ignore-v2/train/samples/sample-138.wav,52224,ignore ignore um ignore ignore ignore 
+/scratch/customtraining/data-ignore-v2/train/samples/sample-139.wav,74752,ignore ignore ignore ignore ignore ignore ignore ignore ignore ignore um 
+/scratch/customtraining/data-ignore-v2/train/samples/sample-140.wav,45056,ignore um ignore ignore ignore ignore 
+/scratch/customtraining/data-ignore-v2/train/samples/sample-141.wav,84992,um ignore ignore ignore ignore ignore ignore ignore ignore ignore ignore 
+/scratch/customtraining/data-ignore-v2/train/samples/sample-142.wav,43008,ignore uh ignore ignore ignore 
+/scratch/customtraining/data-ignore-v2/train/samples/sample-143.wav,78848,ignore ignore ignore ignore ignore ignore uh ignore ignore ignore ignore 
+/scratch/customtraining/data-ignore-v2/train/samples/sample-144.wav,81920,uh ignore ignore ignore ignore ignore ignore ignore ignore ignore 
+/scratch/customtraining/data-ignore-v2/train/samples/sample-145.wav,84992,ignore ignore ignore um ignore ignore ignore ignore ignore ignore ignore ignore 
+/scratch/customtraining/data-ignore-v2/train/samples/sample-146.wav,45056,ignore um ignore ignore ignore 
+/scratch/customtraining/data-ignore-v2/train/samples/sample-147.wav,62464,ignore ignore ignore um ignore ignore ignore 
+/scratch/customtraining/data-ignore-v2/train/samples/sample-148.wav,86016,ignore ignore ignore ignore ignore ignore ignore ignore ignore ignore uh ignore ignore 
+/scratch/customtraining/data-ignore-v2/train/samples/sample-149.wav,80896,um ignore ignore ignore ignore ignore ignore ignore ignore ignore 
+/scratch/customtraining/data-ignore-v2/train/samples/sample-150.wav,58368,ignore uh ignore ignore ignore ignore ignore 
+/scratch/customtraining/data-ignore-v2/train/samples/sample-151.wav,45056,ignore uh ignore ignore ignore 
+/scratch/customtraining/data-ignore-v2/train/samples/sample-152.wav,88064,ignore ignore ignore ignore ignore ignore ignore ignore ignore ignore ignore ignore ignore ignore um 
+/scratch/customtraining/data-ignore-v2/train/samples/sample-153.wav,99328,ignore ignore ignore uh ignore ignore ignore ignore ignore ignore ignore ignore ignore ignore ignore 
+/scratch/customtraining/data-ignore-v2/train/samples/sample-154.wav,72704,ignore ignore ignore ignore ignore ignore ignore um ignore ignore 
+/scratch/customtraining/data-ignore-v2/train/samples/sample-155.wav,69632,ignore ignore ignore ignore uh ignore ignore ignore 
+/scratch/customtraining/data-ignore-v2/train/samples/sample-156.wav,72704,ignore ignore ignore ignore ignore um ignore ignore ignore ignore 
+/scratch/customtraining/data-ignore-v2/train/samples/sample-157.wav,52224,ignore ignore ignore uh ignore 
+/scratch/customtraining/data-ignore-v2/train/samples/sample-158.wav,68608,ignore ignore ignore ignore ignore ignore ignore uh ignore 
+/scratch/customtraining/data-ignore-v2/train/samples/sample-159.wav,72704,ignore ignore ignore uh ignore ignore ignore ignore ignore ignore ignore 
+/scratch/customtraining/data-ignore-v2/train/samples/sample-160.wav,45056,uh ignore ignore ignore ignore 
+/scratch/customtraining/data-ignore-v2/train/samples/sample-161.wav,52224,ignore ignore um ignore ignore ignore 
+/scratch/customtraining/data-ignore-v2/train/samples/sample-162.wav,54272,ignore ignore ignore ignore ignore uh ignore 
+/scratch/customtraining/data-ignore-v2/train/samples/sample-163.wav,50176,um ignore ignore ignore ignore 
+/scratch/customtraining/data-ignore-v2/train/samples/sample-164.wav,93184,ignore ignore ignore ignore ignore uh ignore ignore ignore ignore ignore ignore ignore ignore ignore ignore 
+/scratch/customtraining/data-ignore-v2/train/samples/sample-165.wav,100352,um ignore ignore ignore ignore ignore ignore ignore ignore ignore ignore ignore ignore ignore ignore ignore ignore 
+/scratch/customtraining/data-ignore-v2/train/samples/sample-166.wav,54272,ignore ignore ignore uh ignore 
+/scratch/customtraining/data-ignore-v2/train/samples/sample-167.wav,82944,ignore ignore ignore ignore um ignore ignore ignore 
+/scratch/customtraining/data-ignore-v2/train/samples/sample-168.wav,96256,ignore ignore ignore ignore ignore ignore ignore ignore ignore ignore ignore um ignore ignore ignore ignore 
+/scratch/customtraining/data-ignore-v2/train/samples/sample-169.wav,47104,ignore uh ignore ignore ignore ignore ignore ignore 
+/scratch/customtraining/data-ignore-v2/train/samples/sample-170.wav,95232,ignore ignore ignore ignore ignore ignore ignore ignore ignore ignore ignore ignore uh ignore ignore ignore 
+/scratch/customtraining/data-ignore-v2/train/samples/sample-171.wav,56320,ignore uh ignore ignore ignore ignore ignore ignore ignore 
+/scratch/customtraining/data-ignore-v2/train/samples/sample-172.wav,59392,uh ignore ignore ignore ignore ignore ignore ignore ignore 
+/scratch/customtraining/data-ignore-v2/train/samples/sample-173.wav,95232,ignore ignore ignore ignore uh ignore ignore ignore ignore ignore ignore ignore ignore ignore ignore ignore 
+/scratch/customtraining/data-ignore-v2/train/samples/sample-174.wav,53248,uh ignore ignore ignore ignore ignore ignore ignore ignore 
+/scratch/customtraining/data-ignore-v2/train/samples/sample-175.wav,73728,ignore ignore ignore ignore ignore ignore ignore um ignore 
+/scratch/customtraining/data-ignore-v2/train/samples/sample-176.wav,46080,ignore ignore um ignore ignore ignore 
+/scratch/customtraining/data-ignore-v2/train/samples/sample-177.wav,120832,ignore ignore ignore ignore ignore ignore ignore ignore ignore ignore ignore ignore ignore um ignore ignore ignore 
+/scratch/customtraining/data-ignore-v2/train/samples/sample-178.wav,30720,um ignore ignore ignore ignore 
+/scratch/customtraining/data-ignore-v2/train/samples/sample-179.wav,46080,ignore ignore uh ignore ignore ignore 
+/scratch/customtraining/data-ignore-v2/train/samples/sample-180.wav,88064,ignore ignore ignore ignore ignore ignore ignore ignore ignore ignore ignore ignore ignore um ignore 
+/scratch/customtraining/data-ignore-v2/train/samples/sample-181.wav,75776,ignore uh ignore ignore ignore ignore ignore ignore ignore 
+/scratch/customtraining/data-ignore-v2/train/samples/sample-182.wav,55296,ignore ignore ignore ignore ignore um 
+/scratch/customtraining/data-ignore-v2/train/samples/sample-183.wav,59392,um ignore ignore ignore ignore ignore ignore 
+/scratch/customtraining/data-ignore-v2/train/samples/sample-184.wav,69632,ignore ignore ignore uh ignore ignore 
+/scratch/customtraining/data-ignore-v2/train/samples/sample-185.wav,88064,ignore ignore ignore uh ignore ignore ignore ignore ignore ignore ignore ignore ignore 
+/scratch/customtraining/data-ignore-v2/train/samples/sample-186.wav,60416,ignore ignore ignore ignore ignore ignore um ignore 
+/scratch/customtraining/data-ignore-v2/train/samples/sample-187.wav,80896,ignore ignore uh ignore ignore ignore ignore ignore ignore ignore ignore 
+/scratch/customtraining/data-ignore-v2/train/samples/sample-188.wav,95232,ignore ignore ignore uh ignore ignore ignore ignore ignore ignore ignore ignore ignore ignore 
+/scratch/customtraining/data-ignore-v2/train/samples/sample-189.wav,86016,ignore ignore ignore ignore ignore ignore ignore ignore ignore ignore ignore ignore ignore um 
+/scratch/customtraining/data-ignore-v2/train/samples/sample-190.wav,79872,ignore ignore ignore ignore ignore um ignore ignore ignore ignore 
+/scratch/customtraining/data-ignore-v2/train/samples/sample-191.wav,67584,um ignore ignore ignore ignore ignore ignore ignore ignore ignore ignore 
+/scratch/customtraining/data-ignore-v2/train/samples/sample-192.wav,45056,ignore uh ignore ignore ignore ignore ignore 
+/scratch/customtraining/data-ignore-v2/train/samples/sample-193.wav,81920,ignore uh ignore ignore ignore ignore ignore ignore ignore ignore ignore 
+/scratch/customtraining/data-ignore-v2/train/samples/sample-194.wav,64512,ignore um ignore ignore ignore ignore ignore ignore ignore 
+/scratch/customtraining/data-ignore-v2/train/samples/sample-195.wav,98304,ignore ignore ignore ignore ignore ignore ignore ignore ignore ignore ignore ignore ignore ignore uh ignore ignore ignore 
+/scratch/customtraining/data-ignore-v2/train/samples/sample-196.wav,57344,uh ignore ignore ignore ignore ignore ignore 
+/scratch/customtraining/data-ignore-v2/train/samples/sample-197.wav,63488,ignore ignore ignore ignore ignore ignore ignore ignore ignore um 
+/scratch/customtraining/data-ignore-v2/train/samples/sample-198.wav,71680,ignore ignore ignore ignore ignore ignore uh ignore ignore ignore ignore 
+/scratch/customtraining/data-ignore-v2/train/samples/sample-199.wav,69632,ignore ignore ignore um ignore 
+/scratch/customtraining/data-ignore-v2/train/samples/sample-200.wav,48128,uh ignore ignore ignore ignore ignore 
+/scratch/customtraining/data-ignore-v2/train/samples/sample-201.wav,220160,ignore ignore ignore um ignore ignore ignore ignore ignore ignore ignore ignore ignore ignore ignore ignore ignore ignore ignore ignore ignore ignore ignore 
+/scratch/customtraining/data-ignore-v2/train/samples/sample-202.wav,124928,ignore ignore ignore ignore ignore ignore ignore ignore ignore uh ignore ignore ignore 
+/scratch/customtraining/data-ignore-v2/train/samples/sample-203.wav,92160,um ignore ignore ignore ignore ignore ignore ignore ignore ignore 
+/scratch/customtraining/data-ignore-v2/train/samples/sample-204.wav,120832,ignore ignore ignore ignore ignore ignore ignore ignore ignore ignore ignore ignore um ignore 
+/scratch/customtraining/data-ignore-v2/train/samples/sample-205.wav,129024,uh ignore ignore ignore ignore ignore ignore ignore ignore ignore ignore ignore ignore 
+/scratch/customtraining/data-ignore-v2/train/samples/sample-206.wav,125952,ignore ignore ignore ignore ignore ignore ignore ignore ignore ignore ignore ignore um ignore ignore ignore ignore 
+/scratch/customtraining/data-ignore-v2/train/samples/sample-207.wav,117760,ignore ignore ignore ignore ignore ignore ignore ignore uh ignore ignore ignore ignore ignore ignore 
+/scratch/customtraining/data-ignore-v2/train/samples/sample-208.wav,95232,ignore ignore ignore ignore ignore uh ignore ignore 
+/scratch/customtraining/data-ignore-v2/train/samples/sample-209.wav,58368,ignore ignore ignore ignore um 
+/scratch/customtraining/data-ignore-v2/train/samples/sample-210.wav,66560,ignore ignore ignore uh ignore 
+/scratch/customtraining/data-ignore-v2/train/samples/sample-211.wav,50176,uh ignore ignore ignore ignore 
+/scratch/customtraining/data-ignore-v2/train/samples/sample-212.wav,63488,ignore ignore uh ignore ignore 
+/scratch/customtraining/data-ignore-v2/train/samples/sample-213.wav,65536,ignore ignore ignore ignore ignore uh ignore ignore ignore ignore ignore 
+/scratch/customtraining/data-ignore-v2/train/samples/sample-214.wav,102400,ignore ignore ignore ignore ignore ignore ignore ignore ignore ignore um 
+/scratch/customtraining/data-ignore-v2/train/samples/sample-215.wav,62464,ignore ignore ignore ignore uh ignore 
+/scratch/customtraining/data-ignore-v2/train/samples/sample-216.wav,82944,ignore ignore uh ignore ignore ignore 
+/scratch/customtraining/data-ignore-v2/train/samples/sample-217.wav,97280,ignore ignore ignore ignore um ignore ignore ignore 
+/scratch/customtraining/data-ignore-v2/train/samples/sample-218.wav,71680,ignore ignore ignore ignore ignore ignore ignore ignore uh ignore 
+/scratch/customtraining/data-ignore-v2/train/samples/sample-219.wav,90112,ignore ignore ignore ignore ignore um ignore ignore ignore ignore ignore ignore ignore ignore ignore 
+/scratch/customtraining/data-ignore-v2/train/samples/sample-220.wav,62464,ignore uh ignore ignore ignore ignore ignore ignore ignore 
+/scratch/customtraining/data-ignore-v2/train/samples/sample-221.wav,87040,ignore ignore ignore ignore ignore uh ignore ignore ignore ignore ignore ignore 
+/scratch/customtraining/data-ignore-v2/train/samples/sample-222.wav,111616,ignore ignore ignore ignore ignore ignore ignore ignore ignore ignore ignore ignore uh ignore ignore ignore 
+/scratch/customtraining/data-ignore-v2/train/samples/sample-223.wav,57344,ignore ignore ignore ignore um 
+/scratch/customtraining/data-ignore-v2/train/samples/sample-224.wav,62464,ignore ignore ignore ignore ignore uh ignore ignore 
+/scratch/customtraining/data-ignore-v2/train/samples/sample-225.wav,64512,ignore ignore uh ignore ignore ignore ignore ignore ignore ignore ignore 
+/scratch/customtraining/data-ignore-v2/train/samples/sample-226.wav,74752,um ignore ignore ignore ignore ignore ignore ignore ignore 
+/scratch/customtraining/data-ignore-v2/train/samples/sample-227.wav,120832,ignore ignore ignore ignore ignore ignore ignore um ignore ignore ignore ignore ignore ignore ignore ignore ignore ignore ignore ignore ignore 
+/scratch/customtraining/data-ignore-v2/train/samples/sample-228.wav,62464,ignore ignore ignore ignore ignore uh 
+/scratch/customtraining/data-ignore-v2/train/samples/sample-229.wav,98304,ignore uh ignore ignore ignore ignore ignore ignore ignore ignore ignore ignore ignore ignore ignore 
+/scratch/customtraining/data-ignore-v2/train/samples/sample-230.wav,78848,ignore ignore ignore ignore ignore ignore ignore ignore ignore ignore ignore uh 
+/scratch/customtraining/data-ignore-v2/train/samples/sample-231.wav,114688,ignore ignore ignore ignore ignore ignore ignore uh ignore ignore ignore ignore ignore ignore ignore ignore ignore 
+/scratch/customtraining/data-ignore-v2/train/samples/sample-232.wav,134144,ignore ignore um ignore ignore ignore ignore ignore ignore ignore ignore 
+/scratch/customtraining/data-ignore-v2/train/samples/sample-233.wav,132096,ignore ignore ignore ignore ignore um ignore ignore ignore ignore ignore ignore ignore ignore ignore ignore 
+/scratch/customtraining/data-ignore-v2/train/samples/sample-234.wav,59392,ignore uh ignore ignore ignore ignore ignore 
+/scratch/customtraining/data-ignore-v2/train/samples/sample-235.wav,64512,ignore ignore ignore uh ignore ignore ignore 
+/scratch/customtraining/data-ignore-v2/train/samples/sample-236.wav,108544,ignore ignore ignore ignore um 
+/scratch/customtraining/data-ignore-v2/train/samples/sample-237.wav,81920,ignore ignore ignore ignore uh ignore ignore ignore ignore ignore 
+/scratch/customtraining/data-ignore-v2/train/samples/sample-238.wav,67584,ignore ignore ignore ignore um ignore ignore ignore 
+/scratch/customtraining/data-ignore-v2/train/samples/sample-239.wav,64512,um ignore ignore ignore ignore ignore ignore 
+/scratch/customtraining/data-ignore-v2/train/samples/sample-240.wav,131072,ignore ignore ignore ignore ignore ignore ignore ignore ignore ignore ignore ignore ignore ignore ignore ignore um 
+/scratch/customtraining/data-ignore-v2/train/samples/sample-241.wav,68608,ignore ignore ignore uh ignore ignore ignore ignore 
+/scratch/customtraining/data-ignore-v2/train/samples/sample-242.wav,56320,ignore um ignore ignore ignore ignore 
+/scratch/customtraining/data-ignore-v2/train/samples/sample-243.wav,67584,ignore ignore ignore um ignore ignore 
+/scratch/customtraining/data-ignore-v2/train/samples/sample-244.wav,75776,ignore ignore ignore ignore ignore ignore ignore um ignore ignore 
+/scratch/customtraining/data-ignore-v2/train/samples/sample-245.wav,119808,ignore ignore ignore ignore ignore ignore ignore ignore ignore ignore ignore ignore ignore ignore ignore uh 
+/scratch/customtraining/data-ignore-v2/train/samples/sample-246.wav,74752,ignore ignore uh ignore ignore ignore 
+/scratch/customtraining/data-ignore-v2/train/samples/sample-247.wav,69632,ignore ignore ignore um ignore 
+/scratch/customtraining/data-ignore-v2/train/samples/sample-248.wav,105472,ignore ignore ignore ignore ignore um ignore ignore ignore ignore 
+/scratch/customtraining/data-ignore-v2/train/samples/sample-249.wav,52224,ignore ignore ignore um ignore ignore ignore 
+/scratch/customtraining/data-ignore-v2/train/samples/sample-250.wav,125952,ignore ignore ignore ignore uh ignore ignore ignore ignore ignore ignore ignore ignore ignore 
