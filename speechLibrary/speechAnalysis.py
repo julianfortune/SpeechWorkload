@@ -5,15 +5,15 @@ Created on Apr 23, 2019
 
 @Description: Interface for extracting feature arrays.
 '''
-import os, glob # file io
+import os, glob, sys # file io
 import time
-import numpy
+import numpy as np
 import pyaudio # microphone io
 import wavio # microphone decoding
 from speechLibrary import featureModule
 from speechLibrary import audioModule
 
-numpy.set_printoptions(threshold=numpy.nan)
+np.set_printoptions(threshold=sys.maxsize)
 
 ### Utilities
 
@@ -24,12 +24,13 @@ class SpeechAnalyzer:
 
     def __init__(self):
 
-        # Set defaults for all parameters
+        ### Set defaults for all parameters
+
         self.printStatus = True
 
         # Windowing parameters
-        self.stepSize = 1 #how big to step in seconds
-        self.lookBackSize = 30  #how big of interval to wait until looking for transcript, pitch/intensity features in seconds
+        self.stepSize = 1 # how big to step in seconds
+        self.lookBackSize = 30  # how big of interval to wait until looking for transcript, pitch/intensity features in seconds
 
         # Syllable detection parameters
         self.syllableWindowSize = 64 # In milliseconds
@@ -50,17 +51,16 @@ class SpeechAnalyzer:
         self.voiceActivityFreqThreshold = 18
         self.voiceActivityFreqTolerance = 8
 
+        # Pitch parameter
+        self.pitchWindowSize = 1000 # In milliseconds
+
         # Recording parameters
         self.recordingDeviceIndex = -1
         self.recordingBufferSize = 4096
         self.recordingFormat = pyaudio.paInt16
         self.recordingChannels = 2
 
-    def getFeaturesFromAudio(self, audio):
-
-        features = featureModule.FeatureSet()
-
-        ### WORDS PER MINUTE
+    def getSyllablesFromAudio(self, audio):
         syllables = featureModule.getSyllables(data=audio.data,
                                                sampleRate=audio.sampleRate,
                                                windowSize=self.syllableWindowSize,
@@ -70,35 +70,62 @@ class SpeechAnalyzer:
                                                zcrThreshold=self.syllableZcrThreshold,
                                                dominantFreqThreshold=self.syllableDominantFreqThreshold,
                                                dominantFreqTolerance=self.syllableDominantFreqTolerance)
+        return syllables
 
-        currentSyllablesPerSecond = len(syllables)/self.lookBackSize
-        features.syllablesPerSecond = numpy.append(features.syllablesPerSecond, currentSyllablesPerSecond)
+    def getVoiceActivityFromAudio(self, audio):
+        voiceActivity = featureModule.getVoiceActivity(data=audio.data,
+                                                       sampleRate=audio.sampleRate,
+                                                       windowSizeInMS=self.voiceActivityWindowSize,
+                                                       stepSizeInMS=self.voiceActivityStepSize,
+                                                       useAdaptiveThresholds=self.voiceActivityIsAdaptive,
+                                                       zcrThreshold=self.voiceActivityZCRThreshold,
+                                                       energyPrimaryThreshold=self.voiceActivityEnergyThreshold,
+                                                       dominantFreqThreshold=self.voiceActivityFreqThreshold,
+                                                       dominantFreqTolerance=self.voiceActivityFreqTolerance)
+        return voiceActivity
 
-        ### VAD
-        average, stDev = featureModule.getVoiceActivityFeatures(data=audio.data,
-                                                                sampleRate=audio.sampleRate,
-                                                                windowSizeInMS=self.voiceActivityWindowSize,
-                                                                stepSizeInMS=self.voiceActivityStepSize,
-                                                                useAdaptiveThresholds=self.voiceActivityIsAdaptive,
-                                                                zcrThreshold=self.voiceActivityZCRThreshold,
-                                                                energyPrimaryThreshold=self.voiceActivityEnergyThreshold,
-                                                                dominantFreqThreshold=self.voiceActivityFreqThreshold,
-                                                                dominantFreqTolerance=self.voiceActivityFreqTolerance)
+    def getVoiceActivityStatisticsFromAudio(self, audio):
+        average, stDev = featureModule.getVoiceActivityStatistics(data=audio.data,
+                                                                  sampleRate=audio.sampleRate,
+                                                                  windowSizeInMS=self.voiceActivityWindowSize,
+                                                                  stepSizeInMS=self.voiceActivityStepSize,
+                                                                  useAdaptiveThresholds=self.voiceActivityIsAdaptive,
+                                                                  zcrThreshold=self.voiceActivityZCRThreshold,
+                                                                  energyPrimaryThreshold=self.voiceActivityEnergyThreshold,
+                                                                  dominantFreqThreshold=self.voiceActivityFreqThreshold,
+                                                                  dominantFreqTolerance=self.voiceActivityFreqTolerance)
+        return average, stDev
 
-        features.meanVoiceActivity = numpy.append(features.meanVoiceActivity,average)
-        features.stDevVoiceActivity = numpy.append(features.stDevVoiceActivity,stDev)
-
-        ### AVERAGE PITCH
+    def getPitchFromAudio(self, audio):
         average, stDev = featureModule.getPitchFeatures(audio.data,
                                                         audio.sampleRate,
-                                                        1)
-        features.meanPitch = numpy.append(features.meanPitch, average)
-        features.stDevPitch = numpy.append(features.stDevPitch, stDev)
+                                                        self.pitchWindowSize)
+        return average, stDev
 
-        ### INTENSITY FEATURES
-        average, stDev = featureModule.getIntensityFeatures(audio.data)
-        features.meanIntensity = numpy.append(features.meanIntensity, average)
-        features.stDevIntensity = numpy.append(features.stDevIntensity, stDev)
+    def getFeaturesFromAudio(self, audio):
+        features = featureModule.FeatureSet()
+
+        ### WORDS PER MINUTE
+        syllables = self.getSyllablesFromAudio(audio)
+        currentSyllablesPerSecond = len(syllables)/self.lookBackSize
+        features.syllablesPerSecond = np.append(features.syllablesPerSecond, currentSyllablesPerSecond)
+
+        ### VAD
+        average, stDev = self.getVoiceActivityStatisticsFromAudio(audio)
+        features.meanVoiceActivity = np.append(features.meanVoiceActivity,average)
+        features.stDevVoiceActivity = np.append(features.stDevVoiceActivity,stDev)
+
+        ### PITCH
+        average, stDev = featureModule.getPitchStatistics(audio.data,
+                                                         audio.sampleRate,
+                                                         self.pitchWindowSize)
+        features.meanPitch = np.append(features.meanPitch, average)
+        features.stDevPitch = np.append(features.stDevPitch, stDev)
+
+        ### INTENSITY
+        average, stDev = featureModule.getIntensityStatistics(audio.data)
+        features.meanIntensity = np.append(features.meanIntensity, average)
+        features.stDevIntensity = np.append(features.stDevIntensity, stDev)
 
         return features
 
@@ -107,7 +134,7 @@ class SpeechAnalyzer:
     # |   - filePath: path to file to process
     # | Returns:
     # |   - Numpy array with features
-    def getFeaturesFromFile(self, filePath):
+    def getFeaturesFromFileUsingWindowing(self, filePath):
 
         if self.printStatus :
             print("[ START ] Working on:",filePath)
@@ -119,7 +146,7 @@ class SpeechAnalyzer:
             audio.makeMono()
 
         # Set up time tracker
-        seconds = numpy.zeros(shape=0)
+        seconds = np.zeros(shape=0)
 
         # Set up arrays for features
         features = featureModule.FeatureSet()
@@ -134,7 +161,7 @@ class SpeechAnalyzer:
                 print("[",str(step/audio.length*100)[:4],"% ] Second",int(step/audio.sampleRate), end="\r")
 
             # Keep track of what second we're in
-            seconds = numpy.append(seconds,step/audio.sampleRate)
+            seconds = np.append(seconds,step/audio.sampleRate)
 
             # Look backward to calculate features over long term
             if step + sampleStepSize - sampleLookBackSize > 0:
@@ -154,7 +181,7 @@ class SpeechAnalyzer:
             step += sampleStepSize
 
         # Pulls all the feautures together in one array
-        featureArray = numpy.vstack([seconds,
+        featureArray = np.vstack([seconds,
                                      features.syllablesPerSecond,
                                      features.meanVoiceActivity,
                                      features.stDevVoiceActivity,
@@ -173,18 +200,20 @@ class SpeechAnalyzer:
         startTime = time.time()
         count = 1
 
-        for path in sorted(glob.iglob(inDirectory),reverse=False):
-            # Communicate progress
-            print("[ " + str(count) + "/" + str(len(sorted(glob.iglob(inDirectory)))) + " ] \tStarting:",path)
+        audioFiles = inDirectory + "*.wav"
 
-            featureArray = getFeaturesFromFile(path)
+        for path in sorted(glob.iglob(audioFiles),reverse=False):
+            # Communicate progress
+            print("[ " + str(count) + "/" + str(len(sorted(glob.iglob(audioFiles)))) + " ] \tStarting:",path)
+
+            featureArray = self.getFeaturesFromFileUsingWindowing(path)
 
             # Save the numpy array
-            numpy.save(outDirectory + os.path.basename(path)[:-4],featureArray)
+            np.save(outDirectory + os.path.basename(path)[:-4],featureArray)
 
             # Crunch some numbers and communicate to the user
             timeElapsed = time.time() - startTime
-            estimatedTimeRemaining = timeElapsed/count * (len(sorted(glob.iglob(dir))) - count)
+            estimatedTimeRemaining = timeElapsed/count * (len(sorted(glob.iglob(audioFiles))) - count)
             print("\t\t" + str(timeElapsed/60) + " minutes elapsed. Estimated time remaining: " + str(estimatedTimeRemaining/60))
 
             count += 1
@@ -216,7 +245,7 @@ class SpeechAnalyzer:
         print("\n\u001b[31m• Live\u001b[0m\r", end="\r")
 
         # Setup before recording starts
-        data = numpy.zeros(shape=0)
+        data = np.zeros(shape=0)
 
         windowSampleSize = int(sampleRate * self.lookBackSize)
         stepSampleSize = int(sampleRate * self.stepSize)
@@ -231,10 +260,10 @@ class SpeechAnalyzer:
 
                 # Convert to mono float data
                 waveData = wavio._wav2array(self.recordingChannels, audioController.get_sample_size(self.recordingFormat), buffer)
-                monoWaveData = numpy.mean(waveData,axis=1)
+                monoWaveData = np.mean(waveData,axis=1)
 
                 # Add the just-read buffer to the current running array of audio data
-                data = numpy.append(data, monoWaveData)
+                data = np.append(data, monoWaveData)
 
                 # Once enough time has passed to include an entire window
                 if data.size >= windowSampleSize:
