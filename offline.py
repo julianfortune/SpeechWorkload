@@ -4,8 +4,8 @@ import numpy
 
 analyzer = speechAnalysis.SpeechAnalyzer()
 
+#Leave default parameters
+
 analyzer.printStatus = True
 
-featureArray = analyzer.getFeaturesFromFileUsingWindowing("../media/Participant_Audio/p1_nl.wav")
-
-numpy.save("./features/p1_nl", featureArray)
+analyzer.createFeatureFilesFromDirectory("../media/Participant_Audio/", "./features/")

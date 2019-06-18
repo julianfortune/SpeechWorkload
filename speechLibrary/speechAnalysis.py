@@ -200,18 +200,20 @@ class SpeechAnalyzer:
         startTime = time.time()
         count = 1
 
-        for path in sorted(glob.iglob(inDirectory),reverse=False):
-            # Communicate progress
-            print("[ " + str(count) + "/" + str(len(sorted(glob.iglob(inDirectory)))) + " ] \tStarting:",path)
+        audioFiles = inDirectory + "*.wav"
 
-            featureArray = getFeaturesFromFileUsingWindowing(path)
+        for path in sorted(glob.iglob(audioFiles),reverse=False):
+            # Communicate progress
+            print("[ " + str(count) + "/" + str(len(sorted(glob.iglob(audioFiles)))) + " ] \tStarting:",path)
+
+            featureArray = self.getFeaturesFromFileUsingWindowing(path)
 
             # Save the numpy array
             np.save(outDirectory + os.path.basename(path)[:-4],featureArray)
 
             # Crunch some numbers and communicate to the user
             timeElapsed = time.time() - startTime
-            estimatedTimeRemaining = timeElapsed/count * (len(sorted(glob.iglob(dir))) - count)
+            estimatedTimeRemaining = timeElapsed/count * (len(sorted(glob.iglob(audioFiles))) - count)
             print("\t\t" + str(timeElapsed/60) + " minutes elapsed. Estimated time remaining: " + str(estimatedTimeRemaining/60))
 
             count += 1

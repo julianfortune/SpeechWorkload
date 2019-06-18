@@ -24,8 +24,15 @@ class Audio:
         if isinstance(filePath, str):
             # Read in the file, extract data and metadata
             audioData = wavio.read(filePath) # reads in audio file
-            self.data = audioData.data
             self.numberOfChannels = len(audioData.data[0])
+
+            # Make sure mono sounds are sert up properly
+            if self.numberOfChannels == 1:
+                # Squeeze removes matrices around each value
+                self.data = np.squeeze(audioData.data).astype(np.double)
+            else:
+                self.data = audioData.data.astype(np.double)
+
             self.sampleRate = audioData.rate # usually 44100
             self.length = len(audioData.data) # gets number of sample in audio
 
