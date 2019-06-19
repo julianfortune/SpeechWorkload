@@ -297,4 +297,4 @@ def getFilledPauses(data, sampleRate, windowSize, stepSize, minumumLength, F1Max
                 lengths.append(times[step] - startOfFiller + (minumumLength/1000) )
             fillerUtteranceInitiated = False
 
-    return filledPauses, np.array(timeStamps), times, firstFormant, secondFormant, energy, lengths, firstFormantVariances, secondFormantVariances, averageEnergies, stepTimes, zcr
+    return filledPauses, np.array(timeStamps), times, firstFormant, secondFormant, energy, lengths, firstFormantVariances, secondFormantVariances, averageEnergies, stepTimes
