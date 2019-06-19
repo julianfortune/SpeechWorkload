@@ -73,50 +73,6 @@ def createSlicesFromPauses():
 
 # --
 
-def compareAlgorithmToSlices():
-
-    for filePath in sorted(glob.iglob(audioDirectory)):
-        # Audio file i/o
-        name = os.path.basename(filePath)[:-4]
-
-        participant = name.split("_")[0]
-        condition = name.split("_")[1]
-
-        # # Make fresh directories
-        # os.mkdir(outputDir + name)
-
-        print(participant, condition)
-
-        audio = audioModule.Audio(filePath=filePath)
-        audio.makeMono()
-
-        filledPauses, timeStamps, times, f1, f2, energy, lengths, firstFormantVariances, secondFormantVariances, averageEnergies, stepTimes = featureModule.getFilledPauses(audio.data, audio.sampleRate, utteranceWindowSize, utteranceStepSize, utteranceMinimumLength, utteranceF1MaximumVariance, utteranceF2MaximumVariance, utteranceEnergyThreshold)
-
-        audio = AudioSegment.from_wav(filePath)
-
-        for time in timeStamps:
-
-            # Compare with file containing marked pauses
-            with open('filledPausesAllParticipantsRatings.csv') as csvfile:
-                reader = csv.DictReader(csvfile)
-
-                # Go through each existing filled pause
-                for row in reader:
-                    controlParticipant = row['participant']
-                    controlCondition = row['condition']
-                    controlTime = row['time']
-                    judgement = row['judgement']
-
-                    if controlParticipant == participant and controlCondition[1:] == condition:
-                        if abs(time - float(controlTime)) < 0.01:
-                            if judgement == "1":
-                                print("correct")
-                            elif judgement == "0":
-                                print("maybe")
-                            elif judgement == "-1":
-                                print("wrong")
-
-
 def runAlgorithmOnParticipants():
 
     for filePath in sorted(glob.iglob(audioDirectory)):
@@ -135,8 +91,6 @@ def runAlgorithmOnParticipants():
         audio.makeMono()
 
         filledPauses, timeStamps, times, f1, f2, energy, lengths, firstFormantVariances, secondFormantVariances, averageEnergies, stepTimes = featureModule.getFilledPauses(audio.data, audio.sampleRate, utteranceWindowSize, utteranceStepSize, utteranceMinimumLength, utteranceF1MaximumVariance, utteranceF2MaximumVariance, utteranceEnergyThreshold)
-
-        audio = AudioSegment.from_wav(filePath)
 
         for time in timeStamps:
 
@@ -207,7 +161,7 @@ def runAlgorithmOnSlices():
     # --
 # --
 
-def checkNewAlgorithmAgainstSlices():
+def compareAlgorithmToSlices():
 
     yeses = 0
     maybes = 0
@@ -228,6 +182,8 @@ def checkNewAlgorithmAgainstSlices():
         # Run algorithm
         filledPauses, timeStamps, times, f1, f2, energy, lengths, firstFormantVariances, secondFormantVariances, averageEnergies, stepTimes = featureModule.getFilledPauses(audio.data, audio.sampleRate, utteranceWindowSize, utteranceStepSize, utteranceMinimumLength, utteranceF1MaximumVariance, utteranceF2MaximumVariance, utteranceEnergyThreshold)
 
+        print(timeStamps)
+
         # Compare with file of all existing
         with open('filledPausesAllParticipantsRatings.csv') as csvfile:
             reader = csv.DictReader(csvfile)
@@ -242,16 +198,17 @@ def checkNewAlgorithmAgainstSlices():
                 if controlParticipant == participant and controlCondition[1:] == condition:
                     name = participant + "_" + condition[1:]
 
-                    found = False
-
                     for time in timeStamps:
-                        if abs(time - float(controlTime)) < 0.01:
+                        if abs(time - float(controlTime)) < 0.02:
                             if judgement == "1":
                                 yeses += 1
+                                print("correct")
                             elif judgement == "0":
                                 maybes += 1
+                                print("maybe")
                             elif judgement == "-1":
                                 nos += 1
+                                print("wrong")
 
     # Print original accuracy
     with open('filledPausesAllParticipantsRatings.csv') as csvfile:
@@ -409,7 +366,6 @@ def runAlgorithmOnDataset():
 
 
 def main():
-    printParameters()
-    checkNewAlgorithmAgainstSlices()
+    compareAlgorithmToSlices()
 
 main()
