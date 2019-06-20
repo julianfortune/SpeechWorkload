@@ -275,6 +275,10 @@ def getFilledPauses(data, sampleRate, windowSize, stepSize, minumumLength, F1Max
 
         firstFormantVariance = np.std(firstFormant[start:end])
         secondFormantVariance = np.std(secondFormant[start:end])
+
+        firstFormantAverage = np.mean(firstFormant[start:end])
+        secondFormantAverage = np.mean(secondFormant[start:end])
+
         averageEnergy = np.mean(energy[start:end])
 
         stepTimes.append(start * (sampleStepSize/sampleRate))
