@@ -105,7 +105,7 @@ def getSyllables(data, sampleRate, windowSize, stepSize, peakMinDistance, peakMi
                                                                           dominantFreqTolerance):
             validPeaks = np.append(validPeaks, peaks[i])
 
-    return validPeaks
+    return validPeaks * hop / sampleRate
 
 # | Returns the average voice activity (0 <= v <= 1) using an adaptive algorithm.
 def getVoiceActivity(data, sampleRate, windowSizeInMS, stepSizeInMS, useAdaptiveThresholds, zcrThreshold, energyPrimaryThreshold, dominantFreqThreshold, dominantFreqTolerance):
@@ -204,7 +204,21 @@ def getPitchStatistics(data, sampleRate, windowSize):
 
     return average, stDev
 
-# | Returns the first two formant from a piece of audio.
+def getPitchAC(data, sampleRate, stepSize):
+    # Convert to the parselmouth custom sound type (req'd for formant function)
+    parselSound = parselmouth.Sound(values=data, sampling_frequency=sampleRate)
+
+    # Produce a formant object from this data
+    pitchData = parselSound.to_pitch_ac(time_step=stepSize/1000,
+                                        pitch_ceiling=400.0,
+                                        silence_threshold=0.03,
+                                        voicing_threshold=0.45)
+    pitchValues = pitchData.selected_array['frequency']
+    pitchValues[pitchValues==0] = np.nan
+
+    return pitchValues
+
+# | Returns the first two formants from a piece of audio.
 def getFormants(data, sampleRate, windowSize, stepSize):
     # Convert to the parselmouth custom sound type (req'd for formant function)
     parselSound = parselmouth.Sound(values=data, sampling_frequency=sampleRate)

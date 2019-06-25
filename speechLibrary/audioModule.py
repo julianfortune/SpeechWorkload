@@ -58,7 +58,7 @@ class Audio:
             print("Error: Sound Already Mono")
 
     def description(self):
-        print("Audio data - ", self.sampleRate, "samples/second,", self.numberOfChannels, "channels,", self.length, "seconds.")
+        print("Audio data -", self.sampleRate, "samples/second,", self.numberOfChannels, "channels,", self.length / self.sampleRate, "seconds.")
 
 # Uses the pyaudio library to get the user's choice of input device
 def pickMicrophone(pyAudioController):
