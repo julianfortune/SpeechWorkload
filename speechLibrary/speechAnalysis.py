@@ -48,14 +48,14 @@ class SpeechAnalyzer:
         self.voiceActivityStepSize = 10 # In milliseconds
         self.voiceActivityZCRThreshold = 0.06
         self.voiceActivityEnergyThreshold = 40
-        self.voiceActivityFreqThreshold = 18
+        self.voiceActivityFreqThreshold = 185
         self.voiceActivityFreqTolerance = 8
 
         # Pitch parameter
         self.pitchWindowSize = 1000 # In milliseconds
 
         # Recording parameters
-        self.recordingDeviceIndex = -1
+        self.recordingDeviceIndex = -1 # Default to asking user
         self.recordingBufferSize = 4096
         self.recordingFormat = pyaudio.paInt16
         self.recordingChannels = 2
