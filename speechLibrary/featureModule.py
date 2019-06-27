@@ -11,6 +11,8 @@ import librosa
 import scipy.signal # Extracts power spectrum
 import parselmouth # Formants
 
+import matplotlib.pyplot as plt
+
 class FeatureSet:
 
     # TODO: Redo to use classic lists and convert at very end to save on
@@ -105,7 +107,42 @@ def getSyllables(data, sampleRate, windowSize, stepSize, peakMinDistance, peakMi
                                                                           dominantFreqTolerance):
             validPeaks = np.append(validPeaks, peaks[i])
 
-    return validPeaks * hop / sampleRate
+    # return validPeaks * hop / sampleRate, peaks * hop / sampleRate
+    return validPeaks, peaks
+
+# | Returns the indices of syllables in audio data
+def getSyllablesWithPitch(data, sampleRate, windowSize, stepSize, peakMinDistance, peakMinWidth, zcrThreshold, dominantFreqThreshold, dominantFreqTolerance):
+    ### Constants
+    frame = int(sampleRate / 1000 * windowSize) # samples
+    hop = int(sampleRate / 1000 * stepSize) # samples
+
+    ### Energy
+    energy = librosa.feature.rmse(data, frame_length=frame, hop_length=hop)[0]
+
+    ### Threshold
+    energyMinThreshold = np.percentile(energy, 25) * 2
+    # print(energyMinThreshold)
+
+    ### Peaks
+    peaks, _ = scipy.signal.find_peaks(energy,
+                                       height=energyMinThreshold,
+                                       distance=peakMinDistance,
+                                       width=peakMinWidth)
+
+    # Get pitch
+    pitchValues = getPitchAC(data, sampleRate, stepSize)
+
+    ### ZCR
+    zcr = librosa.feature.zero_crossing_rate(data, frame_length=frame, hop_length=hop)[0]
+
+    ### Removing invalid peaks
+    validPeaks = []
+    for i in range(0,len(peaks)):
+        if zcr[peaks[i]] < zcrThreshold and aboveThresholdWithinTolerance(data=pitchValues, indexInQuestion=peaks[i], threshold=0, tolerance=4):
+            validPeaks = np.append(validPeaks, peaks[i])
+
+    return validPeaks * hop / sampleRate, peaks * hop / sampleRate
+    # return validPeaks, peaks
 
 # | Returns the average voice activity (0 <= v <= 1) using an adaptive algorithm.
 def getVoiceActivity(data, sampleRate, windowSizeInMS, stepSizeInMS, useAdaptiveThresholds, zcrThreshold, energyPrimaryThreshold, dominantFreqThreshold, dominantFreqTolerance):
@@ -212,7 +249,7 @@ def getPitchAC(data, sampleRate, stepSize):
     pitchData = parselSound.to_pitch_ac(time_step=stepSize/1000,
                                         pitch_ceiling=400.0,
                                         silence_threshold=0.03,
-                                        voicing_threshold=0.45)
+                                        voicing_threshold=0.25)
     pitchValues = pitchData.selected_array['frequency']
     pitchValues[pitchValues==0] = np.nan
 
