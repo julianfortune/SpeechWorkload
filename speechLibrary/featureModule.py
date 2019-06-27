@@ -85,7 +85,7 @@ def getSyllables(data, sampleRate, windowSize, stepSize, peakMinDistance, peakMi
     energy = librosa.feature.rmse(data, frame_length=frame, hop_length=hop)[0]
 
     ### Threshold
-    energyMinThreshold = np.median(energy) * 2
+    energyMinThreshold = np.percentile(energy, 25) * 2
 
     ### Peaks
     peaks, _ = scipy.signal.find_peaks(energy,
