@@ -46,7 +46,7 @@ def createSlicesFromPauses():
         audio = AudioSegment.from_wav(filePath)
 
         for time in timeStamps:
-            ### Output files — pydub is in ms
+            ### Output files - pydub is in ms
             outputPath = outputDir + name + "/" + str(round(time, 2))
 
             # move back 100 ms
@@ -112,7 +112,7 @@ def runAlgorithmOnParticipants():
             writer.writerow(row)
 
 
-def getFeaturesFromSlice():
+def getFeaturesFromSlices():
 
     filePaths = sorted(glob.iglob("./filledPauses/p3_ol/*extra].wav"))
 
