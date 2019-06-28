@@ -72,22 +72,22 @@ def getSyllables(data, sampleRate, windowSize, stepSize, peakMinDistance, peakMi
 
     ### Dominant frequency analysis
     dominantFrequency = []
-    windowSize = frame
+    frequencyWindowSize = frame
 
     for i in range(int(len(data)/hop)):
         start = i*hop
         end = start+frame
         if end > len(data):
             end = len(data)
-            windowSize = len(data[start:end])
-        freq, ps = getPowerSpectrum(data[start:end],sampleRate,windowSize)
+            frequencyWindowSize = len(data[start:end])
+        freq, ps = getPowerSpectrum(data[start:end], sampleRate, frequencyWindowSize)
         dominantFrequency.append(freq[np.argmax(ps)])
 
     ### Energy
-    energy = librosa.feature.rmse(data, frame_length=frame, hop_length=hop)[0]
+    energy = getEnergy(data, sampleRate, windowSize, stepSize)
 
     ### Threshold
-    energyMinThreshold = np.percentile(energy, 25) * 2
+    energyMinThreshold = getEnergyMinimumThreshold(energy)
 
     ### Peaks
     peaks, _ = scipy.signal.find_peaks(energy,
