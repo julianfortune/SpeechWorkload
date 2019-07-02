@@ -19,7 +19,6 @@ def comparePRAATSyllablesToPNNC():
     totalNumberOfCorrectlyDetectedPauses = 0
     totalNumberOfFalseAlarms = 0
 
-
     with open("../media/pnnc-v1/PNNC-transcripts.txt") as transcriptFile:
         lines = transcriptFile.readlines()
         for row in lines:
@@ -103,17 +102,15 @@ def compareSyllablesToPNNC():
                     timeToRunWithoutPitches += time.time() - startTime
 
                     startTime = time.time()
-                    pitchSyllables, candidates = speechAnalyzer.getSyllablesWithPitchFromAudio(audio)
+                    pitchSyllables, _ = speechAnalyzer.getSyllablesWithPitchFromAudio(audio)
                     timeToRunWithPitches += time.time() - startTime
 
                     startTime = time.time()
-                    featureModule.getPitchAC(audio.data, audio.sampleRate, 10)
+                    featureModule.getPitchAC(audio.data, audio.sampleRate, 10, 0.03)
                     timeJustToGetPitches += time.time() - startTime
 
                     if shouldPrint:
                         print(correctNumberOfFilledPauses, "|", len(pitchSyllables), "|", len(syllables))
-
-
 
                     totalNumberOfFilledPauses += correctNumberOfFilledPauses
 

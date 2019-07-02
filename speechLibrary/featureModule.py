@@ -108,19 +108,18 @@ def getSyllables(data, sampleRate, windowSize, stepSize, peakMinDistance, peakMi
             validPeaks = np.append(validPeaks, peaks[i])
 
     # return validPeaks * hop / sampleRate, peaks * hop / sampleRate
-    return validPeaks, peaks
+    return np.array(validPeaks) * hop / sampleRate, np.array(peaks) * hop / sampleRate
 
 # | Returns the indices of syllables in audio data
 def getSyllablesWithPitch(data, sampleRate, windowSize, stepSize, peakMinDistance, peakMinWidth, zcrThreshold, dominantFreqThreshold, dominantFreqTolerance):
-    ### Constants
-    frame = int(sampleRate / 1000 * windowSize) # samples
-    hop = int(sampleRate / 1000 * stepSize) # samples
+    windowSizeInSamples = int(sampleRate / 1000 * windowSize)
+    stepSizeInSamples = int(sampleRate / 1000 * stepSize)
 
     ### Energy
-    energy = librosa.feature.rmse(data, frame_length=frame, hop_length=hop)[0]
+    energy = getEnergy(data, sampleRate, windowSize, stepSize)
 
     ### Threshold
-    energyMinThreshold = np.percentile(energy, 25) * 2
+    energyMinThreshold = getEnergyMinimumThreshold(energy)
     # print(energyMinThreshold)
 
     ### Peaks
@@ -129,19 +128,21 @@ def getSyllablesWithPitch(data, sampleRate, windowSize, stepSize, peakMinDistanc
                                        distance=peakMinDistance,
                                        width=peakMinWidth)
 
-    # Get pitch
-    pitchValues = getPitchAC(data, sampleRate, stepSize)
+    fractionEnergyMinThreshold = energyMinThreshold / max(energy)
 
-    ### ZCR
-    zcr = librosa.feature.zero_crossing_rate(data, frame_length=frame, hop_length=hop)[0]
+    ### Get pitch
+    pitchValues = getPitchAC(data, sampleRate, stepSize, silenceProportionThreshold=fractionEnergyMinThreshold)
+
+    ### Zero-crossing Rate
+    zcr = librosa.feature.zero_crossing_rate(data, frame_length=windowSizeInSamples * 4, hop_length=stepSizeInSamples)[0]
 
     ### Removing invalid peaks
     validPeaks = []
     for i in range(0,len(peaks)):
-        if zcr[peaks[i]] < zcrThreshold and aboveThresholdWithinTolerance(data=pitchValues, indexInQuestion=peaks[i], threshold=0, tolerance=4):
+        if zcr[peaks[i]] < zcrThreshold and aboveThresholdWithinTolerance(data=pitchValues, indexInQuestion=peaks[i], threshold=0, tolerance=dominantFreqTolerance):
             validPeaks = np.append(validPeaks, peaks[i])
 
-    return validPeaks * hop / sampleRate, peaks * hop / sampleRate
+    return np.array(validPeaks) * stepSizeInSamples / sampleRate, np.array(peaks) * stepSizeInSamples / sampleRate
     # return validPeaks, peaks
 
 # | Returns the average voice activity (0 <= v <= 1) using an adaptive algorithm.
@@ -223,6 +224,16 @@ def getIntensityStatistics(data):
     stDev = np.std(absVal)
     return average, stDev
 
+def getEnergy(data, sampleRate, windowSize, stepSize):
+    windowSizeInSamples = int(sampleRate / 1000 * windowSize)
+    stepSizeInSamples = int(sampleRate / 1000 * stepSize)
+
+    energy = librosa.feature.rmse(data, frame_length=windowSizeInSamples, hop_length=stepSizeInSamples)[0]
+    return energy
+
+def getEnergyMinimumThreshold(energy):
+    return np.percentile(energy, 10) * 2
+
 # | Computes welch looking back and for number of sampleRate in length of data
 # | and returns the average of the loudest pitch in each window
 def getPitchStatistics(data, sampleRate, windowSize):
@@ -241,15 +252,15 @@ def getPitchStatistics(data, sampleRate, windowSize):
 
     return average, stDev
 
-def getPitchAC(data, sampleRate, stepSize):
+def getPitchAC(data, sampleRate, stepSize, silenceProportionThreshold):
     # Convert to the parselmouth custom sound type (req'd for formant function)
     parselSound = parselmouth.Sound(values=data, sampling_frequency=sampleRate)
 
     # Produce a formant object from this data
     pitchData = parselSound.to_pitch_ac(time_step=stepSize/1000,
                                         pitch_ceiling=400.0,
-                                        silence_threshold=0.03,
-                                        voicing_threshold=0.25)
+                                        silence_threshold=silenceProportionThreshold,
+                                        voicing_threshold=0.35)
     pitchValues = pitchData.selected_array['frequency']
     pitchValues[pitchValues==0] = np.nan
 

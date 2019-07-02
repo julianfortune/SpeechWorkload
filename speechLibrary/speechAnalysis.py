@@ -15,8 +15,6 @@ from speechLibrary import audioModule
 
 np.set_printoptions(threshold=sys.maxsize)
 
-### Utilities
-
 # | A class used to perfom the same analysis on any number of files or on
 # | live input. Handles file and microphone IO in order to manage the entire
 # | process.
