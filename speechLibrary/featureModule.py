@@ -56,13 +56,29 @@ def getPowerSpectrum(data,sampleRate,windowSize):
 
 # | Checks surrounding values in an array around the index to check if
 # | any of them are above the threshold
-def aboveThresholdWithinTolerance(data,indexInQuestion,threshold,tolerance):
+def aboveThresholdWithinTolerance(data, indexInQuestion, threshold, tolerance):
     window = tolerance * 2 - 1
     for index in range(indexInQuestion - tolerance,indexInQuestion + tolerance):
         if index >= 0 and index < len(data):
             if data[index] > threshold:
                 return True
     return False
+
+def removeSmallRunsOfValues(npArray, minimumLength):
+    currentlyInARun = False
+    runStartingIndex = 0
+
+    for index in range(0, len(npArray)):
+        if npArray[index] != 0 and not currentlyInARun:
+            currentlyInARun = True
+            runStartingIndex = index
+        if npArray[index] == 0 and currentlyInARun:
+            currentlyInARun = False
+            lengthOfRun = index - runStartingIndex
+            if lengthOfRun < minimumLength:
+                np.put(npArray, range(runStartingIndex, index + 1), 0)
+
+    # return npArray
 
 # | Returns the indices of syllables in audio data
 def getSyllables(data, sampleRate, windowSize, stepSize, peakMinDistance, peakMinWidth, zcrThreshold, dominantFreqThreshold, dominantFreqTolerance):
@@ -107,7 +123,6 @@ def getSyllables(data, sampleRate, windowSize, stepSize, peakMinDistance, peakMi
                                                                           dominantFreqTolerance):
             validPeaks = np.append(validPeaks, peaks[i])
 
-    # return validPeaks * hop / sampleRate, peaks * hop / sampleRate
     return np.array(validPeaks) * hop / sampleRate, np.array(peaks) * hop / sampleRate
 
 # | Returns the indices of syllables in audio data
@@ -120,7 +135,6 @@ def getSyllablesWithPitch(data, sampleRate, windowSize, stepSize, peakMinDistanc
 
     ### Threshold
     energyMinThreshold = getEnergyMinimumThreshold(energy)
-    # print(energyMinThreshold)
 
     ### Peaks
     peaks, _ = scipy.signal.find_peaks(energy,
@@ -132,20 +146,20 @@ def getSyllablesWithPitch(data, sampleRate, windowSize, stepSize, peakMinDistanc
 
     ### Get pitch
     pitchValues = getPitchAC(data, sampleRate, stepSize, silenceProportionThreshold=fractionEnergyMinThreshold)
+    removeSmallRunsOfValues(pitchValues, 4)
 
     ### Zero-crossing Rate
-    zcr = librosa.feature.zero_crossing_rate(data, frame_length=windowSizeInSamples * 4, hop_length=stepSizeInSamples)[0]
+    zcr = librosa.feature.zero_crossing_rate(data, frame_length=windowSizeInSamples, hop_length=stepSizeInSamples)[0]
 
-    ### Removing invalid peaks
+    ### Removing candidate peaks that don't meet voicing requirements.
     validPeaks = []
     for i in range(0,len(peaks)):
         if zcr[peaks[i]] < zcrThreshold and aboveThresholdWithinTolerance(data=pitchValues, indexInQuestion=peaks[i], threshold=0, tolerance=dominantFreqTolerance):
             validPeaks = np.append(validPeaks, peaks[i])
 
     return np.array(validPeaks) * stepSizeInSamples / sampleRate, np.array(peaks) * stepSizeInSamples / sampleRate
-    # return validPeaks, peaks
 
-# | Returns the average voice activity (0 <= v <= 1) using an adaptive algorithm.
+# | Returns the voice activity (each v_i in V ∈ {0,1}) using an adaptive algorithm from "A Simple but Efficient...".
 def getVoiceActivity(data, sampleRate, windowSizeInMS, stepSizeInMS, useAdaptiveThresholds, zcrThreshold, energyPrimaryThreshold, dominantFreqThreshold, dominantFreqTolerance):
     ### Constants
     windowSize = int(sampleRate / 1000 * windowSizeInMS) # samples
@@ -206,7 +220,7 @@ def getVoiceActivity(data, sampleRate, windowSizeInMS, stepSizeInMS, useAdaptive
 
     return voiceActivity
 
-# | Returns the average voice activity (0 <= v <= 1) using an adaptive algorithm.
+# | Returns the average voice activity (0 <= v <= 1) and stDev using the getVoiceActivity() method.
 def getVoiceActivityStatistics(data, sampleRate, windowSizeInMS, stepSizeInMS, useAdaptiveThresholds, zcrThreshold, energyPrimaryThreshold, dominantFreqThreshold, dominantFreqTolerance):
     # Voice activity
     voiceActivity = getVoiceActivity(data, sampleRate, windowSizeInMS, stepSizeInMS, useAdaptiveThresholds, zcrThreshold, energyPrimaryThreshold, dominantFreqThreshold, dominantFreqTolerance)
@@ -259,12 +273,10 @@ def getPitchAC(data, sampleRate, stepSize, silenceProportionThreshold):
     # Produce a formant object from this data
     pitchData = parselSound.to_pitch_ac(time_step=stepSize/1000,
                                         pitch_ceiling=400.0,
-                                        silence_threshold=silenceProportionThreshold,
-                                        voicing_threshold=0.35)
+                                        silence_threshold=silenceProportionThreshold)
     pitchValues = pitchData.selected_array['frequency']
-    pitchValues[pitchValues==0] = np.nan
 
-    return pitchValues
+    return np.array(pitchValues)
 
 # | Returns the first two formants from a piece of audio.
 def getFormants(data, sampleRate, windowSize, stepSize):
