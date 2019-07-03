@@ -284,7 +284,7 @@ class SpeechAnalyzer:
                     # Create an object to pass around
                     audio = audioModule.Audio(data=currentWindowSelection)
                     audio.sampleRate = sampleRate
-                    audio.numberOfChannels = 2
+                    audio.numberOfChannels = 2 # TODO: Check if this should be 1
 
                     # Get all features for this window of audio
                     features = self.getFeaturesFromAudio(audio)
