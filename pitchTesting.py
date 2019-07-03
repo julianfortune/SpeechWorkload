@@ -24,7 +24,7 @@ def compareAveragePitchOnPNNC():
         if audio.numberOfChannels != 1:
             audio.makeMono()
 
-        pitch = featureModule.getPitchAC(data=audio.data, sampleRate=audio.sampleRate, stepSize=stepSize)
+        pitch = featureModule.getPitch(data=audio.data, sampleRate=audio.sampleRate, stepSize=stepSize)
 
         zcr = librosa.feature.zero_crossing_rate(audio.data, frame_length=int(audio.sampleRate / 1000 * 10), hop_length=int(audio.sampleRate / 1000 * stepSize) )[0]
 
@@ -61,7 +61,7 @@ def compareAveragePitchOnParticipantAudio():
         if audio.numberOfChannels != 1:
             audio.makeMono()
 
-        pitch = featureModule.getPitchAC(data=audio.data, sampleRate=audio.sampleRate, stepSize=stepSize)
+        pitch = featureModule.getPitch(data=audio.data, sampleRate=audio.sampleRate, stepSize=stepSize)
 
         if graph:
             times = np.arange(0, len(audio.data)/audio.sampleRate, stepSize/1000)[:len(pitch)]

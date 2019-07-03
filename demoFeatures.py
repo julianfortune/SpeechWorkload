@@ -71,27 +71,27 @@ def showSyllables():
 
     audio.description()
 
-    syllables, candidates = speechAnalyzer.getSyllablesWithPitchFromAudio(audio)
+    syllables, candidates = speechAnalyzer.getSyllablesFromAudio(audio)
     print(len(syllables))
     syllableMarkers = np.full(len(syllables), 0)
     candidateMarkers = np.full(len(candidates), 0)
 
     ### Energy
-    energy = librosa.feature.rmse(audio.data, frame_length=int(audio.sampleRate / 1000 * speechAnalyzer.syllableStepSize), hop_length=int(audio.sampleRate / 1000 * speechAnalyzer.syllableStepSize))[0]
-    energyTimes = np.arange(0, len(audio.data)/audio.sampleRate, speechAnalyzer.syllableStepSize/1000)[:len(energy)]
+    energy = librosa.feature.rmse(audio.data, frame_length=int(audio.sampleRate / 1000 * speechAnalyzer.pitchStepSize), hop_length=int(audio.sampleRate / 1000 * speechAnalyzer.pitchStepSize))[0]
+    energyTimes = np.arange(0, len(audio.data)/audio.sampleRate, speechAnalyzer.pitchStepSize/1000)[:len(energy)]
 
     energyMinThreshold = featureModule.getEnergyMinimumThreshold(energy)
     fractionEnergyMinThreshold = energyMinThreshold / max(energy)
 
-    pitch = featureModule.getPitchAC(audio.data, audio.sampleRate, speechAnalyzer.syllableStepSize, fractionEnergyMinThreshold)
-    pitchTimes = np.arange(0, len(audio.data)/audio.sampleRate, speechAnalyzer.syllableStepSize/1000)[:len(pitch)]
+    pitch = featureModule.getPitch(audio.data, audio.sampleRate, speechAnalyzer.pitchStepSize, fractionEnergyMinThreshold)
+    pitchTimes = np.arange(0, len(audio.data)/audio.sampleRate, speechAnalyzer.pitchStepSize/1000)[:len(pitch)]
 
-    zcr = librosa.feature.zero_crossing_rate(audio.data, frame_length=int(audio.sampleRate / 1000 * speechAnalyzer.syllableStepSize * 4), hop_length=int(audio.sampleRate / 1000 * speechAnalyzer.syllableStepSize))[0]
-    zcrTimes = np.arange(0, len(audio.data)/audio.sampleRate + 1, speechAnalyzer.syllableStepSize/1000)[:len(zcr)]
+    zcr = librosa.feature.zero_crossing_rate(audio.data, frame_length=int(audio.sampleRate / 1000 * speechAnalyzer.pitchStepSize * 4), hop_length=int(audio.sampleRate / 1000 * speechAnalyzer.pitchStepSize))[0]
+    zcrTimes = np.arange(0, len(audio.data)/audio.sampleRate + 1, speechAnalyzer.pitchStepSize/1000)[:len(zcr)]
 
     voiceActivity = speechAnalyzer.getVoiceActivityFromAudio(audio)
     voiceActivity[voiceActivity == 0] = np.nan
-    voiceActivityTimes = np.arange(0, len(audio.data)/audio.sampleRate, speechAnalyzer.syllableStepSize/1000)[:len(voiceActivity)]
+    voiceActivityTimes = np.arange(0, len(audio.data)/audio.sampleRate, speechAnalyzer.pitchStepSize/1000)[:len(voiceActivity)]
     print(len(voiceActivity), len(voiceActivityTimes))
 
     times = np.arange(0, len(audio.data)/audio.sampleRate, speechAnalyzer.voiceActivityStepSize / 1000)
@@ -123,21 +123,22 @@ def showVoiceActivityAndSyllablesForParticipantAudio():
 
         print("Getting syllables...")
 
-        syllables, candidates = speechAnalyzer.getSyllablesWithPitchFromAudio(audio)
+        syllables, candidates = speechAnalyzer.getSyllablesFromAudio(audio)
         syllableMarkers = np.full(len(syllables), 0)
         candidateMarkers = np.full(len(candidates), 0)
 
         print("Getting other features...")
 
-        energy = featureModule.getEnergy(audio.data, audio.sampleRate, speechAnalyzer.syllableWindowSize, speechAnalyzer.syllableStepSize)
+        energy = featureModule.getEnergy(audio.data, audio.sampleRate, speechAnalyzer.syllableWindowSize, speechAnalyzer.pitchStepSize)
         energyMinThreshold = featureModule.getEnergyMinimumThreshold(energy)
         fractionEnergyMinThreshold = energyMinThreshold / max(energy)
 
-        zcr = librosa.feature.zero_crossing_rate(audio.data, frame_length=int(audio.sampleRate / 1000 * speechAnalyzer.syllableStepSize), hop_length=int(audio.sampleRate / 1000 * speechAnalyzer.syllableStepSize))[0]
-        zcrTimes = np.arange(0, len(audio.data)/audio.sampleRate + 1, speechAnalyzer.syllableStepSize/1000)[:len(zcr)]
+        zcr = librosa.feature.zero_crossing_rate(audio.data, frame_length=int(audio.sampleRate / 1000 * speechAnalyzer.pitchStepSize), hop_length=int(audio.sampleRate / 1000 * speechAnalyzer.pitchStepSize))[0]
+        zcrTimes = np.arange(0, len(audio.data)/audio.sampleRate + 1, speechAnalyzer.pitchStepSize/1000)[:len(zcr)]
 
-        pitch = featureModule.getPitchAC(audio.data, audio.sampleRate, speechAnalyzer.syllableStepSize, fractionEnergyMinThreshold)
-        pitchTimes = np.arange(0, len(audio.data)/audio.sampleRate, speechAnalyzer.syllableStepSize/1000)[:len(pitch)]
+        pitch = featureModule.getPitch(audio.data, audio.sampleRate, speechAnalyzer.pitchStepSize, fractionEnergyMinThreshold)
+        pitch[pitch==0] = np.nan
+        pitchTimes = np.arange(0, len(audio.data)/audio.sampleRate, speechAnalyzer.pitchStepSize/1000)[:len(pitch)]
 
         times = np.arange(0, len(audio.data)/audio.sampleRate, speechAnalyzer.voiceActivityStepSize / 1000)
         energyTimes = np.arange(0, len(audio.data)/audio.sampleRate, speechAnalyzer.voiceActivityStepSize / 1000)[:len(energy)]
@@ -182,25 +183,25 @@ def getFeaturesFromFileUsingWindowing():
             currentWindow.sampleRate = audio.sampleRate
 
             ### WORDS PER MINUTE
-            syllables = speechAnalyzer.getSyllablesWithPitchFromAudio(currentWindow)[0]
+            syllables = speechAnalyzer.getSyllablesFromAudio(currentWindow)[0]
             syllableMarkers = np.full(len(syllables), 0)
 
             ### VAD
             voiceActivity = speechAnalyzer.getVoiceActivityFromAudio(currentWindow)
 
             ### INTENSITY
-            energy = featureModule.getEnergy(currentWindow.data, currentWindow.sampleRate, speechAnalyzer.syllableWindowSize, speechAnalyzer.syllableStepSize)
+            energy = featureModule.getEnergy(currentWindow.data, currentWindow.sampleRate, speechAnalyzer.syllableWindowSize, speechAnalyzer.pitchStepSize)
 
             energyMinThreshold = featureModule.getEnergyMinimumThreshold(energy)
             fractionEnergyMinThreshold = energyMinThreshold / max(energy)
 
             ### PITCH
-            pitch = featureModule.getPitchAC(currentWindow.data, currentWindow.sampleRate, speechAnalyzer.syllableStepSize, fractionEnergyMinThreshold)
+            pitch = featureModule.getPitch(currentWindow.data, currentWindow.sampleRate, speechAnalyzer.pitchStepSize, fractionEnergyMinThreshold)
 
             syllableBinaryArray = np.full(len(voiceActivity), 0)
 
             for timeStamp in syllables:
-                syllableBinaryArray[int(timeStamp / (currentWindow.sampleRate / 1000 * speechAnalyzer.syllableStepSize) * currentWindow.sampleRate)] = 1
+                syllableBinaryArray[int(timeStamp / (currentWindow.sampleRate / 1000 * speechAnalyzer.pitchStepSize) * currentWindow.sampleRate)] = 1
 
             # Mask out all filled pauses that coincide with voice acitivty
             syllableBinaryArray[voiceActivity.astype(bool)] = 0
@@ -209,9 +210,10 @@ def getFeaturesFromFileUsingWindowing():
 
                 # Clean up va for graphing
                 voiceActivity[voiceActivity == 0] = np.nan
+                pitch[pitch == 0] = np.nan
 
-                pitchTimes = np.arange(0, len(currentWindow.data)/currentWindow.sampleRate, speechAnalyzer.syllableStepSize/1000)[:len(pitch)]
-                energyTimes = np.arange(0, len(currentWindow.data)/currentWindow.sampleRate, speechAnalyzer.syllableStepSize/1000)[:len(energy)]
+                pitchTimes = np.arange(0, len(currentWindow.data)/currentWindow.sampleRate, speechAnalyzer.pitchStepSize/1000)[:len(pitch)]
+                energyTimes = np.arange(0, len(currentWindow.data)/currentWindow.sampleRate, speechAnalyzer.pitchStepSize/1000)[:len(energy)]
                 times = np.arange(0, len(currentWindow.data)/currentWindow.sampleRate, speechAnalyzer.voiceActivityStepSize / 1000)
 
                 plt.figure(figsize=[16, 8])
@@ -227,6 +229,6 @@ def getFeaturesFromFileUsingWindowing():
         step += sampleStepSize
 
 def main():
-    showSyllables()
+    getFeaturesFromFileUsingWindowing()
 
 main()

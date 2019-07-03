@@ -61,32 +61,20 @@ def comparePRAATSyllablesToPNNC():
 def compareSyllablesToPNNC():
     audioDirectory = "../media/pnnc-v1/audio/*.wav"
     speechAnalyzer = speechAnalysis.SpeechAnalyzer()
-    shouldPrint = False
 
     transcript = []
 
     totalNumberOfFilledPauses = 0
-    totalNumberOfCorrectlyDetectedPausesWithPitch = 0
-    totalNumberOfFalseAlarmsWithPitch = 0
-
-    totalNumberOfCorrectlyDetectedPausesWithoutPitch = 0
-    totalNumberOfFalseAlarmsWithoutPitch = 0
-
-    timeToRunWithPitches = 0
-    timeToRunWithoutPitches = 0
-    timeJustToGetPitches = 0
+    totalNumberOfCorrectlyDetectedPauses = 0
+    totalNumberOfFalseAlarms = 0
 
     with open("../media/pnnc-v1/PNNC-transcripts.txt") as transcriptFile:
         lines = transcriptFile.readlines()
         for row in lines:
             transcript.append(row.strip().split('\t'))
-    if shouldPrint:
-        print("Real | With Pitch | With zcr and fft")
 
     for sentence in transcript:
         if len(sentence) > 2: # Check syllable count exists
-            if shouldPrint:
-                print(sentence[0])
             for filePath in sorted(glob.iglob(audioDirectory)):
                 fileName = os.path.basename(filePath)[:-4]
                 sentenceReadByParticipant = fileName[-5:]
@@ -98,34 +86,15 @@ def compareSyllablesToPNNC():
                     if audio.numberOfChannels != 1:
                         audio.makeMono()
 
-                    startTime = time.time()
-                    syllables, _ = speechAnalyzer.getSyllablesFromAudio(audio)
-                    timeToRunWithoutPitches += time.time() - startTime
-
-                    startTime = time.time()
-                    pitchSyllables, _ = speechAnalyzer.getSyllablesWithPitchFromAudio(audio)
-                    timeToRunWithPitches += time.time() - startTime
-
-                    startTime = time.time()
-                    featureModule.getPitchAC(audio.data, audio.sampleRate, 10, 0.03)
-                    timeJustToGetPitches += time.time() - startTime
-
-                    if shouldPrint:
-                        print(correctNumberOfFilledPauses, "|", len(pitchSyllables), "|", len(syllables))
+                    syllables, candidates = speechAnalyzer.getSyllablesFromAudio(audio)
 
                     totalNumberOfFilledPauses += correctNumberOfFilledPauses
 
-                    if len(pitchSyllables) > correctNumberOfFilledPauses:
-                        totalNumberOfFalseAlarmsWithPitch += len(pitchSyllables) - correctNumberOfFilledPauses
-                        totalNumberOfCorrectlyDetectedPausesWithPitch += correctNumberOfFilledPauses
-                    else:
-                        totalNumberOfCorrectlyDetectedPausesWithPitch += len(pitchSyllables)
-
                     if len(syllables) > correctNumberOfFilledPauses:
-                        totalNumberOfFalseAlarmsWithoutPitch += len(syllables) - correctNumberOfFilledPauses
-                        totalNumberOfCorrectlyDetectedPausesWithoutPitch += correctNumberOfFilledPauses
+                        totalNumberOfFalseAlarms += len(syllables) - correctNumberOfFilledPauses
+                        totalNumberOfCorrectlyDetectedPauses += correctNumberOfFilledPauses
                     else:
-                        totalNumberOfCorrectlyDetectedPausesWithoutPitch += len(syllables)
+                        totalNumberOfCorrectlyDetectedPauses += len(syllables)
 
                     # syllableMarkers = np.full(len(pitchSyllables), 0)
                     # candidateMarkers = np.full(len(candidates), 0)
@@ -147,12 +116,11 @@ def compareSyllablesToPNNC():
                     # plt.title(fileName + " | " + sentence[1])
                     # plt.show()
 
-    pitchPrecision = totalNumberOfCorrectlyDetectedPausesWithPitch / (totalNumberOfCorrectlyDetectedPausesWithPitch + totalNumberOfFalseAlarmsWithPitch)
-    pitchRecall = totalNumberOfCorrectlyDetectedPausesWithPitch / totalNumberOfFilledPauses
+    pitchPrecision = totalNumberOfCorrectlyDetectedPauses / (totalNumberOfCorrectlyDetectedPauses + totalNumberOfFalseAlarms)
+    pitchRecall = totalNumberOfCorrectlyDetectedPauses / totalNumberOfFilledPauses
     pitchF1 = 2 * pitchPrecision * pitchRecall / (pitchPrecision + pitchRecall)
 
-    print("    Pitch     | Correct syllables:", totalNumberOfCorrectlyDetectedPausesWithPitch, "Precision:", pitchPrecision,"Recall:", pitchRecall, "F1", pitchF1, "Time to run:", timeToRunWithPitches)
-    print("Without Pitch | Correct syllables:", totalNumberOfCorrectlyDetectedPausesWithoutPitch, "Precision:", totalNumberOfCorrectlyDetectedPausesWithoutPitch / (totalNumberOfCorrectlyDetectedPausesWithoutPitch + totalNumberOfFalseAlarmsWithoutPitch),"Recall:", totalNumberOfCorrectlyDetectedPausesWithoutPitch / totalNumberOfFilledPauses, "Time to run:", timeToRunWithoutPitches)
+    print("   Alogrithm  | Correct syllables:", totalNumberOfCorrectlyDetectedPauses, "Precision:", pitchPrecision,"Recall:", pitchRecall, "F1", pitchF1, "Time to run:", timeToRunWithPitches)
     # print("Time just spent on pitch:", timeJustToGetPitches)
 
 def compareSyllablesToParticipants():
@@ -183,7 +151,7 @@ def compareSyllablesToParticipants():
                 if audio.numberOfChannels != 1:
                     audio.makeMono()
 
-                syllables, _ = speechAnalyzer.getSyllablesWithPitchFromAudio(audio)
+                syllables, _ = speechAnalyzer.getSyllablesFromAudio(audio)
                 syllableCount = len(syllables)
 
                 print(name, actualSyllableCount, syllableCount)

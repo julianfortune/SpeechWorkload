@@ -21,23 +21,22 @@ np.set_printoptions(threshold=sys.maxsize)
 class SpeechAnalyzer:
 
     def __init__(self):
-
-        ### Set defaults for all parameters
-
         self.printStatus = True
 
         # Windowing parameters
-        self.stepSize = 1 # how big to step in seconds
-        self.lookBackSize = 30  # how big of interval to wait until looking for transcript, pitch/intensity features in seconds
+        self.stepSize = 1 # In seconds
+        self.lookBackSize = 30  # Duration to wait until looking for features, in seconds
+
+        # Pitch parameters
+        self.pitchStepSize = 10
+        self.pitchMinimumRunLength = 2
 
         # Syllable detection parameters
         self.syllableWindowSize = 50 # In milliseconds
-        self.syllableStepSize = 10 # In milliseconds
-        self.syllablePeakMinDistance = 4
-        self.syllablePeakMinWidth = 2
+        self.syllablePeakMinimumDistance = 4
+        self.syllablePeakMinimumWidth = 2
+        self.syllablePitchDistanceTolerance = 4
         self.syllableZcrThreshold = 0.06
-        self.syllableDominantFreqThreshold = 200
-        self.syllableDominantFreqTolerance = 4
 
         # Voice activity Parameters
         self.voiceActivityIsAdaptive = True
@@ -49,52 +48,50 @@ class SpeechAnalyzer:
         self.voiceActivityFreqThreshold = 185
         self.voiceActivityFreqTolerance = 8
 
-        # Pitch parameter
-        self.pitchWindowSize = 1000 # In milliseconds
-
         # Recording parameters
         self.recordingDeviceIndex = -1 # Default to asking user
         self.recordingBufferSize = 4096
         self.recordingFormat = pyaudio.paInt16
         self.recordingChannels = 2
 
-        # Specify which features to get
 
 
     def getSyllablesFromAudio(self, audio):
-        syllables = featureModule.getSyllables(data=audio.data,
-                                               sampleRate=audio.sampleRate,
-                                               windowSize=64,
-                                               stepSize=16,
-                                               peakMinDistance=5,
-                                               peakMinWidth=2,
-                                               zcrThreshold=self.syllableZcrThreshold,
-                                               dominantFreqThreshold=self.syllableDominantFreqThreshold,
-                                               dominantFreqTolerance=8)
-        return syllables
+        # Get energy threshold for pitch algorithm.
+        energy = featureModule.getEnergy(data= audio.data,
+                                         sampleRate = audio.sampleRate,
+                                         windowSize= self.syllableWindowSize,
+                                         stepSize= self.pitchStepSize)
+        energyMinThreshold = featureModule.getEnergyMinimumThreshold(energy)
+        fractionEnergyMinThreshold = energyMinThreshold / max(energy)
 
-    def getSyllablesWithPitchFromAudio(self, audio):
-        syllables = featureModule.getSyllablesWithPitch(data=audio.data,
-                                                        sampleRate=audio.sampleRate,
-                                                        windowSize=self.syllableWindowSize,
-                                                        stepSize=self.syllableStepSize,
-                                                        peakMinDistance=self.syllablePeakMinDistance,
-                                                        peakMinWidth=self.syllablePeakMinWidth,
-                                                        zcrThreshold=self.syllableZcrThreshold,
-                                                        dominantFreqThreshold=self.syllableDominantFreqThreshold,
-                                                        dominantFreqTolerance=self.syllableDominantFreqTolerance)
+        # Get pitch for syllables algorithm.
+        pitches = featureModule.getPitch(data= audio.data,
+                                         sampleRate= audio.sampleRate,
+                                         stepSize= self.pitchStepSize,
+                                         silenceProportionThreshold= fractionEnergyMinThreshold)
+
+        syllables = featureModule.getSyllables(data= audio.data,
+                                               sampleRate= audio.sampleRate,
+                                               windowSize= self.syllableWindowSize,
+                                               stepSize= self.pitchStepSize,
+                                               pitchValues= pitches,
+                                               energyPeakMinimumDistance= self.syllablePeakMinimumDistance,
+                                               energyPeakMinimumWidth= self.syllablePeakMinimumWidth,
+                                               pitchDistanceTolerance= self.syllablePitchDistanceTolerance,
+                                               zcrThreshold= self.syllableZcrThreshold,)
         return syllables
 
     def getVoiceActivityFromAudio(self, audio):
-        voiceActivity = featureModule.getVoiceActivity(data=audio.data,
-                                                       sampleRate=audio.sampleRate,
-                                                       windowSizeInMS=self.voiceActivityWindowSize,
-                                                       stepSizeInMS=self.voiceActivityStepSize,
-                                                       useAdaptiveThresholds=self.voiceActivityIsAdaptive,
-                                                       zcrThreshold=self.voiceActivityZCRThreshold,
-                                                       energyPrimaryThreshold=self.voiceActivityEnergyThreshold,
-                                                       dominantFreqThreshold=self.voiceActivityFreqThreshold,
-                                                       dominantFreqTolerance=self.voiceActivityFreqTolerance)
+        voiceActivity = featureModule.getVoiceActivity(data= audio.data,
+                                                       sampleRate= audio.sampleRate,
+                                                       windowSizeInMS= self.voiceActivityWindowSize,
+                                                       stepSizeInMS= self.voiceActivityStepSize,
+                                                       useAdaptiveThresholds= self.voiceActivityIsAdaptive,
+                                                       zcrThreshold= self.voiceActivityZCRThreshold,
+                                                       energyPrimaryThreshold= self.voiceActivityEnergyThreshold,
+                                                       dominantFreqThreshold= self.voiceActivityFreqThreshold,
+                                                       dominantFreqTolerance= self.voiceActivityFreqTolerance)
         return voiceActivity
 
     def getVoiceActivityStatisticsFromAudio(self, audio):
