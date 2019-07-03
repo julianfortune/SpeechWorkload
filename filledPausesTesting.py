@@ -106,7 +106,7 @@ def runAlgorithmOnParticipants():
         filledPausesForParticipant.append(participantData)
         print(filledPausesForParticipant)
 
-    with open('./filledPausesForParticipant.csv', 'w') as outputFile:
+    with open('./filledPauses/filledPausesForParticipant.csv', 'w') as outputFile:
         writer = csv.writer(outputFile)
         for row in filledPausesForParticipant:
             writer.writerow(row)
@@ -227,7 +227,7 @@ def compareAlgorithmToSlices():
     startTime = time.time()
 
     # Compare with file of all existing
-    with open('filledPausesAllParticipantsRatings.csv') as csvfile:
+    with open('./filledPauses/filledPausesAllParticipantsRatings.csv') as csvfile:
         reader = csv.DictReader(csvfile)
 
         # Go through each existing filled pause
