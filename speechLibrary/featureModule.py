@@ -349,6 +349,10 @@ def getFilledPauses(data, sampleRate, windowSize, stepSize, minumumLength, F1Max
 
         firstFormantVariance = np.std(firstFormant[start:end])
         secondFormantVariance = np.std(secondFormant[start:end])
+
+        firstFormantAverage = np.mean(firstFormant[start:end])
+        secondFormantAverage = np.mean(secondFormant[start:end])
+
         averageEnergy = np.mean(energy[start:end])
 
         stepTimes.append(start * (sampleStepSize/sampleRate))
@@ -371,4 +375,4 @@ def getFilledPauses(data, sampleRate, windowSize, stepSize, minumumLength, F1Max
                 lengths.append(times[step] - startOfFiller + (minumumLength/1000) )
             fillerUtteranceInitiated = False
 
-    return filledPauses, np.array(timeStamps), times, firstFormant, secondFormant, energy, lengths, firstFormantVariances, secondFormantVariances, averageEnergies, stepTimes, zcr
+    return filledPauses, np.array(timeStamps), times, np.array(firstFormant), np.array(secondFormant), energy, lengths, firstFormantVariances, secondFormantVariances, averageEnergies, stepTimes
