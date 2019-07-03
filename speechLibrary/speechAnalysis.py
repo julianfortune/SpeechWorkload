@@ -15,8 +15,6 @@ from speechLibrary import audioModule
 
 np.set_printoptions(threshold=sys.maxsize)
 
-### Utilities
-
 # | A class used to perfom the same analysis on any number of files or on
 # | live input. Handles file and microphone IO in order to manage the entire
 # | process.
@@ -33,13 +31,13 @@ class SpeechAnalyzer:
         self.lookBackSize = 30  # how big of interval to wait until looking for transcript, pitch/intensity features in seconds
 
         # Syllable detection parameters
-        self.syllableWindowSize = 64 # In milliseconds
-        self.syllableStepSize = 16 # In milliseconds
-        self.syllablePeakMinDistance = 5
+        self.syllableWindowSize = 50 # In milliseconds
+        self.syllableStepSize = 10 # In milliseconds
+        self.syllablePeakMinDistance = 4
         self.syllablePeakMinWidth = 2
         self.syllableZcrThreshold = 0.06
         self.syllableDominantFreqThreshold = 200
-        self.syllableDominantFreqTolerance = 8
+        self.syllableDominantFreqTolerance = 4
 
         # Voice activity Parameters
         self.voiceActivityIsAdaptive = True
@@ -60,16 +58,31 @@ class SpeechAnalyzer:
         self.recordingFormat = pyaudio.paInt16
         self.recordingChannels = 2
 
+        # Specify which features to get
+
+
     def getSyllablesFromAudio(self, audio):
         syllables = featureModule.getSyllables(data=audio.data,
                                                sampleRate=audio.sampleRate,
-                                               windowSize=self.syllableWindowSize,
-                                               stepSize=self.syllableStepSize,
-                                               peakMinDistance=self.syllablePeakMinDistance,
-                                               peakMinWidth=self.syllablePeakMinWidth,
+                                               windowSize=64,
+                                               stepSize=16,
+                                               peakMinDistance=5,
+                                               peakMinWidth=2,
                                                zcrThreshold=self.syllableZcrThreshold,
                                                dominantFreqThreshold=self.syllableDominantFreqThreshold,
-                                               dominantFreqTolerance=self.syllableDominantFreqTolerance)
+                                               dominantFreqTolerance=8)
+        return syllables
+
+    def getSyllablesWithPitchFromAudio(self, audio):
+        syllables = featureModule.getSyllablesWithPitch(data=audio.data,
+                                                        sampleRate=audio.sampleRate,
+                                                        windowSize=self.syllableWindowSize,
+                                                        stepSize=self.syllableStepSize,
+                                                        peakMinDistance=self.syllablePeakMinDistance,
+                                                        peakMinWidth=self.syllablePeakMinWidth,
+                                                        zcrThreshold=self.syllableZcrThreshold,
+                                                        dominantFreqThreshold=self.syllableDominantFreqThreshold,
+                                                        dominantFreqTolerance=self.syllableDominantFreqTolerance)
         return syllables
 
     def getVoiceActivityFromAudio(self, audio):

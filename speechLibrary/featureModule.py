@@ -11,6 +11,8 @@ import librosa
 import scipy.signal # Extracts power spectrum
 import parselmouth # Formants
 
+import matplotlib.pyplot as plt
+
 class FeatureSet:
 
     # TODO: Redo to use classic lists and convert at very end to save on
@@ -54,13 +56,29 @@ def getPowerSpectrum(data,sampleRate,windowSize):
 
 # | Checks surrounding values in an array around the index to check if
 # | any of them are above the threshold
-def aboveThresholdWithinTolerance(data,indexInQuestion,threshold,tolerance):
+def aboveThresholdWithinTolerance(data, indexInQuestion, threshold, tolerance):
     window = tolerance * 2 - 1
     for index in range(indexInQuestion - tolerance,indexInQuestion + tolerance):
         if index >= 0 and index < len(data):
             if data[index] > threshold:
                 return True
     return False
+
+def removeSmallRunsOfValues(npArray, minimumLength):
+    currentlyInARun = False
+    runStartingIndex = 0
+
+    for index in range(0, len(npArray)):
+        if npArray[index] != 0 and not currentlyInARun:
+            currentlyInARun = True
+            runStartingIndex = index
+        if npArray[index] == 0 and currentlyInARun:
+            currentlyInARun = False
+            lengthOfRun = index - runStartingIndex
+            if lengthOfRun < minimumLength:
+                np.put(npArray, range(runStartingIndex, index + 1), 0)
+
+    # return npArray
 
 # | Returns the indices of syllables in audio data
 def getSyllables(data, sampleRate, windowSize, stepSize, peakMinDistance, peakMinWidth, zcrThreshold, dominantFreqThreshold, dominantFreqTolerance):
@@ -70,22 +88,22 @@ def getSyllables(data, sampleRate, windowSize, stepSize, peakMinDistance, peakMi
 
     ### Dominant frequency analysis
     dominantFrequency = []
-    windowSize = frame
+    frequencyWindowSize = frame
 
     for i in range(int(len(data)/hop)):
         start = i*hop
         end = start+frame
         if end > len(data):
             end = len(data)
-            windowSize = len(data[start:end])
-        freq, ps = getPowerSpectrum(data[start:end],sampleRate,windowSize)
+            frequencyWindowSize = len(data[start:end])
+        freq, ps = getPowerSpectrum(data[start:end], sampleRate, frequencyWindowSize)
         dominantFrequency.append(freq[np.argmax(ps)])
 
     ### Energy
-    energy = librosa.feature.rmse(data, frame_length=frame, hop_length=hop)[0]
+    energy = getEnergy(data, sampleRate, windowSize, stepSize)
 
     ### Threshold
-    energyMinThreshold = np.percentile(energy, 25) * 2
+    energyMinThreshold = getEnergyMinimumThreshold(energy)
 
     ### Peaks
     peaks, _ = scipy.signal.find_peaks(energy,
@@ -105,9 +123,43 @@ def getSyllables(data, sampleRate, windowSize, stepSize, peakMinDistance, peakMi
                                                                           dominantFreqTolerance):
             validPeaks = np.append(validPeaks, peaks[i])
 
-    return validPeaks * hop / sampleRate
+    return np.array(validPeaks) * hop / sampleRate, np.array(peaks) * hop / sampleRate
 
-# | Returns the average voice activity (0 <= v <= 1) using an adaptive algorithm.
+# | Returns the indices of syllables in audio data
+def getSyllablesWithPitch(data, sampleRate, windowSize, stepSize, peakMinDistance, peakMinWidth, zcrThreshold, dominantFreqThreshold, dominantFreqTolerance):
+    windowSizeInSamples = int(sampleRate / 1000 * windowSize)
+    stepSizeInSamples = int(sampleRate / 1000 * stepSize)
+
+    ### Energy
+    energy = getEnergy(data, sampleRate, windowSize, stepSize)
+
+    ### Threshold
+    energyMinThreshold = getEnergyMinimumThreshold(energy)
+
+    ### Peaks
+    peaks, _ = scipy.signal.find_peaks(energy,
+                                       height=energyMinThreshold,
+                                       distance=peakMinDistance,
+                                       width=peakMinWidth)
+
+    fractionEnergyMinThreshold = energyMinThreshold / max(energy)
+
+    ### Get pitch
+    pitchValues = getPitchAC(data, sampleRate, stepSize, silenceProportionThreshold=fractionEnergyMinThreshold)
+    removeSmallRunsOfValues(pitchValues, 4)
+
+    ### Zero-crossing Rate
+    zcr = librosa.feature.zero_crossing_rate(data, frame_length=windowSizeInSamples, hop_length=stepSizeInSamples)[0]
+
+    ### Removing candidate peaks that don't meet voicing requirements.
+    validPeaks = []
+    for i in range(0,len(peaks)):
+        if zcr[peaks[i]] < zcrThreshold and aboveThresholdWithinTolerance(data=pitchValues, indexInQuestion=peaks[i], threshold=0, tolerance=dominantFreqTolerance):
+            validPeaks = np.append(validPeaks, peaks[i])
+
+    return np.array(validPeaks) * stepSizeInSamples / sampleRate, np.array(peaks) * stepSizeInSamples / sampleRate
+
+# | Returns the voice activity (each v_i in V ∈ {0,1}) using an adaptive algorithm from "A Simple but Efficient...".
 def getVoiceActivity(data, sampleRate, windowSizeInMS, stepSizeInMS, useAdaptiveThresholds, zcrThreshold, energyPrimaryThreshold, dominantFreqThreshold, dominantFreqTolerance):
     ### Constants
     windowSize = int(sampleRate / 1000 * windowSizeInMS) # samples
@@ -168,7 +220,7 @@ def getVoiceActivity(data, sampleRate, windowSizeInMS, stepSizeInMS, useAdaptive
 
     return voiceActivity
 
-# | Returns the average voice activity (0 <= v <= 1) using an adaptive algorithm.
+# | Returns the average voice activity (0 <= v <= 1) and stDev using the getVoiceActivity() method.
 def getVoiceActivityStatistics(data, sampleRate, windowSizeInMS, stepSizeInMS, useAdaptiveThresholds, zcrThreshold, energyPrimaryThreshold, dominantFreqThreshold, dominantFreqTolerance):
     # Voice activity
     voiceActivity = getVoiceActivity(data, sampleRate, windowSizeInMS, stepSizeInMS, useAdaptiveThresholds, zcrThreshold, energyPrimaryThreshold, dominantFreqThreshold, dominantFreqTolerance)
@@ -185,6 +237,16 @@ def getIntensityStatistics(data):
     average = np.mean(absVal)
     stDev = np.std(absVal)
     return average, stDev
+
+def getEnergy(data, sampleRate, windowSize, stepSize):
+    windowSizeInSamples = int(sampleRate / 1000 * windowSize)
+    stepSizeInSamples = int(sampleRate / 1000 * stepSize)
+
+    energy = librosa.feature.rmse(data, frame_length=windowSizeInSamples, hop_length=stepSizeInSamples)[0]
+    return energy
+
+def getEnergyMinimumThreshold(energy):
+    return np.percentile(energy, 10) * 2
 
 # | Computes welch looking back and for number of sampleRate in length of data
 # | and returns the average of the loudest pitch in each window
@@ -204,19 +266,17 @@ def getPitchStatistics(data, sampleRate, windowSize):
 
     return average, stDev
 
-def getPitchAC(data, sampleRate, stepSize):
+def getPitchAC(data, sampleRate, stepSize, silenceProportionThreshold):
     # Convert to the parselmouth custom sound type (req'd for formant function)
     parselSound = parselmouth.Sound(values=data, sampling_frequency=sampleRate)
 
     # Produce a formant object from this data
     pitchData = parselSound.to_pitch_ac(time_step=stepSize/1000,
                                         pitch_ceiling=400.0,
-                                        silence_threshold=0.03,
-                                        voicing_threshold=0.45)
+                                        silence_threshold=silenceProportionThreshold)
     pitchValues = pitchData.selected_array['frequency']
-    pitchValues[pitchValues==0] = np.nan
 
-    return pitchValues
+    return np.array(pitchValues)
 
 # | Returns the first two formants from a piece of audio.
 def getFormants(data, sampleRate, windowSize, stepSize):
