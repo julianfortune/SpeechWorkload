@@ -107,10 +107,11 @@ class SpeechAnalyzer:
         return average, stDev
 
     def getPitchFromAudio(self, audio):
-        average, stDev = featureModule.getPitchFeatures(audio.data,
-                                                        audio.sampleRate,
-                                                        self.pitchWindowSize)
-        return average, stDev
+        pitches = featureModule.getPitch(data= audio.data,
+                                         sampleRate= audio.sampleRate,
+                                         stepSize= self.pitchStepSize,
+                                         silenceProportionThreshold= fractionEnergyMinThreshold)
+        return pitches
 
     def getFeaturesFromAudio(self, audio):
         features = featureModule.FeatureSet()
