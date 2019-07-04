@@ -48,6 +48,14 @@ class SpeechAnalyzer:
         self.voiceActivityFreqThreshold = 185
         self.voiceActivityFreqTolerance = 8
 
+        # Filled pause parameters
+        self.filledPauseWindowSize = 50 # In milliseconds
+        self.filledPauseStepSize = 10 # In milliseconds
+        self.filledPauseMinimumLength = 250 # milliseconds
+        self.filledPauseF1MaximumVariance = 60
+        self.filledPauseF2MaximumVariance = 60
+        self.filledPausesEnergyThreshold = 0 # Doesn't seem relevant since formants show speech well
+
         # Recording parameters
         self.recordingDeviceIndex = -1 # Default to asking user
         self.recordingBufferSize = 4096
@@ -81,6 +89,17 @@ class SpeechAnalyzer:
                                                pitchDistanceTolerance= self.syllablePitchDistanceTolerance,
                                                zcrThreshold= self.syllableZcrThreshold,)
         return syllables
+
+    def getFilledPausesFromAudio(self, audio):
+        filledPauses = featureModule.getFilledPauses(data= audio.data,
+                                                     sampleRate= audio.sampleRate,
+                                                     windowSize= self.filledPauseWindowSize,
+                                                     stepSize= self.filledPauseStepSize,
+                                                     minumumLength= self.filledPauseMinimumLength,
+                                                     F1MaximumVariance= self.filledPauseF1MaximumVariance,
+                                                     F2MaximumVariance= self.filledPauseF2MaximumVariance,
+                                                     energyThreshold= 0)
+        return filledPauses
 
     def getVoiceActivityFromAudio(self, audio):
         voiceActivity = featureModule.getVoiceActivity(data= audio.data,
@@ -150,9 +169,8 @@ class SpeechAnalyzer:
         if self.printStatus :
             print("[ START ] Working on:",filePath)
 
-        # Read in the file, extract data and metadata
+        # Read in the file
         audio = audioModule.Audio(filePath)
-
         if audio.numberOfChannels > 1:
             audio.makeMono()
 

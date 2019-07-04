@@ -12,14 +12,6 @@ from speechLibrary import featureModule, speechAnalysis, audioModule
 
 np.set_printoptions(threshold=sys.maxsize)
 
-# Parameters of the features
-utteranceWindowSize = 50 # milliseconds
-utteranceStepSize = 10 # milliseconds
-utteranceMinimumLength = 250 # milliseconds
-utteranceF1MaximumVariance = 60
-utteranceF2MaximumVariance = 60
-utteranceEnergyThreshold = 0
-
 audioDirectory = "../media/Participant_Audio_First_five/*.wav"
 outputDir = "./filledPauses/"
 
@@ -113,8 +105,9 @@ def runAlgorithmOnParticipants():
 
 
 def getFeaturesFromSlices():
-
     filePaths = sorted(glob.iglob("./filledPauses/p3_ol/*extra].wav"))
+
+    analyzer = speechAnalysis.SpeechAnalyzer()
 
     for filePath in filePaths:
         print(filePath)
@@ -122,60 +115,26 @@ def getFeaturesFromSlices():
         audio = audioModule.Audio(filePath=filePath)
         audio.makeMono()
 
-        filledPauses, timeStamps, times, f1, f2, energy, lengths, firstFormantVariances, secondFormantVariances, averageEnergies, stepTimes, f3, f4 = featureModule.getFilledPauses(audio.data, audio.sampleRate, utteranceWindowSize, utteranceStepSize, utteranceMinimumLength, utteranceF1MaximumVariance, utteranceF2MaximumVariance, utteranceEnergyThreshold)
+        filledPauses = analyzer.getFilledPausesFromAudio(audio)
 
-        print(timeStamps)
-
-        filledPausesMarkers = [1] * len(timeStamps)
-        energyThresholdMarkers = [utteranceEnergyThreshold] * len(times)
-        firstFormatVarianceMarkers = [utteranceF1MaximumVariance] * len(stepTimes)
-        secondFormatVarianceMarkers = [utteranceF2MaximumVariance] * len(stepTimes)
-
-        fig, axs = plt.subplots(4, 1)
-        axs[0].plot(times, f1, times, f2, times, energy, times, f3, times, f4, timeStamps, filledPausesMarkers, 'ro')
-        axs[0].set_title('Formants and Energy')
-        axs[1].plot(stepTimes, firstFormantVariances, stepTimes, firstFormatVarianceMarkers, timeStamps, filledPausesMarkers, 'ro')
-        axs[1].set_title('First Formant Variance')
-        axs[2].plot(stepTimes, secondFormantVariances, stepTimes, secondFormatVarianceMarkers, timeStamps, filledPausesMarkers, 'ro')
-        axs[2].set_title('Second Formant Variance')
-        axs[3].plot(times, energy, times, energyThresholdMarkers, timeStamps, filledPausesMarkers, 'ro')
-
-        fig.tight_layout()
-
-        # plt.savefig(outputPath + "[extra].png")
-        plt.show()
+        print(filledPauses)
 
 def getFeaturesFromFile():
-
-    filePath = "../../cchp_english/p102/p102_en_pd.wav"
-
-    print(filePath)
+    filePath = "../media/cchp_english/p102/p102_en_pd.wav"
 
     audio = audioModule.Audio(filePath=filePath)
     audio.makeMono()
 
-    filledPauses, timeStamps, times, f1, f2, energy, lengths, firstFormantVariances, secondFormantVariances, averageEnergies, stepTimes = featureModule.getFilledPauses(audio.data, audio.sampleRate, utteranceWindowSize, utteranceStepSize, utteranceMinimumLength, utteranceF1MaximumVariance, utteranceF2MaximumVariance, utteranceEnergyThreshold)
+    print(filePath)
 
-    filledPausesMarkers = [1] * len(timeStamps)
-    energyThresholdMarkers = [utteranceEnergyThreshold] * len(times)
-    firstFormatVarianceMarkers = [utteranceF1MaximumVariance] * len(stepTimes)
-    secondFormatVarianceMarkers = [utteranceF2MaximumVariance] * len(stepTimes)
+    analyzer = speechAnalysis.SpeechAnalyzer()
+    filledPauses = analyzer.getFilledPausesFromAudio(audio)
 
-    fig, axs = plt.subplots(4, 1)
-    axs[0].plot(times, f1, times, f2, times, energy, timeStamps, filledPausesMarkers, 'ro')
-    axs[0].set_title('Formants and Energy')
-    axs[1].plot(stepTimes, firstFormantVariances, stepTimes, firstFormatVarianceMarkers, timeStamps, filledPausesMarkers, 'ro')
-    axs[1].set_title('First Formant Variance')
-    axs[2].plot(stepTimes, secondFormantVariances, stepTimes, secondFormatVarianceMarkers, timeStamps, filledPausesMarkers, 'ro')
-    axs[2].set_title('Second Formant Variance')
-    axs[3].plot(times, energy, times, energyThresholdMarkers, timeStamps, filledPausesMarkers, 'ro')
+    print(len(filledPauses))
 
-    fig.tight_layout()
-
-    # plt.savefig(outputPath + "[extra].png")
-    plt.show()
 
 def runAlgorithmOnSlices():
+    analyzer = speechAnalysis.SpeechAnalyzer()
 
     for subdir, dirs, files in os.walk(outputDir):
         for file in files:
@@ -188,28 +147,9 @@ def runAlgorithmOnSlices():
                 audio = audioModule.Audio(filePath=filePath)
                 audio.makeMono()
 
-                filledPauses, timeStamps, times, f1, f2, energy, lengths, firstFormantVariances, secondFormantVariances, averageEnergies, stepTimes = featureModule.getFilledPauses(audio.data, audio.sampleRate, utteranceWindowSize, utteranceStepSize, utteranceMinimumLength, utteranceF1MaximumVariance, utteranceF2MaximumVariance, utteranceEnergyThreshold)
+                filledPauses = analyzer.getFilledPausesFromAudio(audio)
 
                 print(timeStamps)
-
-                filledPausesMarkers = [1] * len(timeStamps)
-                energyThresholdMarkers = [utteranceEnergyThreshold] * len(times)
-                firstFormatVarianceMarkers = [utteranceF1MaximumVariance] * len(stepTimes)
-                secondFormatVarianceMarkers = [utteranceF2MaximumVariance] * len(stepTimes)
-
-                fig, axs = plt.subplots(4, 1)
-                axs[0].plot(times, f1, times, f2, times, energy, timeStamps, filledPausesMarkers, 'ro')
-                axs[0].set_title('Formants and Energy')
-                axs[1].plot(stepTimes, firstFormantVariances, stepTimes, firstFormatVarianceMarkers, timeStamps, filledPausesMarkers, 'ro')
-                axs[1].set_title('First Formant Variance')
-                axs[2].plot(stepTimes, secondFormantVariances, stepTimes, secondFormatVarianceMarkers, timeStamps, filledPausesMarkers, 'ro')
-                axs[2].set_title('Second Formant Variance')
-                axs[3].plot(times, energy, times, energyThresholdMarkers, timeStamps, filledPausesMarkers, 'ro')
-
-                fig.tight_layout()
-
-                # plt.savefig(outputPath + "[extra].png")
-                plt.show()
 
     # --
 # --
@@ -217,6 +157,8 @@ def runAlgorithmOnSlices():
 def compareAlgorithmToSlices():
     printParameters()
     print("Running on slices")
+
+    analyzer = speechAnalysis.SpeechAnalyzer()
 
     controlYeses = 0
     controlNos = 0
@@ -253,61 +195,17 @@ def compareAlgorithmToSlices():
             audio.makeMono()
 
             # Run algorithm
-            filledPauses, timeStamps, times, f1, f2, energy, lengths, firstFormantVariances, secondFormantVariances, averageEnergies, stepTimes = featureModule.getFilledPauses(audio.data, audio.sampleRate, utteranceWindowSize, utteranceStepSize, utteranceMinimumLength, utteranceF1MaximumVariance, utteranceF2MaximumVariance, utteranceEnergyThreshold)
+            filledPauses = analyzer.getFilledPausesFromAudio(audio)
 
             found = False
 
-            for timeDetected in timeStamps:
+            for timeDetected in filledPauses:
                 if abs(timeDetected - 1.0) < 0.2 and not found:
                     found = True
                     if judgement == "1":
                         yeses += 1
                     elif judgement == "-1":
                         nos += 1
-
-
-            #             print("Accidentally caught: ", participant, condition, timeStamp, timeStamps)
-            #
-            #             filledPausesMarkers = [1] * len(timeStamps)
-            #             energyThresholdMarkers = [utteranceEnergyThreshold] * len(times)
-            #             firstFormatVarianceMarkers = [utteranceF1MaximumVariance] * len(stepTimes)
-            #             secondFormatVarianceMarkers = [utteranceF2MaximumVariance] * len(stepTimes)
-            #
-            #             fig, axs = plt.subplots(4, 1)
-            #             axs[0].plot(times, f1, times, f2, times, energy, timeStamps, filledPausesMarkers, 'ro')
-            #             axs[0].set_title('Formants and Energy')
-            #             axs[1].plot(stepTimes, firstFormantVariances, stepTimes, firstFormatVarianceMarkers, timeStamps, filledPausesMarkers, 'ro')
-            #             axs[1].set_title('First Formant Variance')
-            #             axs[2].plot(stepTimes, secondFormantVariances, stepTimes, secondFormatVarianceMarkers, timeStamps, filledPausesMarkers, 'ro')
-            #             axs[2].set_title('Second Formant Variance')
-            #             axs[3].plot(times, energy, times, energyThresholdMarkers, timeStamps, filledPausesMarkers, 'ro')
-            #
-            #             fig.tight_layout()
-            #
-            #             # plt.savefig(outputPath + "[extra].png")
-            #             plt.show()
-            #
-            # if not found and judgement == "1":
-            #     print("Missed: ", participant, condition, timeStamp, timeStamps)
-            #
-            #     filledPausesMarkers = [1] * len(timeStamps)
-            #     energyThresholdMarkers = [utteranceEnergyThreshold] * len(times)
-            #     firstFormatVarianceMarkers = [utteranceF1MaximumVariance] * len(stepTimes)
-            #     secondFormatVarianceMarkers = [utteranceF2MaximumVariance] * len(stepTimes)
-            #
-            #     fig, axs = plt.subplots(4, 1)
-            #     axs[0].plot(times, f1, times, f2, times, energy, timeStamps, filledPausesMarkers, 'ro')
-            #     axs[0].set_title('Formants and Energy')
-            #     axs[1].plot(stepTimes, firstFormantVariances, stepTimes, firstFormatVarianceMarkers, timeStamps, filledPausesMarkers, 'ro')
-            #     axs[1].set_title('First Formant Variance')
-            #     axs[2].plot(stepTimes, secondFormantVariances, stepTimes, secondFormatVarianceMarkers, timeStamps, filledPausesMarkers, 'ro')
-            #     axs[2].set_title('Second Formant Variance')
-            #     axs[3].plot(times, energy, times, energyThresholdMarkers, timeStamps, filledPausesMarkers, 'ro')
-            #
-            #     fig.tight_layout()
-            #
-            #     # plt.savefig(outputPath + "[extra].png")
-            #     plt.show()
 
     print()
     print("  Time to run:", time.time() - startTime)
@@ -393,6 +291,8 @@ def compareAlgorithmToDataset():
     printParameters()
     print("Running on Dr. Smart's Dataset")
 
+    analyzer = speechAnalysis.SpeechAnalyzer()
+
     directory = './dr_smart_audio'
     dataset = []
 
@@ -413,35 +313,13 @@ def compareAlgorithmToDataset():
     for audioFile in dataset:
         audio = audioModule.Audio(filePath=directory + audioFile[0])
 
-        filledPauses, timeStamps, times, f1, f2, energy, lengths, firstFormantVariances, secondFormantVariances, averageEnergies, stepTimes = featureModule.getFilledPauses(audio.data, audio.sampleRate, utteranceWindowSize, utteranceStepSize, utteranceMinimumLength, utteranceF1MaximumVariance, utteranceF2MaximumVariance, utteranceEnergyThreshold)
+        filledPauses = analyzer.getFilledPausesFromAudio(audio)
 
-        if int(audioFile[1]) <= len(timeStamps):
+        if int(audioFile[1]) <= len(filledPauses):
             numberOfAccurateDetections += int(audioFile[1])
 
         trueNumberOfFilledPauses += int(audioFile[1])
-        numberOfDetections += len(timeStamps)
-
-        # # Graphing
-        # filledPausesMarkers = [1] * len(timeStamps)
-        # energyThresholdMarkers = [utteranceEnergyThreshold] * len(stepTimes)
-        # firstFormatVarianceMarkers = [utteranceF1MaximumVariance] * len(stepTimes)
-        # secondFormatVarianceMarkers = [utteranceF2MaximumVariance] * len(stepTimes)
-        #
-        # fig, axs = plt.subplots(4, 1)
-        # axs[0].plot(times, f1, times, f2, timeStamps, filledPausesMarkers, 'ro')
-        # axs[0].set_title('Formants and Energy')
-        # axs[1].plot(stepTimes, firstFormantVariances, stepTimes, firstFormatVarianceMarkers, timeStamps, filledPausesMarkers, 'ro')
-        # axs[1].set_title('First Formant Variance')
-        # axs[2].plot(stepTimes, secondFormantVariances, stepTimes, secondFormatVarianceMarkers, timeStamps, filledPausesMarkers, 'ro')
-        # axs[2].set_title('Second Formant Variance')
-        # axs[3].plot(times, energy, timeStamps, filledPausesMarkers, 'ro')
-        # axs[3].set_title('Intensity')
-        #
-        # fig.suptitle(audioFile[0])
-        # fig.tight_layout()
-        # plt.show()
-        #
-        # print(audioFile[0], timeStamps, lengths)
+        numberOfDetections += len(filledPauses)
 
     print()
     print("  Time to run:", time.time() - startTime)
@@ -454,6 +332,8 @@ def compareAlgorithmToDataset():
 def runAlgorithmOnDataset():
     directory = './dr_smart_audio'
     dataset = []
+
+    analyzer = speechAnalysis.SpeechAnalyzer()
 
     # Load the dataset info for training
     with open(directory + '/metadata.csv', 'r') as csvfile:
@@ -470,30 +350,11 @@ def runAlgorithmOnDataset():
 
         audio = audioModule.Audio(filePath=directory + audioFile[0])
 
-        filledPauses, timeStamps, times, f1, f2, energy, lengths, firstFormantVariances, secondFormantVariances, averageEnergies, stepTimes = featureModule.getFilledPauses(audio.data, audio.sampleRate, utteranceWindowSize, utteranceStepSize, utteranceMinimumLength, utteranceF1MaximumVariance, utteranceF2MaximumVariance, utteranceEnergyThreshold)
-
-        # Graphing
-        filledPausesMarkers = [1] * len(timeStamps)
-        energyThresholdMarkers = [utteranceEnergyThreshold] * len(stepTimes)
-        firstFormatVarianceMarkers = [utteranceF1MaximumVariance] * len(stepTimes)
-        secondFormatVarianceMarkers = [utteranceF2MaximumVariance] * len(stepTimes)
-
-        fig, axs = plt.subplots(4, 1)
-        axs[0].plot(times, f1, times, f2, timeStamps, filledPausesMarkers, 'ro')
-        axs[0].set_title('Formants and Energy')
-        axs[1].plot(stepTimes, firstFormantVariances, stepTimes, firstFormatVarianceMarkers, timeStamps, filledPausesMarkers, 'ro')
-        axs[1].set_title('First Formant Variance')
-        axs[2].plot(stepTimes, secondFormantVariances, stepTimes, secondFormatVarianceMarkers, timeStamps, filledPausesMarkers, 'ro')
-        axs[2].set_title('Second Formant Variance')
-        axs[3].plot(times, energy, timeStamps, filledPausesMarkers, 'ro')
-        axs[3].set_title('Intensity')
-
-        fig.tight_layout()
-        plt.savefig(directory + filePath[:-4] + ".png")
+        filledPauses = analyzer.getFilledPausesFromAudio(audio)
+        print(len(filledPauses))
 
 
 def main():
     compareAlgorithmToDataset()
-    compareAlgorithmToSlices()
 
 main()
