@@ -120,7 +120,7 @@ def compareSyllablesToPNNC():
     pitchRecall = totalNumberOfCorrectlyDetectedPauses / totalNumberOfFilledPauses
     pitchF1 = 2 * pitchPrecision * pitchRecall / (pitchPrecision + pitchRecall)
 
-    print("   Alogrithm  | Correct syllables:", totalNumberOfCorrectlyDetectedPauses, "Precision:", pitchPrecision,"Recall:", pitchRecall, "F1", pitchF1, "Time to run:", timeToRunWithPitches)
+    print("   Alogrithm  | Correct syllables:", totalNumberOfCorrectlyDetectedPauses, "Precision:", pitchPrecision,"Recall:", pitchRecall, "F1", pitchF1)
     # print("Time just spent on pitch:", timeJustToGetPitches)
 
 def compareSyllablesToParticipants():
