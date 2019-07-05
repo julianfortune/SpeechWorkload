@@ -33,11 +33,11 @@ def createSlicesFromPauses():
         audio = audioModule.Audio(filePath=filePath)
         audio.makeMono()
 
-        filledPauses, timeStamps, times, f1, f2, energy, lengths, firstFormantVariances, secondFormantVariances, averageEnergies, stepTimes = featureModule.getFilledPauses(audio.data, audio.sampleRate, utteranceWindowSize, utteranceStepSize, utteranceMinimumLength, utteranceF1MaximumVariance, utteranceF2MaximumVariance, utteranceEnergyThreshold)
+        filledPauses = featureModule.getFilledPauses(audio.data, audio.sampleRate, utteranceWindowSize, utteranceStepSize, utteranceMinimumLength, utteranceF1MaximumVariance, utteranceF2MaximumVariance, utteranceEnergyThreshold)
 
         audio = AudioSegment.from_wav(filePath)
 
-        for time in timeStamps:
+        for time in filledPauses:
             ### Output files - pydub is in ms
             outputPath = outputDir + name + "/" + str(round(time, 2))
 
@@ -60,7 +60,7 @@ def createSlicesFromPauses():
         # --
 
         print("Done with ", name)
-        print(sum(filledPauses))
+        print(len(filledPauses))
     # --
 
 # --
@@ -88,11 +88,11 @@ def runAlgorithmOnParticipants():
                 audio = audioModule.Audio(filePath=filePath)
                 audio.makeMono()
 
-                filledPauses, timeStamps, times, f1, f2, energy, lengths, firstFormantVariances, secondFormantVariances, averageEnergies, stepTimes = featureModule.getFilledPauses(audio.data, audio.sampleRate, utteranceWindowSize, utteranceStepSize, utteranceMinimumLength, utteranceF1MaximumVariance, utteranceF2MaximumVariance, utteranceEnergyThreshold)
+                filledPauses = featureModule.getFilledPauses(audio.data, audio.sampleRate, utteranceWindowSize, utteranceStepSize, utteranceMinimumLength, utteranceF1MaximumVariance, utteranceF2MaximumVariance, utteranceEnergyThreshold)
 
-                participantData.append(len(timeStamps))
+                participantData.append(len(filledPauses))
 
-                print("   ", len(timeStamps))
+                print("   ", len(filledPauses))
 
         print(participantData)
         filledPausesForParticipant.append(participantData)

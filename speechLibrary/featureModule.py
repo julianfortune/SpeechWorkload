@@ -227,9 +227,9 @@ def getVoiceActivity(data, sampleRate, windowSizeInMS, stepSizeInMS, useAdaptive
         currentActivity = 0
 
         if  zcr[i] < zcrThreshold and energy[i] > energyThreshold and aboveThresholdWithinTolerance(dominantFrequency,
-                                      i,
-                                      dominantFreqThreshold,
-                                      dominantFreqTolerance):
+                                                                                                    i,
+                                                                                                    dominantFreqThreshold,
+                                                                                                    dominantFreqTolerance):
 
             currentActivity = 1 # Voice acitivty present
         else:
@@ -243,8 +243,7 @@ def getVoiceActivity(data, sampleRate, windowSizeInMS, stepSizeInMS, useAdaptive
 
     return voiceActivity
 
-# | Returns a np array for each frame with 1 for filled pause, 0 for no filled pause
-# | and an array of timesstamps where filled pauses were detected
+# | Returns an array of timestamps where filled pauses were detected.
 def getFilledPauses(data, sampleRate, windowSize, stepSize, minumumLength, F1MaximumVariance, F2MaximumVariance, energyThreshold):
     # Convert window and step sizes to samples for Librosa and to prevent rounding issues with RMSE.
     sampleWindowSize = int(windowSize*sampleRate/1000)
