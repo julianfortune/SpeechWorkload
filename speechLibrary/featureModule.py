@@ -80,6 +80,28 @@ def getEnergy(data, sampleRate, windowSize, stepSize):
     energy = librosa.feature.rmse(data, frame_length=windowSizeInSamples, hop_length=stepSizeInSamples)[0]
     return energy
 
+def getShortTermEnergy(data, sampleRate, windowSize, stepSize):
+    windowSizeInSamples = int(sampleRate / 1000 * windowSize)
+    stepSizeInSamples = int(sampleRate / 1000 * stepSize)
+
+    shortTermEnergy = np.array([
+        sum(data[step:step+windowSizeInSamples]**2)
+        for step in range(0, len(data), stepSizeInSamples)
+    ])
+
+    return shortTermEnergy
+
+def getRMSPower(data, sampleRate, windowSize, stepSize):
+    windowSizeInSamples = int(sampleRate / 1000 * windowSize)
+    stepSizeInSamples = int(sampleRate / 1000 * stepSize)
+
+    rms = np.array([
+        math.sqrt(sum(data[step:step+windowSizeInSamples]**2) / windowSizeInSamples)
+        for step in range(0, len(data), stepSizeInSamples)
+    ])
+
+    return rms
+
 def getPitch(data, sampleRate, stepSize, silenceProportionThreshold):
     # Convert to the parselmouth custom sound type (req'd for formant function).
     parselSound = parselmouth.Sound(values=data, sampling_frequency=sampleRate)
@@ -185,7 +207,7 @@ def getVoiceActivity(data, sampleRate, windowSizeInMS, stepSizeInMS, useAdaptive
         dominantFrequency.append(freq[np.argmax(ps)])
 
     # Get energy and zero-crossing rate.
-    energy = librosa.feature.rmse(data, frame_length=windowSize, hop_length=stepSize)[0]
+    energy = getShortTermEnergy(data, sampleRate, windowSizeInMS, stepSizeInMS)
     zcr = librosa.feature.zero_crossing_rate(data, frame_length=windowSize, hop_length=stepSize)[0]
 
     # Ensure the arrays all line up correctly.
@@ -233,7 +255,7 @@ def getFilledPauses(data, sampleRate, windowSize, stepSize, minumumLength, F1Max
 
     # Get first and second formants (F1 & F2) and energy.
     firstFormant, secondFormant = getFormants(data, sampleRate, sampleWindowSize/sampleRate, sampleStepSize/sampleRate)
-    energy = librosa.feature.rmse(data, frame_length=sampleWindowSize, hop_length=sampleStepSize)[0]
+    energy = getEnergy(data, sampleRate, windowSize, stepSize)
 
     # The number of steps in energy and formant arrays
     numberOfSteps = round((len(data)/sampleRate) / (sampleStepSize/sampleRate))
