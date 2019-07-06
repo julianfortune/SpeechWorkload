@@ -288,7 +288,6 @@ def createMetaDataForDataset():
             writer.writerow(row)
 
 def compareAlgorithmToDataset():
-    printParameters()
     print("Running on Dr. Smart's Dataset")
 
     analyzer = speechAnalysis.SpeechAnalyzer()
@@ -353,8 +352,59 @@ def runAlgorithmOnDataset():
         filledPauses = analyzer.getFilledPausesFromAudio(audio)
         print(len(filledPauses))
 
+def compareAlgorithmToParticipants():
+    audioDirectory = "../media/Participant_Audio_30_Sec_Chunks/*.wav"
+    speechAnalyzer = speechAnalysis.SpeechAnalyzer()
+
+    transcript = []
+
+    totalNumberOfFilledPauses = 0
+    totalNumberOfCorrectlyDetectedPauses = 0
+    totalNumberOfFalseAlarms = 0
+
+    with open("../media/Participant_Audio_30_Sec_Chunks_Transcripts/filled_pauses.txt") as transcriptFile:
+        lines = transcriptFile.readlines()
+        for row in lines:
+            transcript.append(row.strip().split(', '))
+
+    for line in transcript:
+        name = line[0]
+        actualFilledPausesCount = int(line[1])
+
+        for filePath in sorted(glob.iglob(audioDirectory)):
+            fileName = os.path.basename(filePath)[:-4]
+
+            if fileName == name:
+                audio = audioModule.Audio(filePath=filePath)
+                if audio.numberOfChannels != 1:
+                    audio.makeMono()
+
+                syllables, _ = speechAnalyzer.getSyllablesFromAudio(audio)
+                filledPauses = speechAnalyzer.getFilledPausesFromAudio(audio)
+
+                filledPausesMarkers = np.full(len(filledPauses), 0)
+                filledPausesCount = len(filledPauses)
+
+                print(name, actualFilledPausesCount, filledPausesCount, filledPauses)
+
+                totalNumberOfFilledPauses += actualFilledPausesCount
+
+                if filledPausesCount > actualFilledPausesCount:
+                    totalNumberOfFalseAlarms += filledPausesCount - actualFilledPausesCount
+                    totalNumberOfCorrectlyDetectedPauses += actualFilledPausesCount
+                else:
+                    totalNumberOfCorrectlyDetectedPauses += filledPausesCount
+
+    precision = totalNumberOfCorrectlyDetectedPauses / (totalNumberOfCorrectlyDetectedPauses + totalNumberOfFalseAlarms)
+    recall = totalNumberOfCorrectlyDetectedPauses / totalNumberOfFilledPauses
+
+    f1 = 2 * precision * recall / (precision + recall)
+
+    print("    Total     | Filled pauses:", totalNumberOfFilledPauses)
+    print("     New      | Correct filled pauses:", totalNumberOfCorrectlyDetectedPauses, "Precision:", precision, "Recall:", recall, "F1", f1)
 
 def main():
+    compareAlgorithmToParticipants()
     compareAlgorithmToDataset()
 
 main()

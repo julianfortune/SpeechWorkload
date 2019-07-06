@@ -256,6 +256,8 @@ def getFilledPauses(data, sampleRate, windowSize, stepSize, minumumLength, F1Max
     firstFormant, secondFormant = getFormants(data, sampleRate, sampleWindowSize/sampleRate, sampleStepSize/sampleRate)
     energy = getEnergy(data, sampleRate, windowSize, stepSize)
 
+    energyThreshold = getEnergyMinimumThreshold(energy)
+
     # The number of steps in energy and formant arrays
     numberOfSteps = round((len(data)/sampleRate) / (sampleStepSize/sampleRate))
 
