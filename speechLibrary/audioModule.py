@@ -1,10 +1,10 @@
-'''
-Created on Apr 23, 2019
+#
+# Created on Apr 23, 2019
+#
+# @author: Julian Fortune
+# @Description: Class for managing audio data and metadata.
+#
 
-@author: Julian Fortune
-
-@Description: Class for managing audio data and metadata.
-'''
 import wavio
 import wave
 import pyaudio

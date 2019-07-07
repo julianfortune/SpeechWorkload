@@ -1,11 +1,16 @@
-import numpy as np
-import matplotlib.pyplot as plt
+#
+# Created on May 12, 2019
+#
+# @author: Julian Fortune
+# @Description: Functions for testing and validating the filled pauses algorithm.
+#
 
 import sys, time, glob, os
-
 import wavio
 import csv
 
+import numpy as np
+import matplotlib.pyplot as plt
 from pydub import AudioSegment
 
 from speechLibrary import featureModule, speechAnalysis, audioModule

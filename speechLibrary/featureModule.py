@@ -1,10 +1,10 @@
-'''
-Created on Apr 23, 2019
+#
+# Created on Apr 23, 2019
+#
+# @author: Julian Fortune
+# @Description: Functions for extracting features from audio data.
+#
 
-@author: Julian Fortune
-
-@Description: Functions for extracting features from audio data.
-'''
 import math
 import numpy as np
 import librosa

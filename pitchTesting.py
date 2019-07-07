@@ -1,3 +1,10 @@
+#
+# Created on June 25, 2019
+#
+# @author: Julian Fortune
+# @Description: Functions for testing and analyzing pitch.
+#
+
 import sys, time, glob, os
 import numpy as np
 import matplotlib.pyplot as plt

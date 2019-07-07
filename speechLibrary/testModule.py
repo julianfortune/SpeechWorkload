@@ -1,3 +1,10 @@
+#
+# Created on May 16, 2019
+#
+# @author: Julian Fortune
+# @Description: Functions for unit testing and comparing changes.
+#
+
 import numpy as np
 
 red = "\u001b[31m"
@@ -8,6 +15,7 @@ reset = "\u001b[0m"
 
 featureNames = ["time", "syllablesPerSecond", "meanVoiceActivity", "stDevVoiceActivity", "meanPitch", "stDevPitch", "meanIntensity", "stDevIntensity"]
 
+# | Compares two numpy arrays and displays information about their differences.
 def compareArrays(old, new):
     print()
 
@@ -38,6 +46,7 @@ def compareArrays(old, new):
                 str(max(differences)) + reset)
     print()
 
+# | Compares two numpy arrays saved in files.
 def compareArrayFiles(oldFeaturesPath, newFeaturesPath):
     oldFeatures = np.load(oldFeaturesPath)
     newFeatures = np.load(newFeaturesPath)

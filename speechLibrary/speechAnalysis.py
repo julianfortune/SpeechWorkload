@@ -1,17 +1,18 @@
-'''
-Created on Apr 23, 2019
+#
+# Created on Apr 23, 2019
+#
+# @author: Julian Fortune
+# @Description: Interface for extracting feature arrays.
+#
 
-@author: Julian Fortune
-
-@Description: Interface for extracting feature arrays.
-'''
 import os, glob, sys # file io
 import time
 import numpy as np
+
 import pyaudio # microphone io
 import wavio # microphone decoding
-from speechLibrary import featureModule
-from speechLibrary import audioModule
+
+from speechLibrary import featureModule, audioModule
 
 np.set_printoptions(threshold=sys.maxsize)
 

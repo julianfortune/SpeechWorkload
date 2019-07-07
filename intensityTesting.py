@@ -1,3 +1,11 @@
+#
+# Created on July 5, 2019
+#
+# @author: Julian Fortune
+# @Description: Functions for testing different intensity/power/energy
+# algorithms.
+#
+
 import sys, time, glob, os
 import numpy as np
 import matplotlib.pyplot as plt

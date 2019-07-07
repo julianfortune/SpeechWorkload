@@ -1,3 +1,11 @@
+#
+# Created on June 25, 2019
+#
+# @author: Julian Fortune
+# @Description: Functions for visualizing and analyzing features run on
+# different audio recordings/sets of audio recordings.
+#
+
 import sys, time, glob, os, csv
 import numpy as np
 import matplotlib.pyplot as plt
