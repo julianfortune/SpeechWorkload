@@ -155,10 +155,10 @@ def runAlgorithmOnSlices():
 # --
 
 def compareAlgorithmToSlices():
-    printParameters()
     print("Running on slices")
 
-    analyzer = speechAnalysis.SpeechAnalyzer()
+    speechAnalyzer = speechAnalysis.SpeechAnalyzer()
+    printParameters(speechAnalyzer)
 
     controlYeses = 0
     controlNos = 0
@@ -195,7 +195,7 @@ def compareAlgorithmToSlices():
             audio.makeMono()
 
             # Run algorithm
-            filledPauses = analyzer.getFilledPausesFromAudio(audio)
+            filledPauses = speechAnalyzer.getFilledPausesFromAudio(audio)
 
             found = False
 
@@ -225,14 +225,14 @@ def testChangesByVaryingParameters():
 
         runAlgorithmOnDataset()
 
-def printParameters():
+def printParameters(speechAnalyzer):
     print()
-    print("  utteranceWindowSize:", utteranceWindowSize)
-    print("  utteranceStepSize:", utteranceStepSize)
-    print("  utteranceMinimumLength:", utteranceMinimumLength)
-    print("  utteranceF1MaximumVariance:", utteranceF1MaximumVariance)
-    print("  utteranceF2MaximumVariance:", utteranceF2MaximumVariance)
-    print("  utteranceEnergyThreshold:", utteranceEnergyThreshold)
+    print("  filledPauseWindowSize:", speechAnalyzer.filledPauseWindowSize)
+    print("  filledPauseStepSize:", speechAnalyzer.filledPauseStepSize)
+    print("  filledPauseMinimumLength:", speechAnalyzer.filledPauseMinimumLength)
+    print("  filledPauseF1MaximumVariance:", speechAnalyzer.filledPauseF1MaximumVariance)
+    print("  filledPauseF2MaximumVariance:", speechAnalyzer.filledPauseF2MaximumVariance)
+    print("  filledPausesEnergyThreshold:", speechAnalyzer.filledPausesEnergyThreshold)
     print()
 
 def createMetaDataForDataset():
@@ -290,7 +290,8 @@ def createMetaDataForDataset():
 def compareAlgorithmToDataset():
     print("Running on Dr. Smart's Dataset")
 
-    analyzer = speechAnalysis.SpeechAnalyzer()
+    speechAnalyzer = speechAnalysis.SpeechAnalyzer()
+    printParameters(speechAnalyzer)
 
     directory = './dr_smart_audio'
     dataset = []
@@ -312,7 +313,7 @@ def compareAlgorithmToDataset():
     for audioFile in dataset:
         audio = audioModule.Audio(filePath=directory + audioFile[0])
 
-        filledPauses = analyzer.getFilledPausesFromAudio(audio)
+        filledPauses = speechAnalyzer.getFilledPausesFromAudio(audio)
 
         if int(audioFile[1]) <= len(filledPauses):
             numberOfAccurateDetections += int(audioFile[1])
@@ -355,6 +356,7 @@ def runAlgorithmOnDataset():
 def compareAlgorithmToParticipants():
     audioDirectory = "../media/Participant_Audio_30_Sec_Chunks/*.wav"
     speechAnalyzer = speechAnalysis.SpeechAnalyzer()
+    printParameters(speechAnalyzer)
 
     transcript = []
 
@@ -379,7 +381,6 @@ def compareAlgorithmToParticipants():
                 if audio.numberOfChannels != 1:
                     audio.makeMono()
 
-                syllables, _ = speechAnalyzer.getSyllablesFromAudio(audio)
                 filledPauses = speechAnalyzer.getFilledPausesFromAudio(audio)
 
                 filledPausesMarkers = np.full(len(filledPauses), 0)

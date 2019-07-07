@@ -256,6 +256,8 @@ def getFilledPauses(data, sampleRate, windowSize, stepSize, minumumLength, F1Max
     firstFormant, secondFormant = getFormants(data, sampleRate, sampleWindowSize/sampleRate, sampleStepSize/sampleRate)
     energy = getEnergy(data, sampleRate, windowSize, stepSize)
 
+    harmonicity = librosa.feature.spectral_flatness(data, hop_length=sampleStepSize)[0][:len(energy)]
+
     energyThreshold = getEnergyMinimumThreshold(energy)
 
     # The number of steps in energy and formant arrays
@@ -278,9 +280,21 @@ def getFilledPauses(data, sampleRate, windowSize, stepSize, minumumLength, F1Max
 
         firstFormantVariance = np.std(firstFormant[start:end])
         secondFormantVariance = np.std(secondFormant[start:end])
-        averageEnergy = np.mean(energy[start:end])
+        averageFormantDistance = np.mean(secondFormant[start:end] - firstFormant[start:end])
 
-        if firstFormantVariance <= F1MaximumVariance and secondFormantVariance <= F2MaximumVariance and averageEnergy > energyThreshold:
+        averageEnergy = np.mean(energy[start:end])
+        harmonicityVariance = np.std(harmonicity[start:end])
+
+        # Check for any filled pauses immediately before the current window
+        previousFilledPause = 0
+        if len(timeStamps) > 0:
+            previousFilledPause = timeStamps[-1]
+        else:
+            previousFilledPause = -10
+        distanceToPreviousFilledPause = times[step] - previousFilledPause
+
+        # Identify filled pauses
+        if firstFormantVariance <= F1MaximumVariance and secondFormantVariance <= F2MaximumVariance and averageEnergy > energyThreshold and distanceToPreviousFilledPause > 1 and averageFormantDistance < 2000 and harmonicityVariance < 0.001:
             # Prevent an utterance from being detected many times.
             if fillerUtteranceInitiated == False:
                 fillerUtteranceInitiated = True
