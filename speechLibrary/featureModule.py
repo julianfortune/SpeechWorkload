@@ -102,7 +102,7 @@ def getRMSPower(data, sampleRate, windowSize, stepSize):
 
     return rms
 
-def getPitch(data, sampleRate, stepSize, silenceProportionThreshold):
+def getPitch(data, sampleRate, stepSize, silenceProportionThreshold, minimumRunLength):
     # Convert to the parselmouth custom sound type (req'd for formant function).
     parselSound = parselmouth.Sound(values=data, sampling_frequency=sampleRate)
 
@@ -111,6 +111,7 @@ def getPitch(data, sampleRate, stepSize, silenceProportionThreshold):
                                         pitch_ceiling=400.0,
                                         silence_threshold=silenceProportionThreshold)
     pitchValues = pitchData.selected_array['frequency']
+    removeSmallRunsOfValues(pitchValues, minimumRunLength)
 
     return np.array(pitchValues)
 
@@ -159,10 +160,6 @@ def getSyllables(data, sampleRate, windowSize, stepSize, pitchValues, energyPeak
     energyMinThreshold = getEnergyMinimumThreshold(energy)
     # Adjust energy threshold for pitch algorithm.
     fractionEnergyMinThreshold = energyMinThreshold / max(energy)
-
-    # Get pitch
-    pitchValues = getPitch(data, sampleRate, stepSize, silenceProportionThreshold=fractionEnergyMinThreshold)
-    removeSmallRunsOfValues(pitchValues, 4)
 
     # Get zero-crossing Rate
     zcr = librosa.feature.zero_crossing_rate(data, frame_length=windowSizeInSamples, hop_length=stepSizeInSamples)[0]

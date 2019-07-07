@@ -29,7 +29,7 @@ class SpeechAnalyzer:
 
         # Pitch parameters
         self.pitchStepSize = 10
-        self.pitchMinimumRunLength = 2
+        self.pitchMinimumRunLength = 4
 
         # Syllable detection parameters
         self.syllableWindowSize = 50 # In milliseconds
@@ -77,7 +77,8 @@ class SpeechAnalyzer:
         pitches = featureModule.getPitch(data= audio.data,
                                          sampleRate= audio.sampleRate,
                                          stepSize= self.pitchStepSize,
-                                         silenceProportionThreshold= fractionEnergyMinThreshold)
+                                         silenceProportionThreshold= fractionEnergyMinThreshold,
+                                         minimumRunLength= self.pitchMinimumRunLength)
 
         syllables = featureModule.getSyllables(data= audio.data,
                                                sampleRate= audio.sampleRate,
@@ -129,7 +130,8 @@ class SpeechAnalyzer:
         pitches = featureModule.getPitch(data= audio.data,
                                          sampleRate= audio.sampleRate,
                                          stepSize= self.pitchStepSize,
-                                         silenceProportionThreshold= fractionEnergyMinThreshold)
+                                         silenceProportionThreshold= fractionEnergyMinThreshold,
+                                         minimumRunLength= self.pitchMinimumRunLength)
         return pitches
 
     def getFeaturesFromAudio(self, audio):
