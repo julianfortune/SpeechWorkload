@@ -55,8 +55,8 @@ class SpeechAnalyzer:
         self.filledPauseMinimumDistanceToPrevious = 1000 # In milliseconds
         self.filledPauseF1MaximumVariance = 60
         self.filledPauseF2MaximumVariance = 30
-        self.filledPauseMinimumFormantDistance = 2000 # In Hz
-        self.filledPauseSpectralFlatnessVariance = 0.001
+        self.filledPauseMaximumFormantDistance = 2000 # In Hz
+        self.filledPauseMaximumSpectralFlatnessVariance = 0.001
 
         # Recording parameters
         self.recordingDeviceIndex = -1 # Default to asking user
@@ -102,8 +102,8 @@ class SpeechAnalyzer:
                                                      minimumDistanceToPrevious= self.filledPauseMinimumDistanceToPrevious,
                                                      F1MaximumVariance= self.filledPauseF1MaximumVariance,
                                                      F2MaximumVariance= self.filledPauseF2MaximumVariance,
-                                                     minimumFormantDistance= self.filledPauseMinimumFormantDistance,
-                                                     spectralFlatnessVariance= self.filledPauseSpectralFlatnessVariance)
+                                                     maximumFormantDistance= self.filledPauseMaximumFormantDistance,
+                                                     maximumSpectralFlatnessVariance= self.filledPauseMaximumSpectralFlatnessVariance)
         return filledPauses
 
     def getVoiceActivityFromAudio(self, audio):

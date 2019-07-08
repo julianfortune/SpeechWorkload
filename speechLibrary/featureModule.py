@@ -242,7 +242,7 @@ def getVoiceActivity(data, sampleRate, pitchValues, windowSizeInMS, stepSizeInMS
     return voiceActivity
 
 # | Returns an array of timestamps where filled pauses were detected.
-def getFilledPauses(data, sampleRate, windowSize, stepSize, minumumLength, minimumDistanceToPrevious, F1MaximumVariance, F2MaximumVariance, minimumFormantDistance, spectralFlatnessVariance):
+def getFilledPauses(data, sampleRate, windowSize, stepSize, minumumLength, minimumDistanceToPrevious, F1MaximumVariance, F2MaximumVariance, maximumFormantDistance, maximumSpectralFlatnessVariance):
     # Convert window and step sizes to samples for Librosa and to prevent rounding issues with RMSE.
     sampleWindowSize = int(windowSize*sampleRate/1000)
     sampleStepSize = int(stepSize*sampleRate/1000)
@@ -291,7 +291,7 @@ def getFilledPauses(data, sampleRate, windowSize, stepSize, minumumLength, minim
         distanceToPreviousFilledPause = times[step] - previousFilledPause
 
         # Identify filled pauses
-        if firstFormantVariance <= F1MaximumVariance and secondFormantVariance <= F2MaximumVariance and averageEnergy > energyThreshold and distanceToPreviousFilledPause > minimumDistanceToPrevious/1000 and averageFormantDistance < minimumFormantDistance and spectralFlatnessVariance < spectralFlatnessVariance:
+        if firstFormantVariance <= F1MaximumVariance and secondFormantVariance <= F2MaximumVariance and averageEnergy > energyThreshold and distanceToPreviousFilledPause > minimumDistanceToPrevious/1000 and averageFormantDistance < maximumFormantDistance and spectralFlatnessVariance < spectralFlatnessVariance:
             # Prevent an utterance from being detected many times.
             if fillerUtteranceInitiated == False:
                 fillerUtteranceInitiated = True
