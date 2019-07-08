@@ -50,7 +50,7 @@ def compareVoiceActivityToParticipants():
                     # voiceActivityBuffered = featureModule.createBufferedBinaryArrayFromArray(voiceActivity == 1, voiceActivityBufferSize)
 
                     frameSizeInSeconds = 1
-                    frameSizeInSteps = int(frameSizeInSeconds / (speechAnalyzer.voiceActivityStepSize / 1000))
+                    frameSizeInSteps = int(frameSizeInSeconds / (speechAnalyzer.featureStepSize / 1000))
                     voiceActivity = []
 
                     for frame in range (0, int(len(audio.data) / audio.sampleRate / (frameSizeInSeconds))):

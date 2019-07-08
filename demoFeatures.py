@@ -33,7 +33,7 @@ def showVoiceActivityForPNNC():
         voiceActivity = speechAnalyzer.getVoiceActivityFromAudio(audio)
         voiceActivity[voiceActivity == 0] = np.nan
 
-        times = np.arange(0, len(audio.data)/audio.sampleRate, speechAnalyzer.voiceActivityStepSize / 1000)
+        times = np.arange(0, len(audio.data)/audio.sampleRate, speechAnalyzer.featureStepSize / 1000)
         signalTimes = np.arange(0, len(audio.data)/audio.sampleRate, 1 / audio.sampleRate)
 
         plt.figure(figsize=[16, 8])
@@ -57,7 +57,7 @@ def showVoiceActivityForParticipantAudio():
         voiceActivity = speechAnalyzer.getVoiceActivityFromAudio(audio)
         voiceActivity[voiceActivity == 0] = np.nan
 
-        times = np.arange(0, len(audio.data)/audio.sampleRate, speechAnalyzer.voiceActivityStepSize / 1000)
+        times = np.arange(0, len(audio.data)/audio.sampleRate, speechAnalyzer.featureStepSize / 1000)
         signalTimes = np.arange(0, len(audio.data)/audio.sampleRate, 1 / audio.sampleRate)
 
         plt.figure(figsize=[16, 8])
@@ -85,24 +85,24 @@ def showSyllables():
     candidateMarkers = np.full(len(candidates), 0)
 
     ### Energy
-    energy = librosa.feature.rmse(audio.data, frame_length=int(audio.sampleRate / 1000 * speechAnalyzer.pitchStepSize), hop_length=int(audio.sampleRate / 1000 * speechAnalyzer.pitchStepSize))[0]
-    energyTimes = np.arange(0, len(audio.data)/audio.sampleRate, speechAnalyzer.pitchStepSize/1000)[:len(energy)]
+    energy = librosa.feature.rmse(audio.data, frame_length=int(audio.sampleRate / 1000 * speechAnalyzer.featureStepSize), hop_length=int(audio.sampleRate / 1000 * speechAnalyzer.featureStepSize))[0]
+    energyTimes = np.arange(0, len(audio.data)/audio.sampleRate, speechAnalyzer.featureStepSize/1000)[:len(energy)]
 
     energyMinThreshold = featureModule.getEnergyMinimumThreshold(energy)
     fractionEnergyMinThreshold = energyMinThreshold / max(energy)
 
-    pitch = featureModule.getPitch(audio.data, audio.sampleRate, speechAnalyzer.pitchStepSize, fractionEnergyMinThreshold)
-    pitchTimes = np.arange(0, len(audio.data)/audio.sampleRate, speechAnalyzer.pitchStepSize/1000)[:len(pitch)]
+    pitch = featureModule.getPitch(audio.data, audio.sampleRate, speechAnalyzer.featureStepSize, fractionEnergyMinThreshold)
+    pitchTimes = np.arange(0, len(audio.data)/audio.sampleRate, speechAnalyzer.featureStepSize/1000)[:len(pitch)]
 
-    zcr = librosa.feature.zero_crossing_rate(audio.data, frame_length=int(audio.sampleRate / 1000 * speechAnalyzer.pitchStepSize * 4), hop_length=int(audio.sampleRate / 1000 * speechAnalyzer.pitchStepSize))[0]
-    zcrTimes = np.arange(0, len(audio.data)/audio.sampleRate + 1, speechAnalyzer.pitchStepSize/1000)[:len(zcr)]
+    zcr = librosa.feature.zero_crossing_rate(audio.data, frame_length=int(audio.sampleRate / 1000 * speechAnalyzer.featureStepSize * 4), hop_length=int(audio.sampleRate / 1000 * speechAnalyzer.featureStepSize))[0]
+    zcrTimes = np.arange(0, len(audio.data)/audio.sampleRate + 1, speechAnalyzer.featureStepSize/1000)[:len(zcr)]
 
     voiceActivity = speechAnalyzer.getVoiceActivityFromAudio(audio)
     voiceActivity[voiceActivity == 0] = np.nan
-    voiceActivityTimes = np.arange(0, len(audio.data)/audio.sampleRate, speechAnalyzer.pitchStepSize/1000)[:len(voiceActivity)]
+    voiceActivityTimes = np.arange(0, len(audio.data)/audio.sampleRate, speechAnalyzer.featureStepSize/1000)[:len(voiceActivity)]
     print(len(voiceActivity), len(voiceActivityTimes))
 
-    times = np.arange(0, len(audio.data)/audio.sampleRate, speechAnalyzer.voiceActivityStepSize / 1000)
+    times = np.arange(0, len(audio.data)/audio.sampleRate, speechAnalyzer.featureStepSize / 1000)
     signalTimes = np.arange(0, len(audio.data)/audio.sampleRate, 1 / audio.sampleRate)
 
     plt.figure(figsize=[16, 8])
@@ -129,7 +129,7 @@ def showVoiceActivityAndSyllablesForParticipantAudio():
         voiceActivity = speechAnalyzer.getVoiceActivityFromAudio(audio)
         voiceActivity[voiceActivity == 0] = np.nan
 
-        voiceActivityBufferSize = int(100 / speechAnalyzer.voiceActivityStepSize)
+        voiceActivityBufferSize = int(100 / speechAnalyzer.featureStepSize)
         voiceActivityBuffered = featureModule.createBufferedBinaryArrayFromArray(voiceActivity == 1, voiceActivityBufferSize).astype(int).astype(float)
         voiceActivityBuffered[voiceActivityBuffered == 0] = np.nan
 
@@ -140,19 +140,19 @@ def showVoiceActivityAndSyllablesForParticipantAudio():
 
         print("Getting other features...")
 
-        energy = featureModule.getEnergy(audio.data, audio.sampleRate, speechAnalyzer.syllableWindowSize, speechAnalyzer.pitchStepSize)
+        energy = featureModule.getEnergy(audio.data, audio.sampleRate, speechAnalyzer.syllableWindowSize, speechAnalyzer.featureStepSize)
         energyMinThreshold = featureModule.getEnergyMinimumThreshold(energy)
         fractionEnergyMinThreshold = energyMinThreshold / max(energy)
 
-        zcr = librosa.feature.zero_crossing_rate(audio.data, frame_length=int(audio.sampleRate / 1000 * speechAnalyzer.pitchStepSize), hop_length=int(audio.sampleRate / 1000 * speechAnalyzer.pitchStepSize))[0]
-        zcrTimes = np.arange(0, len(audio.data)/audio.sampleRate + 1, speechAnalyzer.pitchStepSize/1000)[:len(zcr)]
+        zcr = librosa.feature.zero_crossing_rate(audio.data, frame_length=int(audio.sampleRate / 1000 * speechAnalyzer.featureStepSize), hop_length=int(audio.sampleRate / 1000 * speechAnalyzer.featureStepSize))[0]
+        zcrTimes = np.arange(0, len(audio.data)/audio.sampleRate + 1, speechAnalyzer.featureStepSize/1000)[:len(zcr)]
 
         pitch = speechAnalyzer.getPitchFromAudio(audio)
         pitch[pitch==0] = np.nan
-        pitchTimes = np.arange(0, len(audio.data)/audio.sampleRate, speechAnalyzer.pitchStepSize/1000)[:len(pitch)]
+        pitchTimes = np.arange(0, len(audio.data)/audio.sampleRate, speechAnalyzer.featureStepSize/1000)[:len(pitch)]
 
-        times = np.arange(0, len(audio.data)/audio.sampleRate, speechAnalyzer.voiceActivityStepSize / 1000)
-        energyTimes = np.arange(0, len(audio.data)/audio.sampleRate, speechAnalyzer.voiceActivityStepSize / 1000)[:len(energy)]
+        times = np.arange(0, len(audio.data)/audio.sampleRate, speechAnalyzer.featureStepSize / 1000)
+        energyTimes = np.arange(0, len(audio.data)/audio.sampleRate, speechAnalyzer.featureStepSize / 1000)[:len(energy)]
 
         print("Graphing!")
 
@@ -203,18 +203,18 @@ def getFeaturesFromFileUsingWindowing():
             voiceActivity = speechAnalyzer.getVoiceActivityFromAudio(currentWindow)
 
             ### INTENSITY
-            energy = featureModule.getEnergy(currentWindow.data, currentWindow.sampleRate, speechAnalyzer.syllableWindowSize, speechAnalyzer.pitchStepSize)
+            energy = featureModule.getEnergy(currentWindow.data, currentWindow.sampleRate, speechAnalyzer.syllableWindowSize, speechAnalyzer.featureStepSize)
 
             energyMinThreshold = featureModule.getEnergyMinimumThreshold(energy)
             fractionEnergyMinThreshold = energyMinThreshold / max(energy)
 
             ### PITCH
-            pitch = featureModule.getPitch(currentWindow.data, currentWindow.sampleRate, speechAnalyzer.pitchStepSize, fractionEnergyMinThreshold)
+            pitch = featureModule.getPitch(currentWindow.data, currentWindow.sampleRate, speechAnalyzer.featureStepSize, fractionEnergyMinThreshold)
 
             syllableBinaryArray = np.full(len(voiceActivity), 0)
 
             for timeStamp in syllables:
-                syllableBinaryArray[int(timeStamp / (currentWindow.sampleRate / 1000 * speechAnalyzer.pitchStepSize) * currentWindow.sampleRate)] = 1
+                syllableBinaryArray[int(timeStamp / (currentWindow.sampleRate / 1000 * speechAnalyzer.featureStepSize) * currentWindow.sampleRate)] = 1
 
             # Mask out all filled pauses that coincide with voice acitivty
             syllableBinaryArray[voiceActivity.astype(bool)] = 0
@@ -225,9 +225,9 @@ def getFeaturesFromFileUsingWindowing():
                 voiceActivity[voiceActivity == 0] = np.nan
                 pitch[pitch == 0] = np.nan
 
-                pitchTimes = np.arange(0, len(currentWindow.data)/currentWindow.sampleRate, speechAnalyzer.pitchStepSize/1000)[:len(pitch)]
-                energyTimes = np.arange(0, len(currentWindow.data)/currentWindow.sampleRate, speechAnalyzer.pitchStepSize/1000)[:len(energy)]
-                times = np.arange(0, len(currentWindow.data)/currentWindow.sampleRate, speechAnalyzer.voiceActivityStepSize / 1000)
+                pitchTimes = np.arange(0, len(currentWindow.data)/currentWindow.sampleRate, speechAnalyzer.featureStepSize/1000)[:len(pitch)]
+                energyTimes = np.arange(0, len(currentWindow.data)/currentWindow.sampleRate, speechAnalyzer.featureStepSize/1000)[:len(energy)]
+                times = np.arange(0, len(currentWindow.data)/currentWindow.sampleRate, speechAnalyzer.featureStepSize / 1000)
 
                 plt.figure(figsize=[16, 8])
                 plt.plot(times, energy / 10, pitchTimes, pitch)

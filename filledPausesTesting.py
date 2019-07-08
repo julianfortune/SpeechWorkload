@@ -233,7 +233,7 @@ def testChangesByVaryingParameters():
 def printParameters(speechAnalyzer):
     print()
     print("  filledPauseWindowSize:", speechAnalyzer.filledPauseWindowSize)
-    print("  filledPauseStepSize:", speechAnalyzer.filledPauseStepSize)
+    print("  filledPauseStepSize:", speechAnalyzer.featureStepSize)
     print("  filledPauseMinimumLength:", speechAnalyzer.filledPauseMinimumLength)
     print("  filledPauseF1MaximumVariance:", speechAnalyzer.filledPauseF1MaximumVariance)
     print("  filledPauseF2MaximumVariance:", speechAnalyzer.filledPauseF2MaximumVariance)
