@@ -88,7 +88,7 @@ def aboveThresholdWithinTolerance(data, indexInQuestion, threshold, tolerance):
     return False
 
 def getEnergyMinimumThreshold(energy):
-    return np.percentile(energy, 10) * 2
+    return np.percentile(energy, 10) * 4
 
 def getEnergy(data, sampleRate, windowSize, stepSize):
     windowSizeInSamples = int(sampleRate / 1000 * windowSize)
@@ -165,7 +165,7 @@ def getFormants(data, sampleRate, windowSize, stepSize):
     return np.array(firstFormant), np.array(secondFormant)
 
 # | Returns the indices of syllables in audio data.
-def getSyllables(data, sampleRate, windowSize, stepSize, pitchValues, energyPeakMinimumDistance, energyPeakMinimumWidth, pitchDistanceTolerance, zcrThreshold):
+def getSyllables(data, sampleRate, pitchValues, windowSize, stepSize, energyPeakMinimumDistance, energyPeakMinimumWidth, pitchDistanceTolerance, zcrThreshold):
     # Convert window and step sizes to samples for Librosa.
     windowSizeInSamples = int(sampleRate / 1000 * windowSize)
     stepSizeInSamples = int(sampleRate / 1000 * stepSize)
@@ -201,31 +201,14 @@ def getSyllables(data, sampleRate, windowSize, stepSize, pitchValues, energyPeak
     return np.array(validPeaks) * stepSizeInSamples / sampleRate, np.array(peaks) * stepSizeInSamples / sampleRate
 
 # | Returns the voice activity (each v_i in V ∈ {0,1}) using an adaptive algorithm from "A Simple but Efficient...".
-def getVoiceActivity(data, sampleRate, windowSizeInMS, stepSizeInMS, useAdaptiveThresholds, zcrThreshold, energyPrimaryThreshold, dominantFreqThreshold, dominantFreqTolerance):
+def getVoiceActivity(data, sampleRate, pitchValues, windowSizeInMS, stepSizeInMS, useAdaptiveThresholds, zcrThreshold, energyPrimaryThreshold, pitchTolerance, minimumRunLength):
     # Convert window and step sizes to samples for Librosa.
     windowSize = int(sampleRate / 1000 * windowSizeInMS) # samples
     stepSize = int(sampleRate / 1000 * stepSizeInMS) # samples
 
-    dominantFrequency = []
-
-    # Get most dominant frequency values.
-    for i in range(math.ceil(len(data)/stepSize)):
-        start = i*stepSize
-        end = start+windowSize
-        currentWindowSize = windowSize
-
-        if end > len(data):
-            end = len(data)
-            currentWindowSize = len(data[start:end])
-        freq, ps = getPowerSpectrum(data[start:end],sampleRate,currentWindowSize)
-        dominantFrequency.append(freq[np.argmax(ps)])
-
     # Get energy and zero-crossing rate.
     energy = getShortTermEnergy(data, sampleRate, windowSizeInMS, stepSizeInMS)
     zcr = librosa.feature.zero_crossing_rate(data, frame_length=windowSize, hop_length=stepSize)[0]
-
-    # Ensure the arrays all line up correctly.
-    assert (len(zcr) == len(energy) and len(energy) == len(dominantFrequency)), "Feature lengths differ."
 
     # Move the thresholds if needed.
     if useAdaptiveThresholds:
@@ -240,10 +223,10 @@ def getVoiceActivity(data, sampleRate, windowSizeInMS, stepSizeInMS, useAdaptive
     for i in range(0,len(energy)):
         currentActivity = 0
 
-        if  zcr[i] < zcrThreshold and energy[i] > energyThreshold and aboveThresholdWithinTolerance(dominantFrequency,
-                                                                                                    i,
-                                                                                                    dominantFreqThreshold,
-                                                                                                    dominantFreqTolerance):
+        if  zcr[i] < zcrThreshold and energy[i] > energyThreshold and aboveThresholdWithinTolerance(data=pitchValues,
+                                                                                                    indexInQuestion=i,
+                                                                                                    threshold=0,
+                                                                                                    tolerance=pitchTolerance):
 
             currentActivity = 1 # Voice acitivty present
         else:
@@ -255,10 +238,11 @@ def getVoiceActivity(data, sampleRate, windowSizeInMS, stepSizeInMS, useAdaptive
             minEnergy = ( (silenceCount * minEnergy) + energy[i] ) / ( silenceCount + 1 )
             energyThreshold = energyPrimaryThreshold * math.log(minEnergy)
 
+    removeSmallRunsOfValues(voiceActivity, minimumRunLength)
     return voiceActivity
 
 # | Returns an array of timestamps where filled pauses were detected.
-def getFilledPauses(data, sampleRate, windowSize, stepSize, minumumLength, F1MaximumVariance, F2MaximumVariance, energyThreshold):
+def getFilledPauses(data, sampleRate, windowSize, stepSize, minumumLength, minimumDistanceToPrevious, F1MaximumVariance, F2MaximumVariance, minimumFormantDistance, spectralFlatnessVariance):
     # Convert window and step sizes to samples for Librosa and to prevent rounding issues with RMSE.
     sampleWindowSize = int(windowSize*sampleRate/1000)
     sampleStepSize = int(stepSize*sampleRate/1000)
@@ -266,15 +250,14 @@ def getFilledPauses(data, sampleRate, windowSize, stepSize, minumumLength, F1Max
     timeStamps = []
     lengths = []
 
-    # Get first and second formants (F1 & F2) and energy.
-    firstFormant, secondFormant = getFormants(data, sampleRate, sampleWindowSize/sampleRate, sampleStepSize/sampleRate)
+    # Get energy, first and second formants (F1 & F2), and spectral flatness.
     energy = getEnergy(data, sampleRate, windowSize, stepSize)
-
-    harmonicity = librosa.feature.spectral_flatness(data, hop_length=sampleStepSize)[0][:len(energy)]
+    firstFormant, secondFormant = getFormants(data, sampleRate, sampleWindowSize/sampleRate, sampleStepSize/sampleRate)
+    spectralFlatness = librosa.feature.spectral_flatness(data, hop_length=sampleStepSize)[0][:len(energy)]
 
     energyThreshold = getEnergyMinimumThreshold(energy)
 
-    # The number of steps in energy and formant arrays
+    # The number of steps in the feature arrays.
     numberOfSteps = round((len(data)/sampleRate) / (sampleStepSize/sampleRate))
 
     # Used for finding time stamp.
@@ -297,7 +280,7 @@ def getFilledPauses(data, sampleRate, windowSize, stepSize, minumumLength, F1Max
         averageFormantDistance = np.mean(secondFormant[start:end] - firstFormant[start:end])
 
         averageEnergy = np.mean(energy[start:end])
-        harmonicityVariance = np.std(harmonicity[start:end])
+        spectralFlatnessVariance = np.std(spectralFlatness[start:end])
 
         # Check for any filled pauses immediately before the current window
         previousFilledPause = 0
@@ -308,7 +291,7 @@ def getFilledPauses(data, sampleRate, windowSize, stepSize, minumumLength, F1Max
         distanceToPreviousFilledPause = times[step] - previousFilledPause
 
         # Identify filled pauses
-        if firstFormantVariance <= F1MaximumVariance and secondFormantVariance <= F2MaximumVariance and averageEnergy > energyThreshold and distanceToPreviousFilledPause > 1 and averageFormantDistance < 2000 and harmonicityVariance < 0.001:
+        if firstFormantVariance <= F1MaximumVariance and secondFormantVariance <= F2MaximumVariance and averageEnergy > energyThreshold and distanceToPreviousFilledPause > minimumDistanceToPrevious/1000 and averageFormantDistance < minimumFormantDistance and spectralFlatnessVariance < spectralFlatnessVariance:
             # Prevent an utterance from being detected many times.
             if fillerUtteranceInitiated == False:
                 fillerUtteranceInitiated = True

@@ -129,11 +129,14 @@ def showVoiceActivityAndSyllablesForParticipantAudio():
         voiceActivity = speechAnalyzer.getVoiceActivityFromAudio(audio)
         voiceActivity[voiceActivity == 0] = np.nan
 
+        voiceActivityBufferSize = int(100 / speechAnalyzer.voiceActivityStepSize)
+        voiceActivityBuffered = featureModule.createBufferedBinaryArrayFromArray(voiceActivity == 1, voiceActivityBufferSize).astype(int).astype(float)
+        voiceActivityBuffered[voiceActivityBuffered == 0] = np.nan
+
         print("Getting syllables...")
 
-        syllables, candidates = speechAnalyzer.getSyllablesFromAudio(audio)
+        syllables, _ = speechAnalyzer.getSyllablesFromAudio(audio)
         syllableMarkers = np.full(len(syllables), 0)
-        candidateMarkers = np.full(len(candidates), 0)
 
         print("Getting other features...")
 
@@ -144,7 +147,7 @@ def showVoiceActivityAndSyllablesForParticipantAudio():
         zcr = librosa.feature.zero_crossing_rate(audio.data, frame_length=int(audio.sampleRate / 1000 * speechAnalyzer.pitchStepSize), hop_length=int(audio.sampleRate / 1000 * speechAnalyzer.pitchStepSize))[0]
         zcrTimes = np.arange(0, len(audio.data)/audio.sampleRate + 1, speechAnalyzer.pitchStepSize/1000)[:len(zcr)]
 
-        pitch = featureModule.getPitch(audio.data, audio.sampleRate, speechAnalyzer.pitchStepSize, fractionEnergyMinThreshold)
+        pitch = speechAnalyzer.getPitchFromAudio(audio)
         pitch[pitch==0] = np.nan
         pitchTimes = np.arange(0, len(audio.data)/audio.sampleRate, speechAnalyzer.pitchStepSize/1000)[:len(pitch)]
 
@@ -154,10 +157,12 @@ def showVoiceActivityAndSyllablesForParticipantAudio():
         print("Graphing!")
 
         plt.figure(figsize=[16, 8])
-        plt.plot(times, energy / 10, zcrTimes, zcr * 100, pitchTimes, pitch)
-        plt.plot(candidates, candidateMarkers, 'ro')
+        plt.plot(zcrTimes, zcr * 1000, 'gold')
+        plt.plot(times, energy / 5)
+        plt.plot(pitchTimes, pitch, 'red')
         plt.plot(syllables, syllableMarkers, 'go')
-        plt.plot(times, voiceActivity)
+        plt.plot(times, voiceActivityBuffered * -5, 'darkorange')
+        plt.plot(times, voiceActivity, 'purple')
         plt.title(name)
         plt.show()
 
