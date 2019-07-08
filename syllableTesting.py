@@ -201,8 +201,8 @@ def compareSyllablesToParticipants():
     print("     New      | Correct syllables:", totalNumberOfCorrectlyDetectedPauses, "Precision:", precision, "Recall:", recall, "F1", f1)
 
 def main():
-    comparePRAATSyllablesToPNNC()
-    compareSyllablesToPNNC()
-    # compareSyllablesToParticipants()
+    # comparePRAATSyllablesToPNNC()
+    # compareSyllablesToPNNC()
+    compareSyllablesToParticipants()
 
 main()

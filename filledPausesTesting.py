@@ -410,7 +410,8 @@ def compareAlgorithmToParticipants():
     print("     New      | Correct filled pauses:", totalNumberOfCorrectlyDetectedPauses, "Precision:", precision, "Recall:", recall, "F1", f1)
 
 def main():
+    # compareAlgorithmToSlices()
     compareAlgorithmToParticipants()
-    compareAlgorithmToDataset()
+    # compareAlgorithmToDataset()
 
 main()

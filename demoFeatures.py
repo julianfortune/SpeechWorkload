@@ -237,6 +237,6 @@ def getFeaturesFromFileUsingWindowing():
         step += sampleStepSize
 
 def main():
-    getFeaturesFromFileUsingWindowing()
+    showVoiceActivityAndSyllablesForParticipantAudio()
 
 main()
