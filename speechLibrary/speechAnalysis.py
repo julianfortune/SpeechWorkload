@@ -25,11 +25,11 @@ class SpeechAnalyzer:
         self.printStatus = True
 
         # Windowing parameters
-        self.stepSize = 1 # In seconds
+        self.stepSize = 1 # Time interval between extracting features, in seconds
         self.lookBackSize = 30  # Duration to wait until looking for features, in seconds
 
         # Pitch parameters
-        self.pitchStepSize = 10
+        self.pitchStepSize = 10 # In milliseconds
         self.pitchMinimumRunLength = 4
 
         # Syllable detection parameters
@@ -59,7 +59,7 @@ class SpeechAnalyzer:
 
         # Recording parameters
         self.recordingDeviceIndex = -1 # Default to asking user
-        self.recordingBufferSize = 4096
+        self.recordingBufferSize = 4096 # In samples
         self.recordingFormat = pyaudio.paInt16
         self.recordingChannels = 2
 
