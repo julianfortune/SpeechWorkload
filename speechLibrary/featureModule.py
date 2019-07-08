@@ -291,7 +291,7 @@ def getFilledPauses(data, sampleRate, windowSize, stepSize, minumumLength, minim
         distanceToPreviousFilledPause = times[step] - previousFilledPause
 
         # Identify filled pauses
-        if firstFormantVariance <= F1MaximumVariance and secondFormantVariance <= F2MaximumVariance and averageEnergy > energyThreshold and distanceToPreviousFilledPause > minimumDistanceToPrevious/1000 and averageFormantDistance < maximumFormantDistance and spectralFlatnessVariance < spectralFlatnessVariance:
+        if firstFormantVariance <= F1MaximumVariance and secondFormantVariance <= F2MaximumVariance and averageEnergy > energyThreshold and distanceToPreviousFilledPause > minimumDistanceToPrevious/1000 and averageFormantDistance < maximumFormantDistance and spectralFlatnessVariance < maximumSpectralFlatnessVariance:
             # Prevent an utterance from being detected many times.
             if fillerUtteranceInitiated == False:
                 fillerUtteranceInitiated = True
