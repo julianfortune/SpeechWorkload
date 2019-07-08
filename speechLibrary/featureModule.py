@@ -60,6 +60,23 @@ def removeSmallRunsOfValues(npArray, minimumLength):
             if lengthOfRun < minimumLength:
                 np.put(npArray, range(runStartingIndex, index + 1), 0)
 
+def createBufferedBinaryArrayFromArray(npArray, frames):
+    bufferedArray = np.full(len(npArray), False)
+
+    for index in range(0, len(npArray)):
+        start = index - frames
+        end = index + frames + 1
+
+        if start < 0:
+            start = 0
+        if end > len(npArray) - 1:
+            end = len(npArray) - 1
+
+        if True in npArray[start:end]:
+            bufferedArray[index] = True
+
+    return bufferedArray
+
 # | Checks surrounding values in an array around the index to check if
 # | any of them are above the threshold
 def aboveThresholdWithinTolerance(data, indexInQuestion, threshold, tolerance):
