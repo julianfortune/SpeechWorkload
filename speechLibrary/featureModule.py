@@ -13,6 +13,8 @@ import parselmouth # Formants
 
 import matplotlib.pyplot as plt
 
+DEBUG = False
+
 class FeatureSet:
 
     # TODO: Redo to use classic lists and convert at very end to save on
@@ -239,6 +241,20 @@ def getVoiceActivity(data, sampleRate, pitchValues, windowSizeInMS, stepSizeInMS
             energyThreshold = energyPrimaryThreshold * math.log(minEnergy)
 
     removeSmallRunsOfValues(voiceActivity, minimumRunLength)
+
+    if DEBUG:
+        # Show graph if debugging
+        energyTimes = np.arange(0, len(data)/sampleRate, stepSizeInMS/1000)[:len(energy)]
+        zcrTimes = np.arange(0, len(data)/sampleRate, stepSizeInMS/1000)[:len(zcr)]
+        pitchTimes = np.arange(0, len(data)/sampleRate, stepSizeInMS/1000)[:len(pitchValues)]
+        plotVoiceActivity = np.copy(voiceActivity)
+        plotVoiceActivity[plotVoiceActivity == 0] = np.nan
+
+        plt.figure(figsize=[16, 8])
+        plt.plot(energyTimes, energy / 10000000, zcrTimes, zcr * 100, pitchTimes, pitchValues)
+        plt.plot(energyTimes, plotVoiceActivity)
+        plt.show()
+
     return voiceActivity
 
 # | Returns an array of timestamps where filled pauses were detected.
@@ -304,6 +320,18 @@ def getFilledPauses(data, sampleRate, windowSize, stepSize, minumumLength, minim
                 lengths.append(times[step] - startOfFiller + (minumumLength/1000) )
 
             fillerUtteranceInitiated = False
+
+    if DEBUG:
+        # Show graph if debugging
+        filledPausesMarkers = np.full(len(timeStamps), 0)
+        energyTimes = np.arange(0, len(data)/sampleRate, stepSize/1000)[:len(energy)]
+        spectralFlatnessTimes = np.arange(0, len(data)/sampleRate, stepSize/1000)[:len(spectralFlatness)]
+
+        plt.figure(figsize=[16, 8])
+        plt.plot(energyTimes, energy)
+        plt.plot(spectralFlatnessTimes, spectralFlatness * 10000)
+        plt.plot(times, firstFormant, times, secondFormant, np.array(timeStamps), filledPausesMarkers, 'go')
+        plt.show()
 
     return np.array(timeStamps)
 
