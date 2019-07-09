@@ -8,4 +8,4 @@ analyzer = speechAnalysis.SpeechAnalyzer()
 
 analyzer.printStatus = True
 
-analyzer.createFeatureFilesFromDirectory("../media/Participant_Audio/", "./features/")
+analyzer.createFeatureFilesFromDirectory("../media/Participant_Audio/", "./featuresTest/")
