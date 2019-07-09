@@ -134,15 +134,6 @@ def getPitch(data, sampleRate, stepSize, silenceProportionThreshold, minimumRunL
 
     return np.array(pitchValues)
 
-# | Gets power of sound and returns np arrays
-def getPowerSpectrum(data,sampleRate,windowSize):
-    freqs,ps = scipy.signal.welch(data,
-                                  sampleRate,
-                                  window='hanning',   # Apply a Hanning window
-                                  nperseg= int(windowSize), # Compute periodograms of ____-long segments of x
-                                  )
-    return freqs,ps
-
 # | Returns the first two formants from a piece of audio.
 def getFormants(data, sampleRate, windowSize, stepSize):
     # Convert to the parselmouth custom sound type (req'd for formant function).
@@ -172,6 +163,10 @@ def getSyllables(data, sampleRate, pitchValues, windowSize, stepSize, energyPeak
     windowSizeInSamples = int(sampleRate / 1000 * windowSize)
     stepSizeInSamples = int(sampleRate / 1000 * stepSize)
 
+    # Empty integer array
+    numberOfSteps = int(len(data) / stepSizeInSamples)
+    syllables = np.full(numberOfSteps, 0)
+
     # Get energy.
     energy = getEnergy(data, sampleRate, windowSize, stepSize)
 
@@ -198,19 +193,20 @@ def getSyllables(data, sampleRate, pitchValues, windowSize, stepSize, energyPeak
                                                                           threshold=0,
                                                                           tolerance=pitchDistanceTolerance):
             validPeaks = np.append(validPeaks, peaks[i])
+            syllables[peaks[i]] = 1
 
     # Return syllables & candidate peaks that didn't meet voicing requirements.
-    return np.array(validPeaks) * stepSizeInSamples / sampleRate, np.array(peaks) * stepSizeInSamples / sampleRate
+    return syllables, np.array(validPeaks) * stepSizeInSamples / sampleRate
 
 # | Returns the voice activity (each v_i in V ∈ {0,1}) using an adaptive algorithm from "A Simple but Efficient...".
-def getVoiceActivity(data, sampleRate, pitchValues, windowSizeInMS, stepSizeInMS, useAdaptiveThresholds, zcrThreshold, energyPrimaryThreshold, pitchTolerance, minimumRunLength):
+def getVoiceActivity(data, sampleRate, pitchValues, windowSize, stepSize, useAdaptiveThresholds, zcrThreshold, energyPrimaryThreshold, pitchTolerance, minimumRunLength):
     # Convert window and step sizes to samples for Librosa.
-    windowSize = int(sampleRate / 1000 * windowSizeInMS) # samples
-    stepSize = int(sampleRate / 1000 * stepSizeInMS) # samples
+    windowSizeInSamples = int(sampleRate / 1000 * windowSize)
+    stepSizeInSamples = int(sampleRate / 1000 * stepSize)
 
     # Get energy and zero-crossing rate.
-    energy = getShortTermEnergy(data, sampleRate, windowSizeInMS, stepSizeInMS)
-    zcr = librosa.feature.zero_crossing_rate(data, frame_length=windowSize, hop_length=stepSize)[0]
+    energy = getShortTermEnergy(data, sampleRate, windowSize, stepSize)
+    zcr = librosa.feature.zero_crossing_rate(data, frame_length=windowSizeInSamples, hop_length=stepSizeInSamples)[0]
 
     # Move the thresholds if needed.
     if useAdaptiveThresholds:
@@ -244,9 +240,9 @@ def getVoiceActivity(data, sampleRate, pitchValues, windowSizeInMS, stepSizeInMS
 
     if DEBUG:
         # Show graph if debugging
-        energyTimes = np.arange(0, len(data)/sampleRate, stepSizeInMS/1000)[:len(energy)]
-        zcrTimes = np.arange(0, len(data)/sampleRate, stepSizeInMS/1000)[:len(zcr)]
-        pitchTimes = np.arange(0, len(data)/sampleRate, stepSizeInMS/1000)[:len(pitchValues)]
+        energyTimes = np.arange(0, len(data)/sampleRate, stepSize/1000)[:len(energy)]
+        zcrTimes = np.arange(0, len(data)/sampleRate, stepSize/1000)[:len(zcr)]
+        pitchTimes = np.arange(0, len(data)/sampleRate, stepSize/1000)[:len(pitchValues)]
         plotVoiceActivity = np.copy(voiceActivity)
         plotVoiceActivity[plotVoiceActivity == 0] = np.nan
 
@@ -260,30 +256,30 @@ def getVoiceActivity(data, sampleRate, pitchValues, windowSizeInMS, stepSizeInMS
 # | Returns an array of timestamps where filled pauses were detected.
 def getFilledPauses(data, sampleRate, windowSize, stepSize, minumumLength, minimumDistanceToPrevious, F1MaximumVariance, F2MaximumVariance, maximumFormantDistance, maximumSpectralFlatnessVariance):
     # Convert window and step sizes to samples for Librosa and to prevent rounding issues with RMSE.
-    sampleWindowSize = int(windowSize*sampleRate/1000)
-    sampleStepSize = int(stepSize*sampleRate/1000)
+    windowSizeInSamples = int(sampleRate / 1000 * windowSize)
+    stepSizeInSamples = int(sampleRate / 1000 * stepSize)
 
     timeStamps = []
-    lengths = []
+
+    # The number of steps in the feature arrays.
+    numberOfSteps = int(len(data) / stepSizeInSamples)
+    # Empty integer array
+    filledPauses = np.full(numberOfSteps, 0)
 
     # Get energy, first and second formants (F1 & F2), and spectral flatness.
     energy = getEnergy(data, sampleRate, windowSize, stepSize)
-    firstFormant, secondFormant = getFormants(data, sampleRate, sampleWindowSize/sampleRate, sampleStepSize/sampleRate)
-    spectralFlatness = librosa.feature.spectral_flatness(data, hop_length=sampleStepSize)[0][:len(energy)]
+    firstFormant, secondFormant = getFormants(data, sampleRate, windowSizeInSamples/sampleRate, stepSizeInSamples/sampleRate)
+    spectralFlatness = librosa.feature.spectral_flatness(data, hop_length=stepSizeInSamples)[0][:len(energy)]
 
     energyThreshold = getEnergyMinimumThreshold(energy)
 
-    # The number of steps in the feature arrays.
-    numberOfSteps = round((len(data)/sampleRate) / (sampleStepSize/sampleRate))
-
     # Used for finding time stamp.
-    times = np.arange(0, len(data)/sampleRate, sampleStepSize/sampleRate) # seconds
+    times = np.arange(0, len(data)/sampleRate, stepSizeInSamples/sampleRate) # seconds
 
     # The number of steps in the feature arrays that make up a single window for checking for utterances.
-    utteranceWindowSize = int(minumumLength / 1000 * sampleRate / sampleStepSize)
+    utteranceWindowSize = int(minumumLength / 1000 * sampleRate / stepSizeInSamples)
 
     fillerUtteranceInitiated = False
-    startOfFiller = 0
 
     # Step through each data point in formant and energy arrays and check for
     # filler utterances over the next 'minimumLength' size window of features.
@@ -313,12 +309,8 @@ def getFilledPauses(data, sampleRate, windowSize, stepSize, minumumLength, minim
                 fillerUtteranceInitiated = True
 
                 timeStamps.append(times[step])
-                startOfFiller = times[step]
+                filledPauses[step] = 1
         else:
-            # Keep track of the length of the filled pauses.
-            if fillerUtteranceInitiated == True:
-                lengths.append(times[step] - startOfFiller + (minumumLength/1000) )
-
             fillerUtteranceInitiated = False
 
     if DEBUG:
@@ -333,32 +325,4 @@ def getFilledPauses(data, sampleRate, windowSize, stepSize, minumumLength, minim
         plt.plot(times, firstFormant, times, secondFormant, np.array(timeStamps), filledPausesMarkers, 'go')
         plt.show()
 
-    return np.array(timeStamps)
-
-# | Computes the absolute value of the raw data values then calculates
-# | the mean, max, min, and standard deviation of those data values
-def getIntensityStatistics(data):
-    absVal = np.absolute(data)
-    average = np.mean(absVal)
-    stDev = np.std(absVal)
-    return average, stDev
-
-# | Computes welch looking back and for number of sampleRate in length of data
-# | and returns the average of the loudest pitch in each window
-def getPitchStatistics(data, sampleRate, windowSize):
-
-    pitches = getPitch(data, sampleRate, stepSize, silenceProportionThreshold)
-
-    average = np.mean(loudestPitch)
-    stDev = np.std(loudestPitch)
-
-    return average, stDev
-
-# | Returns the average voice activity (0 <= v <= 1) and stDev using the getVoiceActivity() method.
-def getVoiceActivityStatistics(data, sampleRate, windowSizeInMS, stepSizeInMS, useAdaptiveThresholds, zcrThreshold, energyPrimaryThreshold, dominantFreqThreshold, dominantFreqTolerance):
-    voiceActivity = getVoiceActivity(data, sampleRate, windowSizeInMS, stepSizeInMS, useAdaptiveThresholds, zcrThreshold, energyPrimaryThreshold, dominantFreqThreshold, dominantFreqTolerance)
-
-    # Get stats on voice activity
-    average = np.mean(voiceActivity)
-    stDev = np.std(voiceActivity)
-    return average, stDev
+    return filledPauses, np.array(timeStamps)

@@ -93,27 +93,27 @@ def compareSyllablesToPNNC():
                     if audio.numberOfChannels != 1:
                         audio.makeMono()
 
-                    syllables, candidates = speechAnalyzer.getSyllablesFromAudio(audio)
+                    syllables, timeStamps = speechAnalyzer.getSyllablesFromAudio(audio)
 
                     totalNumberOfFilledPauses += correctNumberOfFilledPauses
 
-                    if len(syllables) > correctNumberOfFilledPauses:
-                        totalNumberOfFalseAlarms += len(syllables) - correctNumberOfFilledPauses
+                    if len(timeStamps) > correctNumberOfFilledPauses:
+                        totalNumberOfFalseAlarms += len(timeStamps) - correctNumberOfFilledPauses
                         totalNumberOfCorrectlyDetectedPauses += correctNumberOfFilledPauses
                     else:
-                        totalNumberOfCorrectlyDetectedPauses += len(syllables)
+                        totalNumberOfCorrectlyDetectedPauses += len(timeStamps)
 
                     # syllableMarkers = np.full(len(pitchSyllables), 0)
                     # candidateMarkers = np.full(len(candidates), 0)
                     #
                     # ### Energy
-                    # energy = librosa.feature.rmse(audio.data, frame_length=int(audio.sampleRate / 1000 * speechAnalyzer.syllableStepSize), hop_length=int(audio.sampleRate / 1000 * speechAnalyzer.syllableStepSize))[0]
-                    # energyTimes = np.arange(0, len(audio.data)/audio.sampleRate, speechAnalyzer.syllableStepSize/1000)[:len(energy)]
+                    # energy = librosa.feature.rmse(audio.data, frame_length=int(audio.sampleRate / 1000 * speechAnalyzer.featureStepSize), hop_length=int(audio.sampleRate / 1000 * speechAnalyzer.featureStepSize))[0]
+                    # energyTimes = np.arange(0, len(audio.data)/audio.sampleRate, speechAnalyzer.featureStepSize/1000)[:len(energy)]
                     #
-                    # pitch = featureModule.getPitchAC(audio.data, audio.sampleRate, speechAnalyzer.syllableStepSize)
-                    # # pitchAdjustment = np.full(int(speechAnalyzer.syllableWindowSize/speechAnalyzer.syllableStepSize - 1), np.nan)
+                    # pitch = featureModule.getPitchAC(audio.data, audio.sampleRate, speechAnalyzer.featureStepSize)
+                    # # pitchAdjustment = np.full(int(speechAnalyzer.syllableWindowSize/speechAnalyzer.featureStepSize - 1), np.nan)
                     # # pitch = np.append(pitchAdjustment, pitch)
-                    # pitchTimes = np.arange(0, len(audio.data)/audio.sampleRate, speechAnalyzer.syllableStepSize/1000)[:len(pitch)]
+                    # pitchTimes = np.arange(0, len(audio.data)/audio.sampleRate, speechAnalyzer.featureStepSize/1000)[:len(pitch)]
                     #
                     # signalTimes = np.arange(0, len(audio.data)/audio.sampleRate, 1 / audio.sampleRate)
                     #
@@ -158,8 +158,8 @@ def compareSyllablesToParticipants():
                 if audio.numberOfChannels != 1:
                     audio.makeMono()
 
-                syllables, _ = speechAnalyzer.getSyllablesFromAudio(audio)
-                syllableCount = len(syllables)
+                syllables, timeStamps = speechAnalyzer.getSyllablesFromAudio(audio)
+                syllableCount = len(timeStamps)
 
                 print(name, actualSyllableCount, syllableCount)
 
@@ -172,20 +172,20 @@ def compareSyllablesToParticipants():
                     totalNumberOfCorrectlyDetectedPauses += syllableCount
 
                 # ### Energy
-                # energy = librosa.feature.rmse(audio.data, frame_length=int(audio.sampleRate / 1000 * speechAnalyzer.syllableStepSize), hop_length=int(audio.sampleRate / 1000 * speechAnalyzer.syllableStepSize))[0]
-                # energyTimes = np.arange(0, len(audio.data)/audio.sampleRate, speechAnalyzer.syllableStepSize/1000)[:len(energy)]
+                # energy = librosa.feature.rmse(audio.data, frame_length=int(audio.sampleRate / 1000 * speechAnalyzer.featureStepSize), hop_length=int(audio.sampleRate / 1000 * speechAnalyzer.featureStepSize))[0]
+                # energyTimes = np.arange(0, len(audio.data)/audio.sampleRate, speechAnalyzer.featureStepSize/1000)[:len(energy)]
                 #
                 # energyMinThreshold = featureModule.getEnergyMinimumThreshold(energy)
                 # fractionEnergyMinThreshold = energyMinThreshold / max(energy)
                 #
-                # pitch = featureModule.getPitchAC(audio.data, audio.sampleRate, speechAnalyzer.syllableStepSize, fractionEnergyMinThreshold)
-                # # pitchAdjustment = np.full(int(speechAnalyzer.syllableWindowSize/speechAnalyzer.syllableStepSize - 1), np.nan)
+                # pitch = featureModule.getPitchAC(audio.data, audio.sampleRate, speechAnalyzer.featureStepSize, fractionEnergyMinThreshold)
+                # # pitchAdjustment = np.full(int(speechAnalyzer.syllableWindowSize/speechAnalyzer.featureStepSize - 1), np.nan)
                 # # pitch = np.append(pitchAdjustment, pitch)
-                # pitchTimes = np.arange(0, len(audio.data)/audio.sampleRate, speechAnalyzer.syllableStepSize/1000)[:len(pitch)]
+                # pitchTimes = np.arange(0, len(audio.data)/audio.sampleRate, speechAnalyzer.featureStepSize/1000)[:len(pitch)]
                 # syllableMarkers = np.full(len(syllables), 0)
                 #
-                # zcr = librosa.feature.zero_crossing_rate(audio.data, frame_length=int(audio.sampleRate / 1000 * speechAnalyzer.syllableStepSize * 4), hop_length=int(audio.sampleRate / 1000 * speechAnalyzer.syllableStepSize))[0]
-                # zcrTimes = np.arange(0, len(audio.data)/audio.sampleRate + 1, speechAnalyzer.syllableStepSize/1000)[:len(zcr)]
+                # zcr = librosa.feature.zero_crossing_rate(audio.data, frame_length=int(audio.sampleRate / 1000 * speechAnalyzer.featureStepSize * 4), hop_length=int(audio.sampleRate / 1000 * speechAnalyzer.featureStepSize))[0]
+                # zcrTimes = np.arange(0, len(audio.data)/audio.sampleRate + 1, speechAnalyzer.featureStepSize/1000)[:len(zcr)]
                 #
                 # plt.figure(figsize=[16, 8])
                 # plt.plot(energyTimes, energy / 10, zcrTimes, zcr * 100, pitchTimes, pitch, syllables, syllableMarkers, 'go')

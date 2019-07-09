@@ -66,30 +66,7 @@ def compareEnergyAndIntensity():
     plt.title(name)
     plt.show()
 
-def voiceActivity():
-    filePath = "../media/Participant_Audio/p10_ol.wav"
-    name = os.path.basename(filePath)[:-4]
-
-    speechAnalyzer = speechAnalysis.SpeechAnalyzer()
-
-    audio = audioModule.Audio(filePath=filePath)
-    if audio.numberOfChannels != 1:
-        audio.makeMono()
-
-    voiceActivity = speechAnalyzer.getVoiceActivityFromAudio(audio)
-    print("Total voice activity:", sum(voiceActivity))
-
-    runs = 0
-    voiceActivityPresent = False
-    for frame in voiceActivity:
-        if not voiceActivityPresent and frame == 1:
-            voiceActivityPresent = True
-            runs += 1
-        if voiceActivityPresent and frame == 0:
-            voiceActivityPresent = False
-    print("Total number of segments of voice activity:", runs)
-
 def main():
-    voiceActivity()
+    compareEnergyAndIntensity()
 
 main()

@@ -120,9 +120,9 @@ def getFeaturesFromSlices():
         audio = audioModule.Audio(filePath=filePath)
         audio.makeMono()
 
-        filledPauses = analyzer.getFilledPausesFromAudio(audio)
+        filledPauses, timeStamps = analyzer.getFilledPausesFromAudio(audio)
 
-        print(filledPauses)
+        print(timeStamps)
 
 def getFeaturesFromFile():
     filePath = "../media/cchp_english/p102/p102_en_pd.wav"
@@ -133,9 +133,9 @@ def getFeaturesFromFile():
     print(filePath)
 
     analyzer = speechAnalysis.SpeechAnalyzer()
-    filledPauses = analyzer.getFilledPausesFromAudio(audio)
+    filledPauses, timeStamps = analyzer.getFilledPausesFromAudio(audio)
 
-    print(len(filledPauses))
+    print(len(timeStamps))
 
 
 def runAlgorithmOnSlices():
@@ -152,7 +152,7 @@ def runAlgorithmOnSlices():
                 audio = audioModule.Audio(filePath=filePath)
                 audio.makeMono()
 
-                filledPauses = analyzer.getFilledPausesFromAudio(audio)
+                filledPauses, timeStamps = analyzer.getFilledPausesFromAudio(audio)
 
                 print(timeStamps)
 
@@ -200,11 +200,11 @@ def compareAlgorithmToSlices():
             audio.makeMono()
 
             # Run algorithm
-            filledPauses = speechAnalyzer.getFilledPausesFromAudio(audio)
+            filledPauses, timeStamps = speechAnalyzer.getFilledPausesFromAudio(audio)
 
             found = False
 
-            for timeDetected in filledPauses:
+            for timeDetected in timeStamps:
                 if abs(timeDetected - 1.0) < 0.2 and not found:
                     found = True
                     if judgement == "1":
@@ -317,13 +317,13 @@ def compareAlgorithmToDataset():
     for audioFile in dataset:
         audio = audioModule.Audio(filePath=directory + audioFile[0])
 
-        filledPauses = speechAnalyzer.getFilledPausesFromAudio(audio)
+        filledPauses, timeStamps = speechAnalyzer.getFilledPausesFromAudio(audio)
 
-        if int(audioFile[1]) <= len(filledPauses):
+        if int(audioFile[1]) <= len(timeStamps):
             numberOfAccurateDetections += int(audioFile[1])
 
         trueNumberOfFilledPauses += int(audioFile[1])
-        numberOfDetections += len(filledPauses)
+        numberOfDetections += len(timeStamps)
 
     print()
     print("  Time to run:", time.time() - startTime)
@@ -354,8 +354,8 @@ def runAlgorithmOnDataset():
 
         audio = audioModule.Audio(filePath=directory + audioFile[0])
 
-        filledPauses = analyzer.getFilledPausesFromAudio(audio)
-        print(len(filledPauses))
+        filledPauses, timeStamps = analyzer.getFilledPausesFromAudio(audio)
+        print(len(timeStamps))
 
 def compareAlgorithmToParticipants():
     audioDirectory = "../media/Participant_Audio_30_Sec_Chunks/*.wav"
@@ -385,12 +385,12 @@ def compareAlgorithmToParticipants():
                 if audio.numberOfChannels != 1:
                     audio.makeMono()
 
-                filledPauses = speechAnalyzer.getFilledPausesFromAudio(audio)
+                filledPauses, timeStamps = speechAnalyzer.getFilledPausesFromAudio(audio)
 
-                filledPausesMarkers = np.full(len(filledPauses), 0)
-                filledPausesCount = len(filledPauses)
+                filledPausesMarkers = np.full(len(timeStamps), 0)
+                filledPausesCount = len(timeStamps)
 
-                print(name, actualFilledPausesCount, filledPausesCount, filledPauses)
+                print(name, actualFilledPausesCount, filledPausesCount, sum(filledPauses))
 
                 totalNumberOfFilledPauses += actualFilledPausesCount
 

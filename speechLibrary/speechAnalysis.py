@@ -34,6 +34,9 @@ class SpeechAnalyzer:
         # Pitch parameters
         self.pitchMinimumRunLength = 4
 
+        # Pitch parameters
+        self.energyWindowSize = 50
+
         # Syllable detection parameters
         self.syllableWindowSize = 50 # In milliseconds
         self.syllablePeakMinimumDistance = 4
@@ -66,45 +69,20 @@ class SpeechAnalyzer:
 
 
 
-    def getSyllablesFromAudio(self, audio):
-        # Get energy threshold for pitch algorithm.
+    def getEnergyFromAudio(self, audio):
         energy = featureModule.getEnergy(data= audio.data,
-                                         sampleRate = audio.sampleRate,
-                                         windowSize= self.syllableWindowSize,
+                                         sampleRate= audio.sampleRate,
+                                         windowSize= self.energyWindowSize,
                                          stepSize= self.featureStepSize)
-        energyMinThreshold = featureModule.getEnergyMinimumThreshold(energy)
-        fractionEnergyMinThreshold = energyMinThreshold / max(energy)
+        return energy
 
-        # Get pitch for syllables algorithm.
+    def getPitchFromAudio(self, audio):
         pitches = featureModule.getPitch(data= audio.data,
                                          sampleRate= audio.sampleRate,
                                          stepSize= self.featureStepSize,
                                          silenceProportionThreshold= fractionEnergyMinThreshold,
                                          minimumRunLength= self.pitchMinimumRunLength)
-
-        syllables = featureModule.getSyllables(data= audio.data,
-                                               sampleRate= audio.sampleRate,
-                                               pitchValues= pitches,
-                                               windowSize= self.syllableWindowSize,
-                                               stepSize= self.featureStepSize,
-                                               energyPeakMinimumDistance= self.syllablePeakMinimumDistance,
-                                               energyPeakMinimumWidth= self.syllablePeakMinimumWidth,
-                                               pitchDistanceTolerance= self.syllablePitchDistanceTolerance,
-                                               zcrThreshold= self.syllableZcrThreshold,)
-        return syllables
-
-    def getFilledPausesFromAudio(self, audio):
-        filledPauses = featureModule.getFilledPauses(data= audio.data,
-                                                     sampleRate= audio.sampleRate,
-                                                     windowSize= self.filledPauseWindowSize,
-                                                     stepSize= self.featureStepSize,
-                                                     minumumLength= self.filledPauseMinimumLength,
-                                                     minimumDistanceToPrevious= self.filledPauseMinimumDistanceToPrevious,
-                                                     F1MaximumVariance= self.filledPauseF1MaximumVariance,
-                                                     F2MaximumVariance= self.filledPauseF2MaximumVariance,
-                                                     maximumFormantDistance= self.filledPauseMaximumFormantDistance,
-                                                     maximumSpectralFlatnessVariance= self.filledPauseMaximumSpectralFlatnessVariance)
-        return filledPauses
+        return pitches
 
     def getVoiceActivityFromAudio(self, audio):
         # Get energy threshold for pitch algorithm.
@@ -125,8 +103,8 @@ class SpeechAnalyzer:
         voiceActivity = featureModule.getVoiceActivity(data= audio.data,
                                                        sampleRate= audio.sampleRate,
                                                        pitchValues= pitches,
-                                                       windowSizeInMS= self.voiceActivityWindowSize,
-                                                       stepSizeInMS= self.featureStepSize,
+                                                       windowSize= self.voiceActivityWindowSize,
+                                                       stepSize= self.featureStepSize,
                                                        useAdaptiveThresholds= self.voiceActivityIsAdaptive,
                                                        zcrThreshold= self.voiceActivityZCRThreshold,
                                                        energyPrimaryThreshold= self.voiceActivityEnergyThreshold,
@@ -134,50 +112,83 @@ class SpeechAnalyzer:
                                                        minimumRunLength= self.voiceActivityMinimumRunLength)
         return voiceActivity
 
-    def getVoiceActivityStatisticsFromAudio(self, audio):
-        average, stDev = featureModule.getVoiceActivityStatistics(data= audio.data,
-                                                                  sampleRate= audio.sampleRate,
-                                                                  windowSizeInMS= self.voiceActivityWindowSize,
-                                                                  stepSizeInMS= self.featureStepSize,
-                                                                  useAdaptiveThresholds= self.voiceActivityIsAdaptive,
-                                                                  zcrThreshold= self.voiceActivityZCRThreshold,
-                                                                  energyPrimaryThreshold= self.voiceActivityEnergyThreshold,
-                                                                  dominantFreqThreshold= self.voiceActivityFreqThreshold,
-                                                                  dominantFreqTolerance= self.voiceActivityFreqTolerance)
-        return average, stDev
+    def getSyllablesFromAudio(self, audio):
+        # Get energy threshold for pitch algorithm.
+        energy = featureModule.getEnergy(data= audio.data,
+                                         sampleRate = audio.sampleRate,
+                                         windowSize= self.syllableWindowSize,
+                                         stepSize= self.featureStepSize)
+        energyMinThreshold = featureModule.getEnergyMinimumThreshold(energy)
+        fractionEnergyMinThreshold = energyMinThreshold / max(energy)
 
-    def getPitchFromAudio(self, audio):
+        # Get pitch for syllables algorithm.
         pitches = featureModule.getPitch(data= audio.data,
                                          sampleRate= audio.sampleRate,
                                          stepSize= self.featureStepSize,
                                          silenceProportionThreshold= fractionEnergyMinThreshold,
                                          minimumRunLength= self.pitchMinimumRunLength)
-        return pitches
+
+        syllables, timeStamps = featureModule.getSyllables(data= audio.data,
+                                               sampleRate= audio.sampleRate,
+                                               pitchValues= pitches,
+                                               windowSize= self.syllableWindowSize,
+                                               stepSize= self.featureStepSize,
+                                               energyPeakMinimumDistance= self.syllablePeakMinimumDistance,
+                                               energyPeakMinimumWidth= self.syllablePeakMinimumWidth,
+                                               pitchDistanceTolerance= self.syllablePitchDistanceTolerance,
+                                               zcrThreshold= self.syllableZcrThreshold)
+        return syllables, timeStamps
+
+    def getFilledPausesFromAudio(self, audio):
+        filledPauses, timeStamps = featureModule.getFilledPauses(data= audio.data,
+                                                     sampleRate= audio.sampleRate,
+                                                     windowSize= self.filledPauseWindowSize,
+                                                     stepSize= self.featureStepSize,
+                                                     minumumLength= self.filledPauseMinimumLength,
+                                                     minimumDistanceToPrevious= self.filledPauseMinimumDistanceToPrevious,
+                                                     F1MaximumVariance= self.filledPauseF1MaximumVariance,
+                                                     F2MaximumVariance= self.filledPauseF2MaximumVariance,
+                                                     maximumFormantDistance= self.filledPauseMaximumFormantDistance,
+                                                     maximumSpectralFlatnessVariance= self.filledPauseMaximumSpectralFlatnessVariance)
+        return filledPauses, timeStamps
+
+
 
     def getFeaturesFromAudio(self, audio):
         features = featureModule.FeatureSet()
 
-        ### WORDS PER MINUTE
-        syllables = self.getSyllablesFromAudio(audio)
-        currentSyllablesPerSecond = len(syllables)/self.lookBackSize
-        features.syllablesPerSecond = np.append(features.syllablesPerSecond, currentSyllablesPerSecond)
+        ### AMPLITUDE
+        energy= self.getEnergyFromAudio(audio)
 
-        ### VAD
-        average, stDev = self.getVoiceActivityStatisticsFromAudio(audio)
-        features.meanVoiceActivity = np.append(features.meanVoiceActivity,average)
-        features.stDevVoiceActivity = np.append(features.stDevVoiceActivity,stDev)
+        averageEnergy = np.mean(energy)
+        stDevEnergy = np.std(energy)
+
+        features.meanIntensity = np.append(features.meanIntensity, average)
+        features.stDevIntensity = np.append(features.stDevIntensity, stDev)
 
         ### PITCH
-        average, stDev = featureModule.getPitchStatistics(audio.data,
-                                                         audio.sampleRate,
-                                                         self.pitchWindowSize)
+        pitch = self.getPitchFromAudio(audio)
+
+        averagePitch = np.mean(pitch)
+        stDevPitch = np.std(pitch)
+
         features.meanPitch = np.append(features.meanPitch, average)
         features.stDevPitch = np.append(features.stDevPitch, stDev)
 
-        ### INTENSITY
-        average, stDev = featureModule.getIntensityStatistics(audio.data)
-        features.meanIntensity = np.append(features.meanIntensity, average)
-        features.stDevIntensity = np.append(features.stDevIntensity, stDev)
+        ### VAD
+        voiceActivity = self.getVoiceActivityFromAudio(audio)
+
+        average = np.mean(voiceActivity)
+        stDev = np.std(voiceActivity)
+
+        features.meanVoiceActivity = np.append(features.meanVoiceActivity,average)
+        features.stDevVoiceActivity = np.append(features.stDevVoiceActivity,stDev)
+
+        ### WORDS PER MINUTE
+        syllables, timeStampes = self.getSyllablesFromAudio(audio)
+        currentSyllablesPerSecond = len(syllables)/self.lookBackSize
+
+        features.syllablesPerSecond = np.append(features.syllablesPerSecond, currentSyllablesPerSecond)
 
         return features
 
