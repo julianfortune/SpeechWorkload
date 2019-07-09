@@ -28,6 +28,7 @@ class FeatureSet:
         self.stDevPitch = np.zeros(shape=0)
         self.meanIntensity = np.zeros(shape=0)
         self.stDevIntensity = np.zeros(shape=0)
+        self.filledPauses = np.zeros(shape=0)
 
     def appendAllZeros(self):
         self.syllablesPerSecond = np.append(self.syllablesPerSecond, 0)
@@ -37,6 +38,7 @@ class FeatureSet:
         self.stDevPitch = np.append(self.stDevPitch, 0)
         self.meanIntensity = np.append(self.meanIntensity, 0)
         self.stDevIntensity = np.append(self.stDevIntensity, 0)
+        self.filledPauses = np.append(self.filledPauses, 0)
 
     def append(self, secondFeatureSet):
         self.syllablesPerSecond = np.append(self.syllablesPerSecond, secondFeatureSet.syllablesPerSecond)
@@ -46,6 +48,7 @@ class FeatureSet:
         self.stDevPitch = np.append(self.stDevPitch, secondFeatureSet.stDevPitch)
         self.meanIntensity = np.append(self.meanIntensity, secondFeatureSet.meanIntensity)
         self.stDevIntensity = np.append(self.stDevIntensity, secondFeatureSet.stDevIntensity)
+        self.filledPauses = np.append(self.filledPauses, secondFeatureSet.filledPauses)
 
 
 def removeSmallRunsOfValues(npArray, minimumLength):
@@ -89,8 +92,8 @@ def aboveThresholdWithinTolerance(data, indexInQuestion, threshold, tolerance):
                 return True
     return False
 
-def getEnergyMinimumThreshold(energy):
-    return np.percentile(energy, 10) * 4
+def getEnergyMinimumThreshold(energy, signalToNoiseRatio):
+    return np.percentile(energy, 10) * signalToNoiseRatio
 
 def getEnergy(data, sampleRate, windowSize, stepSize):
     windowSizeInSamples = int(sampleRate / 1000 * windowSize)
@@ -158,7 +161,7 @@ def getFormants(data, sampleRate, windowSize, stepSize):
     return np.array(firstFormant), np.array(secondFormant)
 
 # | Returns the indices of syllables in audio data.
-def getSyllables(data, sampleRate, pitchValues, windowSize, stepSize, energyPeakMinimumDistance, energyPeakMinimumWidth, pitchDistanceTolerance, zcrThreshold):
+def getSyllables(data, sampleRate, pitchValues, windowSize, stepSize, energyPeakMinimumDistance, energyPeakMinimumWidth, pitchDistanceTolerance, zcrThreshold, energyThresholdRatio):
     # Convert window and step sizes to samples for Librosa.
     windowSizeInSamples = int(sampleRate / 1000 * windowSize)
     stepSizeInSamples = int(sampleRate / 1000 * stepSize)
@@ -171,7 +174,7 @@ def getSyllables(data, sampleRate, pitchValues, windowSize, stepSize, energyPeak
     energy = getEnergy(data, sampleRate, windowSize, stepSize)
 
     # Get energy threshold
-    energyMinThreshold = getEnergyMinimumThreshold(energy)
+    energyMinThreshold = getEnergyMinimumThreshold(energy, energyThresholdRatio)
     # Adjust energy threshold for pitch algorithm.
     fractionEnergyMinThreshold = energyMinThreshold / max(energy)
 
@@ -254,7 +257,7 @@ def getVoiceActivity(data, sampleRate, pitchValues, windowSize, stepSize, useAda
     return voiceActivity
 
 # | Returns an array of timestamps where filled pauses were detected.
-def getFilledPauses(data, sampleRate, windowSize, stepSize, minumumLength, minimumDistanceToPrevious, F1MaximumVariance, F2MaximumVariance, maximumFormantDistance, maximumSpectralFlatnessVariance):
+def getFilledPauses(data, sampleRate, windowSize, stepSize, minumumLength, minimumDistanceToPrevious, F1MaximumVariance, F2MaximumVariance, maximumFormantDistance, maximumSpectralFlatnessVariance, energyThresholdRatio):
     # Convert window and step sizes to samples for Librosa and to prevent rounding issues with RMSE.
     windowSizeInSamples = int(sampleRate / 1000 * windowSize)
     stepSizeInSamples = int(sampleRate / 1000 * stepSize)
@@ -271,7 +274,7 @@ def getFilledPauses(data, sampleRate, windowSize, stepSize, minumumLength, minim
     firstFormant, secondFormant = getFormants(data, sampleRate, windowSizeInSamples/sampleRate, stepSizeInSamples/sampleRate)
     spectralFlatness = librosa.feature.spectral_flatness(data, hop_length=stepSizeInSamples)[0][:len(energy)]
 
-    energyThreshold = getEnergyMinimumThreshold(energy)
+    energyThreshold = getEnergyMinimumThreshold(energy, energyThresholdRatio)
 
     # Used for finding time stamp.
     times = np.arange(0, len(data)/sampleRate, stepSizeInSamples/sampleRate) # seconds

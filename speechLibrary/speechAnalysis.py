@@ -29,20 +29,22 @@ class SpeechAnalyzer:
         self.lookBackSize = 30 # Time interval to examine looking backward for features, in seconds.
 
         # Parameters for all features
+        self.features = ["syllables", "meanVoiceActivity", "stDevVoiceActivity", "meanPitch", "stDevPitch", "meanIntensity", "stDevIntensity"]
         self.featureStepSize = 10 # Step size for all features, in milliseconds.
+        self.energyThresholdRatio = 4
 
-        # Pitch parameters
-        self.pitchMinimumRunLength = 4
+        self.voiceActivityMaskBufferSize = 100 # In milliseconds
+
+        self.maskEnergyWithVoiceActivity = False
+        self.maskPitchWIthVoiceActivity = False
+        self.maskSyllablesWithVoiceActivity = False
+        self.maskFilledPausesWithVoiceActivity = False
 
         # Pitch parameters
         self.energyWindowSize = 50
 
-        # Syllable detection parameters
-        self.syllableWindowSize = 50 # In milliseconds
-        self.syllablePeakMinimumDistance = 4
-        self.syllablePeakMinimumWidth = 2
-        self.syllablePitchDistanceTolerance = 4
-        self.syllableZcrThreshold = 0.06
+        # Pitch parameters
+        self.pitchMinimumRunLength = 4
 
         # Voice activity Parameters
         self.voiceActivityIsAdaptive = True
@@ -51,6 +53,13 @@ class SpeechAnalyzer:
         self.voiceActivityEnergyThreshold = 40
         self.voiceActivityPitchTolerance = 8
         self.voiceActivityMinimumRunLength = 10
+
+        # Syllable detection parameters
+        self.syllableWindowSize = 50 # In milliseconds
+        self.syllablePeakMinimumDistance = 4
+        self.syllablePeakMinimumWidth = 2
+        self.syllablePitchDistanceTolerance = 4
+        self.syllableZcrThreshold = 0.06
 
         # Filled pause parameters
         self.filledPauseWindowSize = 50 # In milliseconds
@@ -78,13 +87,9 @@ class SpeechAnalyzer:
 
     def getPitchFromAudio(self, audio, energy= None):
         if energy is None:
-            # Get energy threshold for pitch algorithm.
-            energy = featureModule.getEnergy(data= audio.data,
-                                             sampleRate= audio.sampleRate,
-                                             windowSize= self.syllableWindowSize,
-                                             stepSize= self.featureStepSize)
+            energy = self.getEnergyFromAudio(audio)
 
-        energyMinThreshold = featureModule.getEnergyMinimumThreshold(energy)
+        energyMinThreshold = featureModule.getEnergyMinimumThreshold(energy, self.energyThresholdRatio)
         fractionEnergyMinThreshold = energyMinThreshold / max(energy)
 
         pitches = featureModule.getPitch(data= audio.data,
@@ -122,7 +127,8 @@ class SpeechAnalyzer:
                                                energyPeakMinimumDistance= self.syllablePeakMinimumDistance,
                                                energyPeakMinimumWidth= self.syllablePeakMinimumWidth,
                                                pitchDistanceTolerance= self.syllablePitchDistanceTolerance,
-                                               zcrThreshold= self.syllableZcrThreshold)
+                                               zcrThreshold= self.syllableZcrThreshold,
+                                               energyThresholdRatio= self.energyThresholdRatio)
         return syllables, timeStamps
 
     def getFilledPausesFromAudio(self, audio):
@@ -135,7 +141,8 @@ class SpeechAnalyzer:
                                                      F1MaximumVariance= self.filledPauseF1MaximumVariance,
                                                      F2MaximumVariance= self.filledPauseF2MaximumVariance,
                                                      maximumFormantDistance= self.filledPauseMaximumFormantDistance,
-                                                     maximumSpectralFlatnessVariance= self.filledPauseMaximumSpectralFlatnessVariance)
+                                                     maximumSpectralFlatnessVariance= self.filledPauseMaximumSpectralFlatnessVariance,
+                                                     energyThresholdRatio= self.energyThresholdRatio)
         return filledPauses, timeStamps
 
 
