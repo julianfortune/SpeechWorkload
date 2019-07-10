@@ -99,7 +99,7 @@ def getEnergy(data, sampleRate, windowSize, stepSize):
     windowSizeInSamples = int(sampleRate / 1000 * windowSize)
     stepSizeInSamples = int(sampleRate / 1000 * stepSize)
 
-    energy = librosa.feature.rmse(data, frame_length=windowSizeInSamples, hop_length=stepSizeInSamples)[0]
+    energy = librosa.feature.rms(data, frame_length=windowSizeInSamples, hop_length=stepSizeInSamples)[0]
     return energy
 
 def getShortTermEnergy(data, sampleRate, windowSize, stepSize):
