@@ -241,7 +241,62 @@ def getFeaturesFromFileUsingWindowing():
         # Increment to next step
         step += sampleStepSize
 
+def showFeatures():
+    filePath = "../media/Participant_Audio/p3_ol.wav"
+    name = os.path.basename(filePath)[:-4]
+
+    speechAnalyzer = speechAnalysis.SpeechAnalyzer()
+
+    # Read in the file, extract data and metadata
+    audio = audioModule.Audio(filePath)
+    if audio.numberOfChannels > 1:
+        audio.makeMono()
+
+    speechAnalyzer = speechAnalysis.SpeechAnalyzer()
+
+    ### AMPLITUDE
+    energy = speechAnalyzer.getEnergyFromAudio(audio)
+
+    ### PITCH
+    pitches = speechAnalyzer.getPitchFromAudio(audio, energy)
+
+    ### VAD
+    voiceActivity = speechAnalyzer.getVoiceActivityFromAudio(audio, pitches)
+
+    ### SYLLABLES
+    syllables = speechAnalyzer.getSyllablesFromAudio(audio, pitches)[0].astype(float)
+
+    # ### FILLED PAUSES
+    filledPauses = speechAnalyzer.getFilledPausesFromAudio(audio)[0].astype(float)
+
+    # Mask features with voice activity
+    bufferFrames = int(speechAnalyzer.voiceActivityMaskBufferSize / speechAnalyzer.featureStepSize)
+    mask = np.invert(featureModule.createBufferedBinaryArrayFromArray(voiceActivity.astype(bool), bufferFrames))
+
+    # energy[mask[:len(energy)]] = 0
+    pitches[mask[:len(pitches)]] = 0
+    syllables[mask[:len(syllables)]] = 0
+    filledPauses[mask[:len(filledPauses)]] = 0
+
+    # Graphing
+    pitches[pitches == 0] = np.nan
+    voiceActivity[voiceActivity == 0] = np.nan
+    syllables[syllables == 0] = np.nan
+    filledPauses[filledPauses == 0] = np.nan
+
+    pitchTimes = np.arange(0, len(audio.data)/audio.sampleRate, speechAnalyzer.featureStepSize/1000)[:len(pitches)]
+    times = np.arange(0, len(audio.data)/audio.sampleRate, speechAnalyzer.featureStepSize / 1000)
+
+    plt.figure(figsize=[16, 8])
+    plt.plot(times, energy / 10, pitchTimes, pitches)
+    plt.plot(times, voiceActivity, 'orchid')
+    plt.plot(times[:len(syllables)], syllables, color='c', marker='^')
+    plt.plot(times[:len(filledPauses)], filledPauses, 'ro')
+    plt.title(name)
+    # plt.savefig("./syllablesVersusVAD/" + name + "_" + str(step/audio.sampleRate - speechAnalyzer.lookBackSize) + "-" + str(step/audio.sampleRate) + "_seconds.png")
+    plt.show()
+
 def main():
-    showVoiceActivityAndSyllablesForParticipantAudio()
+    showFeatures()
 
 main()
