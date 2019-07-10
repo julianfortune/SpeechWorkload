@@ -250,7 +250,7 @@ def createMetaDataForDataset():
     header = []
 
     # Load the dataset info for training
-    with open('./dr_smart_audio/train/train.csv', 'r') as csvfile:
+    with open('../media/drSmartAudio/train/train.csv', 'r') as csvfile:
         reader = csv.reader(csvfile)
         train.extend(reader)
 
@@ -259,7 +259,7 @@ def createMetaDataForDataset():
     train = train[1:]
 
     # Load the dataset info for training
-    with open('./dr_smart_audio/testing/testing.csv', 'r') as csvfile:
+    with open('../media/drSmartAudio/testing/testing.csv', 'r') as csvfile:
         reader = csv.reader(csvfile)
         testing.extend(reader)
 
@@ -267,7 +267,7 @@ def createMetaDataForDataset():
     testing = testing[1:]
 
     # Load the dataset info for training
-    with open('./dr_smart_audio/dev/dev.csv', 'r') as csvfile:
+    with open('../media/drSmartAudio/dev/dev.csv', 'r') as csvfile:
         reader = csv.reader(csvfile)
         dev.extend(reader)
 
@@ -289,7 +289,7 @@ def createMetaDataForDataset():
     dataset.insert(0, header)
 
 
-    with open('./dr_smart_audio/metadata.csv', 'w') as outputFile:
+    with open('../media/drSmartAudio/metadata.csv', 'w') as outputFile:
         writer = csv.writer(outputFile)
         for row in dataset:
             writer.writerow(row)
@@ -300,7 +300,7 @@ def compareAlgorithmToDataset():
     speechAnalyzer = speechAnalysis.SpeechAnalyzer()
     printParameters(speechAnalyzer)
 
-    directory = './dr_smart_audio'
+    directory = '../media/drSmartAudio'
     dataset = []
 
     numberOfAccurateDetections = 0
@@ -337,7 +337,7 @@ def compareAlgorithmToDataset():
     print()
 
 def runAlgorithmOnDataset():
-    directory = './dr_smart_audio'
+    directory = '../media/drSmartAudio'
     dataset = []
 
     analyzer = speechAnalysis.SpeechAnalyzer()
