@@ -5,6 +5,6 @@ analyzer = speechAnalysis.SpeechAnalyzer()
 analyzer.lookBackSize = 5
 analyzer.stepSize = 1
 
-analyzer.recordingBufferSize = 2048
+analyzer.recordingBufferSize = 8192
 
 analyzer.getFeaturesFromLiveInput()

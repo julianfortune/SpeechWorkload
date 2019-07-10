@@ -2,11 +2,11 @@ from speechLibrary import testModule
 import numpy, os, glob
 import matplotlib.pyplot as plt # Visualisation
 
-testDir = "./featuresTest/*.npy"
-oldDir =  "./features/"
+testDir = "./featuresCurrent/*.npy"
+oldDir =  "./featuresTest/"
 
 for testPath in sorted(glob.iglob(testDir)):
-    oldPath = oldDir + testPath[15:]
+    oldPath = oldDir + testPath.split('/')[2]
 
     testModule.compareArrayFiles(testPath, oldPath)
 

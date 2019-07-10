@@ -16,6 +16,8 @@ from speechLibrary import featureModule, audioModule
 
 np.set_printoptions(threshold=sys.maxsize)
 
+DEBUG = False
+
 # | A class used to perfom the same analysis on any number of files or on
 # | live input. Handles file and microphone IO in order to manage the entire
 # | process.
@@ -151,25 +153,71 @@ class SpeechAnalyzer:
         features = featureModule.FeatureSet()
 
         totalStartTime = time.time()
-
         startTime = time.time()
 
         ### AMPLITUDE
         energy = self.getEnergyFromAudio(audio)
 
+        if DEBUG:
+            print("Time to get amplitude:", time.time() - startTime)
+            startTime = time.time()
+
+        ### PITCH
+        pitches = self.getPitchFromAudio(audio, energy)
+
+        if DEBUG:
+            print("Time to get pitch:", time.time() - startTime)
+            startTime = time.time()
+
+        ### VAD
+        voiceActivity = self.getVoiceActivityFromAudio(audio, pitches)
+
+        if DEBUG:
+            print("Time to get voice activity:", time.time() - startTime)
+            startTime = time.time()
+
+        ### SYLLABLES
+        syllables, _ = self.getSyllablesFromAudio(audio, pitches)
+
+        if DEBUG:
+            print("Time to get syllables:", time.time() - startTime)
+            startTime = time.time()
+
+        # ### FILLED PAUSES
+        filledPauses, _ = self.getFilledPausesFromAudio(audio)
+
+        # print("Time to get filled pauses:", time.time() - startTime)
+        # print("Time to get features:", time.time() - totalStartTime)
+
+
+
+        # Mask features with voice activity
+        bufferFrames = int(self.voiceActivityMaskBufferSize / self.featureStepSize)
+        mask = featureModule.createBufferedBinaryArrayFromArray(voiceActivity.astype(bool), bufferFrames)
+
+        if self.maskEnergyWithVoiceActivity:
+            energy[not mask] = 0
+
+        if self.maskPitchWIthVoiceActivity:
+            pitches[not mask] = 0
+
+        if self.maskSyllablesWithVoiceActivity:
+            syllables[not mask] = 0
+
+        if self.maskFilledPausesWithVoiceActivity:
+            filledPauses[not mask] = 0
+
+
+
+        # Calculate statistics and add to feature arrays
+        ### AMPLITUDE
         averageEnergy = np.mean(energy)
         stDevEnergy = np.std(energy)
 
         features.meanIntensity = np.append(features.meanIntensity, averageEnergy)
         features.stDevIntensity = np.append(features.stDevIntensity, stDevEnergy)
 
-        print("Time to get amplitude:", time.time() - startTime)
-
-        startTime = time.time()
-
         ### PITCH
-        pitches = self.getPitchFromAudio(audio, energy)
-
         if max(pitches) > 0:
             pitches[pitches == 0] = np.nan
 
@@ -182,32 +230,20 @@ class SpeechAnalyzer:
         features.meanPitch = np.append(features.meanPitch, averagePitch)
         features.stDevPitch = np.append(features.stDevPitch, stDevPitch)
 
-        print("Time to get pitch:", time.time() - startTime)
-
-        startTime = time.time()
-
-        ### VAD
-        voiceActivity = self.getVoiceActivityFromAudio(audio, pitches)
-
+        ### VOICE ACTIVITY
         averageVoiceActivity = np.mean(voiceActivity)
         stDevVoiceActivity = np.std(voiceActivity)
 
         features.meanVoiceActivity = np.append(features.meanVoiceActivity, averageVoiceActivity)
         features.stDevVoiceActivity = np.append(features.stDevVoiceActivity, stDevVoiceActivity)
 
-        print("Time to get voice activity:", time.time() - startTime)
-
-        startTime = time.time()
-
         ### WORDS PER MINUTE
-        syllables, timeStampes = self.getSyllablesFromAudio(audio, pitches)
-        currentSyllablesPerSecond = len(timeStampes)/self.lookBackSize
+        currentSyllablesPerSecond = int(sum(syllables))/self.lookBackSize
 
         features.syllablesPerSecond = np.append(features.syllablesPerSecond, currentSyllablesPerSecond)
 
-        print("Time to get syllables:", time.time() - startTime)
-
-        print("Time to get features:", time.time() - totalStartTime)
+        # FILLED PAUSES
+        features.filledPauses = np.append(features.filledPauses, int(sum(filledPauses)))
 
         return features
 
@@ -363,7 +399,9 @@ class SpeechAnalyzer:
                           "Mean pitch:", features.meanPitch[0],
                           "Voice activity:", features.meanVoiceActivity[0],
                           "Speech Rate:", features.syllablesPerSecond[0],
-                          end="      \r")
+                          "Filled pauses:", features.filledPauses[0],
+                          "Time:", time.time() - startTime,
+                          end="                    \r")
 
                     # Reduce the size of the audio data array to move the beggining
                     # forward by one step size so the next window is offset by this amount
@@ -371,7 +409,7 @@ class SpeechAnalyzer:
 
         # User stops with ctrl + c
         except KeyboardInterrupt:
-            print("\rStopped!                                          ")
+            print("\rStopped!                                                                     ")
 
         # Clean up audio session
         audioStream.stop_stream()

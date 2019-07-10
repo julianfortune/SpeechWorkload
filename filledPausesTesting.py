@@ -235,8 +235,11 @@ def printParameters(speechAnalyzer):
     print("  filledPauseWindowSize:", speechAnalyzer.filledPauseWindowSize)
     print("  filledPauseStepSize:", speechAnalyzer.featureStepSize)
     print("  filledPauseMinimumLength:", speechAnalyzer.filledPauseMinimumLength)
+    print("  filledPauseMinimumDistanceToPrevious:", speechAnalyzer.filledPauseMinimumDistanceToPrevious)
     print("  filledPauseF1MaximumVariance:", speechAnalyzer.filledPauseF1MaximumVariance)
     print("  filledPauseF2MaximumVariance:", speechAnalyzer.filledPauseF2MaximumVariance)
+    print("  filledPauseMaximumFormantDistance:", speechAnalyzer.filledPauseMaximumFormantDistance)
+    print("  filledPauseMaximumSpectralFlatnessVariance:", speechAnalyzer.filledPauseMaximumSpectralFlatnessVariance)
     print()
 
 def createMetaDataForDataset():
@@ -390,7 +393,7 @@ def compareAlgorithmToParticipants():
                 filledPausesMarkers = np.full(len(timeStamps), 0)
                 filledPausesCount = len(timeStamps)
 
-                print(name, actualFilledPausesCount, filledPausesCount, sum(filledPauses))
+                print(name, actualFilledPausesCount, filledPausesCount)
 
                 totalNumberOfFilledPauses += actualFilledPausesCount
 
@@ -406,7 +409,7 @@ def compareAlgorithmToParticipants():
     f1 = 2 * precision * recall / (precision + recall)
 
     print("    Total     | Filled pauses:", totalNumberOfFilledPauses)
-    print("     New      | Correct filled pauses:", totalNumberOfCorrectlyDetectedPauses, "Precision:", precision, "Recall:", recall, "F1", f1)
+    print("     New      | Correct filled pauses:", totalNumberOfCorrectlyDetectedPauses, "False alarms:", totalNumberOfFalseAlarms, "Precision:", precision, "Recall:", recall, "F1", f1)
 
 def main():
     compareAlgorithmToParticipants()
