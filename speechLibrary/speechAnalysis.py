@@ -18,6 +18,8 @@ np.set_printoptions(threshold=sys.maxsize)
 
 DEBUG = False
 
+FEATURE_NAMES = ["meanIntensity", "stDevIntensity", "meanPitch", "stDevPitch", "meanVoiceActivity", "stDevVoiceActivity", "syllables", "filledPauses"]
+
 # | A class used to perfom the same analysis on any number of files or on
 # | live input. Handles file and microphone IO in order to manage the entire
 # | process.
@@ -149,6 +151,11 @@ class SpeechAnalyzer:
 
 
 
+    # | Extracts features from audio and returns feature set.
+    # | Parameters:
+    # |   - audio: audio data to process
+    # | Returns:
+    # |   - Feature set
     def getFeaturesFromAudio(self, audio):
         features = featureModule.FeatureSet()
 
@@ -177,35 +184,38 @@ class SpeechAnalyzer:
             startTime = time.time()
 
         ### SYLLABLES
-        syllables, _ = self.getSyllablesFromAudio(audio, pitches)
+        if "syllables" in self.features:
+            syllables, _ = self.getSyllablesFromAudio(audio, pitches)
 
-        if DEBUG:
-            print("Time to get syllables:", time.time() - startTime)
-            startTime = time.time()
+            if DEBUG:
+                print("Time to get syllables:", time.time() - startTime)
+                startTime = time.time()
 
         # ### FILLED PAUSES
-        filledPauses, _ = self.getFilledPausesFromAudio(audio)
+        if "filledPauses" in self.features:
+            filledPauses, _ = self.getFilledPausesFromAudio(audio)
 
-        # print("Time to get filled pauses:", time.time() - startTime)
-        # print("Time to get features:", time.time() - totalStartTime)
+            if DEBUG:
+                print("Time to get filled pauses:", time.time() - startTime)
+                print("Time to get features:", time.time() - totalStartTime)
 
 
 
         # Mask features with voice activity
         bufferFrames = int(self.voiceActivityMaskBufferSize / self.featureStepSize)
-        mask = featureModule.createBufferedBinaryArrayFromArray(voiceActivity.astype(bool), bufferFrames)
+        mask = np.invert(featureModule.createBufferedBinaryArrayFromArray(voiceActivity.astype(bool), bufferFrames))
 
         if self.maskEnergyWithVoiceActivity:
-            energy[not mask] = 0
+            energy[mask] = 0
 
         if self.maskPitchWIthVoiceActivity:
-            pitches[not mask] = 0
+            pitches[mask] = 0
 
         if self.maskSyllablesWithVoiceActivity:
-            syllables[not mask] = 0
+            syllables[mask] = 0
 
         if self.maskFilledPausesWithVoiceActivity:
-            filledPauses[not mask] = 0
+            filledPauses[mask] = 0
 
 
 
@@ -238,25 +248,23 @@ class SpeechAnalyzer:
         features.stDevVoiceActivity = np.append(features.stDevVoiceActivity, stDevVoiceActivity)
 
         ### WORDS PER MINUTE
-        currentSyllablesPerSecond = int(sum(syllables))/self.lookBackSize
+        if "syllables" in self.features:
+            currentSyllablesPerSecond = int(sum(syllables))/self.lookBackSize
 
-        features.syllablesPerSecond = np.append(features.syllablesPerSecond, currentSyllablesPerSecond)
+            features.syllablesPerSecond = np.append(features.syllablesPerSecond, currentSyllablesPerSecond)
 
         # FILLED PAUSES
-        features.filledPauses = np.append(features.filledPauses, int(sum(filledPauses)))
+        if "filledPauses" in self.features:
+            features.filledPauses = np.append(features.filledPauses, int(sum(filledPauses)))
 
         return features
 
-    # | Extracts all features and returns array in accordance with Jamison's drawing
+    # | Extracts features and returns array in accordance with Jamison's drawing
     # | Parameters:
     # |   - filePath: path to file to process
     # | Returns:
     # |   - Numpy array with features
     def getFeaturesFromFileUsingWindowing(self, filePath):
-
-        if self.printStatus :
-            print("[ START ] Working on:",filePath)
-
         # Read in the file
         audio = audioModule.Audio(filePath)
         if audio.numberOfChannels > 1:
@@ -275,7 +283,7 @@ class SpeechAnalyzer:
         while step < audio.length:
 
             if self.printStatus:
-                print("[",str(step/audio.length*100)[:4],"% ] Second",int(step/audio.sampleRate), end="\r")
+                print("[", str(step/audio.length*100)[:4], "% ] Second", int(step/audio.sampleRate), "of", filePath, end="\r")
 
             # Keep track of what second we're in
             seconds = np.append(seconds,step/audio.sampleRate)
@@ -297,22 +305,39 @@ class SpeechAnalyzer:
             # Increment to next step
             step += sampleStepSize
 
-        # Pulls all the feautures together in one array
-        featureArray = np.vstack([seconds,
-                                     features.syllablesPerSecond,
-                                     features.meanVoiceActivity,
-                                     features.stDevVoiceActivity,
-                                     features.meanPitch,
-                                     features.stDevPitch,
-                                     features.meanIntensity,
-                                     features.stDevIntensity])
+        # Pull all the feautures together in one array
+        featureArray = np.vstack([seconds])
+        for feature in self.features:
+            if feature == "meanIntensity":
+                featureArray = np.vstack([featureArray, features.meanIntensity])
+            elif feature == "stDevIntensity":
+                featureArray = np.vstack([featureArray, features.stDevIntensity])
+            elif feature == "meanPitch":
+                featureArray = np.vstack([featureArray, features.meanPitch])
+            elif feature == "stDevPitch":
+                featureArray = np.vstack([featureArray, features.stDevPitch])
+            elif feature == "meanVoiceActivity":
+                featureArray = np.vstack([featureArray, features.meanVoiceActivity])
+            elif feature == "stDevVoiceActivity":
+                featureArray = np.vstack([featureArray, features.stDevVoiceActivity])
+            elif feature == "syllables":
+                featureArray = np.vstack([featureArray, features.syllablesPerSecond])
+            elif feature == "filledPauses":
+                featureArray = np.vstack([featureArray, features.filledPauses])
 
         if self.printStatus :
             print("[ DONE ] Finished processing", filePath, "!")
 
         return featureArray
 
+    # | Extracts features from all files in a directory and saves to numpy files.
+    # | Parameters:
+    # |   - inDirectory: directory for audio files
+    # |   - outDirectory: directory for saving numpy files
     def createFeatureFilesFromDirectory(self, inDirectory, outDirectory):
+        for featureName in self.features:
+            assert(featureName in FEATURE_NAMES, 'Invalid feature name in list.')
+
         # Keep track of running stats
         startTime = time.time()
         count = 1
@@ -335,7 +360,11 @@ class SpeechAnalyzer:
 
             count += 1
 
+    # | Extracts features from live audio.
     def getFeaturesFromLiveInput(self):
+        for featureName in self.features:
+            assert(featureName in FEATURE_NAMES, 'Invalid feature name in list.')
+
         # Controls the microphone and live input
         audioController = pyaudio.PyAudio()
 
