@@ -12,13 +12,15 @@ import numpy as np
 import pyaudio # microphone io
 import wavio # microphone decoding
 
+import csv
+
 from speechLibrary import featureModule, audioModule
 
 np.set_printoptions(threshold=sys.maxsize)
 
 DEBUG = False
 
-FEATURE_NAMES = ["meanIntensity", "stDevIntensity", "meanPitch", "stDevPitch", "meanVoiceActivity", "stDevVoiceActivity", "syllables", "filledPauses"]
+FEATURE_NAMES = ["meanIntensity", "stDevIntensity", "meanPitch", "stDevPitch", "meanVoiceActivity", "stDevVoiceActivity", "syllablesPerSecond", "filledPauses"]
 
 # | A class used to perfom the same analysis on any number of files or on
 # | live input. Handles file and microphone IO in order to manage the entire
@@ -336,7 +338,11 @@ class SpeechAnalyzer:
     # |   - outDirectory: directory for saving numpy files
     def createFeatureFilesFromDirectory(self, inDirectory, outDirectory):
         for featureName in self.features:
-            assert(featureName in FEATURE_NAMES, 'Invalid feature name in list.')
+            assert featureName in FEATURE_NAMES, 'Invalid feature name in list.'
+
+        with open(outDirectory + 'labels.csv', 'w') as outputFile:
+            writer = csv.writer(outputFile)
+            writer.writerow(["time"] + self.features)
 
         # Keep track of running stats
         startTime = time.time()
@@ -351,7 +357,7 @@ class SpeechAnalyzer:
             featureArray = self.getFeaturesFromFileUsingWindowing(path)
 
             # Save the numpy array
-            np.save(outDirectory + os.path.basename(path)[:-4],featureArray)
+            np.save(outDirectory + os.path.basename(path)[:-4], featureArray)
 
             # Crunch some numbers and communicate to the user
             timeElapsed = time.time() - startTime
@@ -363,7 +369,7 @@ class SpeechAnalyzer:
     # | Extracts features from live audio.
     def getFeaturesFromLiveInput(self):
         for featureName in self.features:
-            assert(featureName in FEATURE_NAMES, 'Invalid feature name in list.')
+            assert featureName in FEATURE_NAMES, 'Invalid feature name in list.'
 
         # Controls the microphone and live input
         audioController = pyaudio.PyAudio()
