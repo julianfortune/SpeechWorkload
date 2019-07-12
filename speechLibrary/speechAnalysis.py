@@ -35,7 +35,7 @@ class SpeechAnalyzer:
         self.lookBackSize = 30 # Time interval to examine looking backward for features, in seconds.
 
         # Parameters for all features
-        self.features = ["syllables", "meanVoiceActivity", "stDevVoiceActivity", "meanPitch", "stDevPitch", "meanIntensity", "stDevIntensity"]
+        self.features = ["meanIntensity", "stDevIntensity", "meanPitch", "stDevPitch", "stDevVoiceActivity", "meanVoiceActivity", "syllablesPerSecond", "filledPauses"]
         self.featureStepSize = 10 # Step size for all features, in milliseconds.
         self.energyThresholdRatio = 4
 
@@ -164,36 +164,36 @@ class SpeechAnalyzer:
         totalStartTime = time.time()
         startTime = time.time()
 
-        ### AMPLITUDE
+        # Get amplitude envelope feature.
         energy = self.getEnergyFromAudio(audio)
 
         if DEBUG:
             print("Time to get amplitude:", time.time() - startTime)
             startTime = time.time()
 
-        ### PITCH
+        # Get pitch feature.
         pitches = self.getPitchFromAudio(audio, energy)
 
         if DEBUG:
             print("Time to get pitch:", time.time() - startTime)
             startTime = time.time()
 
-        ### VAD
+        # Get voice activity feature.
         voiceActivity = self.getVoiceActivityFromAudio(audio, pitches)
 
         if DEBUG:
             print("Time to get voice activity:", time.time() - startTime)
             startTime = time.time()
 
-        ### SYLLABLES
-        if "syllables" in self.features:
+        # Get syllables feature if needed as binary array for easy masking.
+        if "syllablesPerSecond" in self.features:
             syllables, _ = self.getSyllablesFromAudio(audio, pitches)
 
             if DEBUG:
                 print("Time to get syllables:", time.time() - startTime)
                 startTime = time.time()
 
-        # ### FILLED PAUSES
+        # Get filled pauses feature if needed as binary array for easy masking.
         if "filledPauses" in self.features:
             filledPauses, _ = self.getFilledPausesFromAudio(audio)
 
@@ -203,15 +203,19 @@ class SpeechAnalyzer:
 
 
 
-        # Mask features with voice activity
+        # Expand voice activity to have a margin for error to catch speech features
+        # and create boolean array with True for no activity to set no activity
+        # to all zeros.
         bufferFrames = int(self.voiceActivityMaskBufferSize / self.featureStepSize)
         mask = np.invert(featureModule.createBufferedBinaryArrayFromArray(voiceActivity.astype(bool), bufferFrames))
 
+        # Mask features with voice activity but setting regions with no voice
+        # activity (incl. buffered margin of error) to zero.
         if self.maskEnergyWithVoiceActivity:
             energy[mask] = 0
 
         if self.maskPitchWIthVoiceActivity:
-            pitches[mask] = 0
+            pitches[mask] = np.nan
 
         if self.maskSyllablesWithVoiceActivity:
             syllables[mask] = 0
@@ -250,7 +254,7 @@ class SpeechAnalyzer:
         features.stDevVoiceActivity = np.append(features.stDevVoiceActivity, stDevVoiceActivity)
 
         ### WORDS PER MINUTE
-        if "syllables" in self.features:
+        if "syllablesPerSecond" in self.features:
             currentSyllablesPerSecond = int(sum(syllables))/self.lookBackSize
 
             features.syllablesPerSecond = np.append(features.syllablesPerSecond, currentSyllablesPerSecond)
@@ -322,7 +326,7 @@ class SpeechAnalyzer:
                 featureArray = np.vstack([featureArray, features.meanVoiceActivity])
             elif feature == "stDevVoiceActivity":
                 featureArray = np.vstack([featureArray, features.stDevVoiceActivity])
-            elif feature == "syllables":
+            elif feature == "syllablesPerSecond":
                 featureArray = np.vstack([featureArray, features.syllablesPerSecond])
             elif feature == "filledPauses":
                 featureArray = np.vstack([featureArray, features.filledPauses])

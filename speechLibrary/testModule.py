@@ -6,6 +6,7 @@
 #
 
 import numpy as np
+import matplotlib.pyplot as plt # Visualisation
 
 RED = "\u001b[31m"
 GREEN = "\u001b[32m"
@@ -14,9 +15,9 @@ BLUE = "\u001b[34m"
 RESET = "\u001b[0m"
 
 # | Compares two numpy arrays and displays information about their differences.
-def compareArrays(oldLables, oldFeatures, newLabels, newFeatures):
+def compareArrays(oldLabels, oldFeatures, newLabels, newFeatures):
     # Make sure labels match up in size to features
-    assert len(oldLables) == oldFeatures.shape[0], "Old features do not match labels."
+    assert len(oldLabels) == oldFeatures.shape[0], "Old features do not match labels."
     assert len(newLabels) == newFeatures.shape[0], "New features do not match labels."
 
     # Make sure no funny business with feature arrays
@@ -29,9 +30,9 @@ def compareArrays(oldLables, oldFeatures, newLabels, newFeatures):
 
     else:
         # Check for features modified or removed from old array
-        for featureName in oldLables:
+        for featureName in oldLabels:
             if featureName in newLabels:
-                oldColumn = oldFeatures[oldLables.index(featureName)]
+                oldColumn = oldFeatures[oldLabels.index(featureName)]
                 newColumn = newFeatures[newLabels.index(featureName)]
 
                 if np.array_equal(oldColumn, newColumn):
@@ -53,7 +54,42 @@ def compareArrays(oldLables, oldFeatures, newLabels, newFeatures):
 
         # Check for features added to new array
         for featureName in newLabels:
-            if featureName not in oldLables:
+            if featureName not in oldLabels:
                 print(BLUE + "+ '" + featureName + "' added" + RESET)
 
     print()
+
+
+# | Compares two numpy arrays and displays graphs.
+def graphArrays(oldLabels, oldFeatures, newLabels, newFeatures, filePath, name=None):
+    # Make sure labels match up in size to features
+    assert len(oldLabels) == oldFeatures.shape[0], "Old features do not match labels."
+    assert len(newLabels) == newFeatures.shape[0], "New features do not match labels."
+
+    # Make sure no funny business with feature arrays
+    assert oldFeatures.shape[1] == newFeatures.shape[1], "Feature array lengths differ."
+    assert oldLabels.index("time") == 0, "Time array missing from first position."
+
+    seconds = oldFeatures[0]
+
+    numberOfPlots = len(oldLabels) - 1
+
+    plt.figure(figsize=[16, 10])
+    plt.suptitle(name)
+
+    for featureIndex in range(1, len(oldLabels)):
+        featureName = oldLabels[featureIndex]
+
+        plt.subplot(numberOfPlots * 100 + 10 + featureIndex)
+        plt.plot(seconds, oldFeatures[featureIndex])
+        plt.title(featureName)
+
+        if featureName in newLabels:
+            newFeatureIndex = newLabels.index(featureName)
+
+            plt.plot(seconds, newFeatures[newFeatureIndex])
+            plt.legend(["old", "new"])
+
+    plt.subplots_adjust(hspace = 1)
+    plt.savefig(filePath + ".png")
+    plt.close()
