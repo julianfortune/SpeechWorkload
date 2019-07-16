@@ -29,6 +29,8 @@ def loadData():
         currentInput = np.load(path)[1:] # [speech rate, mean pitch, stDev pitch, mean intensity, stDev intensity, mean voice activity, stDev voice activity]
 
         condition = path[:-4][-2:]
+        assert condition in ["ul", "nl", "ol"]
+
         if condition == "ul":
             currentLabels = ulLabels
         elif condition == "nl":
@@ -45,8 +47,10 @@ def loadData():
             labels = np.append(labels, currentLabels)
             inputs = np.append(inputs, currentInput, axis=-1)
 
-    # Random solutions I found on the internet
+    # Rearrange the feature data to have all feature values together for each
+    # time instance instead of lists of features.
     inputs = np.swapaxes(inputs,0,1)
+
     labels = np.reshape(labels, (-1, 1))
 
     print(len(inputs), len(labels))

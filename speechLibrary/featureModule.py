@@ -13,7 +13,8 @@ import parselmouth # Formants
 
 import matplotlib.pyplot as plt
 
-DEBUG = False
+VOICE_ACTIVITY_DEBUG = False
+FILLED_PAUSE_DEBUG = False
 
 class FeatureSet:
 
@@ -241,18 +242,25 @@ def getVoiceActivity(data, sampleRate, pitchValues, windowSize, stepSize, useAda
 
     removeSmallRunsOfValues(voiceActivity, minimumRunLength)
 
-    if DEBUG:
+    if VOICE_ACTIVITY_DEBUG:
+        # Try formants
+        # firstFormant, secondFormant = getFormants(data, sampleRate, windowSizeInSamples/sampleRate, stepSizeInSamples/sampleRate)
+
         # Show graph if debugging
+        times = np.arange(0, len(data)/sampleRate, stepSize/1000)
         energyTimes = np.arange(0, len(data)/sampleRate, stepSize/1000)[:len(energy)]
         zcrTimes = np.arange(0, len(data)/sampleRate, stepSize/1000)[:len(zcr)]
         pitchTimes = np.arange(0, len(data)/sampleRate, stepSize/1000)[:len(pitchValues)]
         plotVoiceActivity = np.copy(voiceActivity)
         plotVoiceActivity[plotVoiceActivity == 0] = np.nan
+        pitchValues[pitchValues == 0] = np.nan
 
         plt.figure(figsize=[16, 8])
-        plt.plot(energyTimes, energy / 10000000, zcrTimes, zcr * 100, pitchTimes, pitchValues)
-        plt.plot(energyTimes, plotVoiceActivity)
+        plt.plot(energyTimes, energy / 100000000, zcrTimes, zcr * 10000, pitchTimes, pitchValues)
+        # plt.plot(times, firstFormant, times, secondFormant)
+        plt.plot(energyTimes, plotVoiceActivity * -100)
         plt.show()
+        plt.close()
 
     return voiceActivity
 
@@ -316,16 +324,18 @@ def getFilledPauses(data, sampleRate, windowSize, stepSize, minumumLength, minim
         else:
             fillerUtteranceInitiated = False
 
-    if DEBUG:
+    if FILLED_PAUSE_DEBUG:
+        if not name:
+            name = ""
+
         # Show graph if debugging
         filledPausesMarkers = np.full(len(timeStamps), 0)
         energyTimes = np.arange(0, len(data)/sampleRate, stepSize/1000)[:len(energy)]
-        spectralFlatnessTimes = np.arange(0, len(data)/sampleRate, stepSize/1000)[:len(spectralFlatness)]
 
         plt.figure(figsize=[16, 8])
         plt.plot(energyTimes, energy)
-        plt.plot(spectralFlatnessTimes, spectralFlatness * 10000)
         plt.plot(times, firstFormant, times, secondFormant, np.array(timeStamps), filledPausesMarkers, 'go')
-        plt.show()
+        plt.savefig("../media/validation_participant_audio/filledPausesFigures/" + name + ".png")
+        plt.close()
 
     return filledPauses, np.array(timeStamps)
