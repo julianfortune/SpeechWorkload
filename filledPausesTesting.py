@@ -239,7 +239,6 @@ def printParameters(speechAnalyzer):
     print("  filledPauseF1MaximumVariance:", speechAnalyzer.filledPauseF1MaximumVariance)
     print("  filledPauseF2MaximumVariance:", speechAnalyzer.filledPauseF2MaximumVariance)
     print("  filledPauseMaximumFormantDistance:", speechAnalyzer.filledPauseMaximumFormantDistance)
-    print("  filledPauseMaximumSpectralFlatnessVariance:", speechAnalyzer.filledPauseMaximumSpectralFlatnessVariance)
     print()
 
 def createMetaDataForDataset():
@@ -412,6 +411,6 @@ def compareAlgorithmToParticipants():
     print("     New      | Correct filled pauses:", totalNumberOfCorrectlyDetectedPauses, "False alarms:", totalNumberOfFalseAlarms, "Precision:", precision, "Recall:", recall, "F1", f1)
 
 def main():
-    compareAlgorithmToParticipants()
+    compareAlgorithmToDataset()
 
 main()

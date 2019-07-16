@@ -54,8 +54,9 @@ class SpeechAnalyzer:
 
         # Voice activity Parameters
         self.voiceActivityIsAdaptive = True
-        self.voiceActivityWindowSize = 10 # In milliseconds
-        self.voiceActivityZCRThreshold = 0.04 # Originally 0.06
+        self.voiceActivityWindowSize = 50 # In milliseconds
+        self.voiceActivityZCRMaximumThreshold = 0.04 # Originally 0.06
+        self.voiceActivityZCRMinimumThreshold = 0.008
         self.voiceActivityEnergyThreshold = 40
         self.voiceActivityPitchTolerance = 8
         self.voiceActivityMinimumRunLength = 10
@@ -69,12 +70,11 @@ class SpeechAnalyzer:
 
         # Filled pause parameters
         self.filledPauseWindowSize = 50 # In milliseconds
-        self.filledPauseMinimumLength = 200 # In milliseconds
+        self.filledPauseMinimumLength = 250 # In milliseconds
         self.filledPauseMinimumDistanceToPrevious = 1000 # In milliseconds
         self.filledPauseF1MaximumVariance = 60
         self.filledPauseF2MaximumVariance = 30
-        self.filledPauseMaximumFormantDistance = 2000 # In Hz
-        self.filledPauseMaximumSpectralFlatnessVariance = 0.001
+        self.filledPauseMaximumFormantDistance = 1000 # In Hz
 
         # Recording parameters
         self.recordingDeviceIndex = -1 # Default to asking user
@@ -115,7 +115,8 @@ class SpeechAnalyzer:
                                                        windowSize= self.voiceActivityWindowSize,
                                                        stepSize= self.featureStepSize,
                                                        useAdaptiveThresholds= self.voiceActivityIsAdaptive,
-                                                       zcrThreshold= self.voiceActivityZCRThreshold,
+                                                       zcrMaximumThreshold= self.voiceActivityZCRMaximumThreshold,
+                                                       zcrMinimumThreshold= self.voiceActivityZCRMinimumThreshold,
                                                        energyPrimaryThreshold= self.voiceActivityEnergyThreshold,
                                                        pitchTolerance= self.voiceActivityPitchTolerance,
                                                        minimumRunLength= self.voiceActivityMinimumRunLength)
@@ -147,7 +148,6 @@ class SpeechAnalyzer:
                                                      F1MaximumVariance= self.filledPauseF1MaximumVariance,
                                                      F2MaximumVariance= self.filledPauseF2MaximumVariance,
                                                      maximumFormantDistance= self.filledPauseMaximumFormantDistance,
-                                                     maximumSpectralFlatnessVariance= self.filledPauseMaximumSpectralFlatnessVariance,
                                                      energyThresholdRatio= self.energyThresholdRatio)
         return filledPauses, timeStamps
 

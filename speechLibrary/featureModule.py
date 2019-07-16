@@ -203,7 +203,7 @@ def getSyllables(data, sampleRate, pitchValues, windowSize, stepSize, energyPeak
     return syllables, np.array(validPeaks) * stepSizeInSamples / sampleRate
 
 # | Returns the voice activity (each v_i in V ∈ {0,1}) using an adaptive algorithm from "A Simple but Efficient...".
-def getVoiceActivity(data, sampleRate, pitchValues, windowSize, stepSize, useAdaptiveThresholds, zcrThreshold, energyPrimaryThreshold, pitchTolerance, minimumRunLength):
+def getVoiceActivity(data, sampleRate, pitchValues, windowSize, stepSize, useAdaptiveThresholds, zcrMaximumThreshold, zcrMinimumThreshold, energyPrimaryThreshold, pitchTolerance, minimumRunLength):
     # Convert window and step sizes to samples for Librosa.
     windowSizeInSamples = int(sampleRate / 1000 * windowSize)
     stepSizeInSamples = int(sampleRate / 1000 * stepSize)
@@ -225,10 +225,11 @@ def getVoiceActivity(data, sampleRate, pitchValues, windowSize, stepSize, useAda
     for i in range(0,len(energy)):
         currentActivity = 0
 
-        if  zcr[i] < zcrThreshold and energy[i] > energyThreshold and aboveThresholdWithinTolerance(data=pitchValues,
-                                                                                                    indexInQuestion=i,
-                                                                                                    threshold=0,
-                                                                                                    tolerance=pitchTolerance):
+        if (zcr[i] < zcrMaximumThreshold and zcr[i] > zcrMinimumThreshold and
+            energy[i] > energyThreshold and aboveThresholdWithinTolerance(data=pitchValues,
+                                                                          indexInQuestion=i,
+                                                                          threshold=0,
+                                                                          tolerance=pitchTolerance)):
 
             currentActivity = 1 # Voice acitivty present
         else:
@@ -243,9 +244,6 @@ def getVoiceActivity(data, sampleRate, pitchValues, windowSize, stepSize, useAda
     removeSmallRunsOfValues(voiceActivity, minimumRunLength)
 
     if VOICE_ACTIVITY_DEBUG:
-        # Try formants
-        # firstFormant, secondFormant = getFormants(data, sampleRate, windowSizeInSamples/sampleRate, stepSizeInSamples/sampleRate)
-
         # Show graph if debugging
         times = np.arange(0, len(data)/sampleRate, stepSize/1000)
         energyTimes = np.arange(0, len(data)/sampleRate, stepSize/1000)[:len(energy)]
@@ -257,7 +255,6 @@ def getVoiceActivity(data, sampleRate, pitchValues, windowSize, stepSize, useAda
 
         plt.figure(figsize=[16, 8])
         plt.plot(energyTimes, energy / 100000000, zcrTimes, zcr * 10000, pitchTimes, pitchValues)
-        # plt.plot(times, firstFormant, times, secondFormant)
         plt.plot(energyTimes, plotVoiceActivity * -100)
         plt.show()
         plt.close()
@@ -265,7 +262,7 @@ def getVoiceActivity(data, sampleRate, pitchValues, windowSize, stepSize, useAda
     return voiceActivity
 
 # | Returns an array of timestamps where filled pauses were detected.
-def getFilledPauses(data, sampleRate, windowSize, stepSize, minumumLength, minimumDistanceToPrevious, F1MaximumVariance, F2MaximumVariance, maximumFormantDistance, maximumSpectralFlatnessVariance, energyThresholdRatio):
+def getFilledPauses(data, sampleRate, windowSize, stepSize, minumumLength, minimumDistanceToPrevious, F1MaximumVariance, F2MaximumVariance, maximumFormantDistance, energyThresholdRatio):
     # Convert window and step sizes to samples for Librosa and to prevent rounding issues with RMSE.
     windowSizeInSamples = int(sampleRate / 1000 * windowSize)
     stepSizeInSamples = int(sampleRate / 1000 * stepSize)
@@ -279,8 +276,9 @@ def getFilledPauses(data, sampleRate, windowSize, stepSize, minumumLength, minim
 
     # Get energy, first and second formants (F1 & F2), and spectral flatness.
     energy = getEnergy(data, sampleRate, windowSize, stepSize)
-    firstFormant, secondFormant = getFormants(data, sampleRate, windowSizeInSamples/sampleRate, stepSizeInSamples/sampleRate)
-    spectralFlatness = librosa.feature.spectral_flatness(data, hop_length=stepSizeInSamples)[0][:len(energy)]
+    firstFormant, secondFormant = getFormants(data, sampleRate,
+                                              windowSizeInSamples/sampleRate,
+                                              stepSizeInSamples/sampleRate)
 
     energyThreshold = getEnergyMinimumThreshold(energy, energyThresholdRatio)
 
@@ -303,7 +301,6 @@ def getFilledPauses(data, sampleRate, windowSize, stepSize, minumumLength, minim
         averageFormantDistance = np.mean(secondFormant[start:end] - firstFormant[start:end])
 
         averageEnergy = np.mean(energy[start:end])
-        spectralFlatnessVariance = np.std(spectralFlatness[start:end])
 
         # Check for any filled pauses immediately before the current window
         previousFilledPause = 0
@@ -314,7 +311,11 @@ def getFilledPauses(data, sampleRate, windowSize, stepSize, minumumLength, minim
         distanceToPreviousFilledPause = times[step] - previousFilledPause
 
         # Identify filled pauses
-        if firstFormantVariance <= F1MaximumVariance and secondFormantVariance <= F2MaximumVariance and averageEnergy > energyThreshold and distanceToPreviousFilledPause > minimumDistanceToPrevious/1000 and averageFormantDistance < maximumFormantDistance and spectralFlatnessVariance < maximumSpectralFlatnessVariance:
+        if (firstFormantVariance <= F1MaximumVariance and
+            secondFormantVariance <= F2MaximumVariance and
+            averageEnergy > energyThreshold and
+            distanceToPreviousFilledPause > minimumDistanceToPrevious/1000 and
+            averageFormantDistance < maximumFormantDistance):
             # Prevent an utterance from being detected many times.
             if fillerUtteranceInitiated == False:
                 fillerUtteranceInitiated = True
@@ -325,9 +326,6 @@ def getFilledPauses(data, sampleRate, windowSize, stepSize, minumumLength, minim
             fillerUtteranceInitiated = False
 
     if FILLED_PAUSE_DEBUG:
-        if not name:
-            name = ""
-
         # Show graph if debugging
         filledPausesMarkers = np.full(len(timeStamps), 0)
         energyTimes = np.arange(0, len(data)/sampleRate, stepSize/1000)[:len(energy)]
@@ -335,7 +333,7 @@ def getFilledPauses(data, sampleRate, windowSize, stepSize, minumumLength, minim
         plt.figure(figsize=[16, 8])
         plt.plot(energyTimes, energy)
         plt.plot(times, firstFormant, times, secondFormant, np.array(timeStamps), filledPausesMarkers, 'go')
-        plt.savefig("../media/validation_participant_audio/filledPausesFigures/" + name + ".png")
+        plt.show()
         plt.close()
 
     return filledPauses, np.array(timeStamps)
