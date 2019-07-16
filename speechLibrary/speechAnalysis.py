@@ -290,11 +290,14 @@ class SpeechAnalyzer:
 
         while step < audio.length:
 
-            if self.printStatus and int(step/audio.sampleRate) >= self.lookBackSize:
+            if self.printStatus:
                 print("[", str(step/audio.length*100)[:4], "% ]",
                       "Second", int(step/audio.sampleRate), "of", filePath,
-                      "Time per second:", (time.time() - startTime)/(int(step/audio.sampleRate) - self.lookBackSize) ,
-                      end="\r")
+                      end="")
+                if int(step/audio.sampleRate) > self.lookBackSize:
+                    print(" - Time per second:", (time.time() - startTime)/(int(step/audio.sampleRate) - self.lookBackSize), end="\r")
+                else:
+                    print(end="\r")
 
             # Keep track of what second we're in
             seconds = np.append(seconds,step/audio.sampleRate)
