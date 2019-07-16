@@ -269,7 +269,7 @@ def filledPauses():
                 if audio.numberOfChannels != 1:
                     audio.makeMono()
 
-                filledPauses, timeStamps = speechAnalyzer.getFilledPausesFromAudio(audio, name)
+                filledPauses, timeStamps = speechAnalyzer.getFilledPausesFromAudio(audio)
 
                 voiceActivity = speechAnalyzer.getVoiceActivityFromAudio(audio)
                 bufferFrames = int(speechAnalyzer.voiceActivityMaskBufferSize / speechAnalyzer.featureStepSize)
