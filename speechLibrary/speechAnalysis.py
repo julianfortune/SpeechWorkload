@@ -276,6 +276,8 @@ class SpeechAnalyzer:
         if audio.numberOfChannels > 1:
             audio.makeMono()
 
+        startTime = time.time()
+
         # Set up time tracker
         seconds = np.zeros(shape=0)
 
@@ -288,8 +290,11 @@ class SpeechAnalyzer:
 
         while step < audio.length:
 
-            if self.printStatus:
-                print("[", str(step/audio.length*100)[:4], "% ] Second", int(step/audio.sampleRate), "of", filePath, end="\r")
+            if self.printStatus and int(step/audio.sampleRate) >= self.lookBackSize:
+                print("[", str(step/audio.length*100)[:4], "% ]",
+                      "Second", int(step/audio.sampleRate), "of", filePath,
+                      "Time per second:", (time.time() - startTime)/(int(step/audio.sampleRate) - self.lookBackSize) ,
+                      end="\r")
 
             # Keep track of what second we're in
             seconds = np.append(seconds,step/audio.sampleRate)
