@@ -3,15 +3,21 @@
 #
 # @author: Julian Fortune
 #
+
+import glob, sys, csv
+
 import tensorflow as tf
 import numpy as np
 import matplotlib.pyplot as plt
 import tflearn
-import glob
 
-np.set_printoptions(threshold=np.nan)
+np.set_printoptions(threshold=sys.maxsize)
 
-def loadData():
+def loadData(directory, inputFeaturesToDiscard=[]):
+    # Always discard time
+    if "time" not in inputFeaturesToDiscard:
+        inputFeaturesToDiscard.append("time")
+
     ulLabelPath = "./labels/ul.npy"
     nlLabelPath = "./labels/nl.npy"
     olLabelPath = "./labels/ol.npy"
@@ -20,13 +26,26 @@ def loadData():
     nlLabels = np.load(nlLabelPath)
     olLabels = np.load(olLabelPath)
 
+    inputFeatureNames = []
+    with open(directory + 'labels.csv', 'r') as csvfile:
+        reader = csv.reader(csvfile)
+        for row in reader:
+            inputFeatureNames = row
+
+    for feature in inputFeaturesToDiscard:
+        assert feature in inputFeatureNames, "Invalid feature to discard."
+
+    numberOfInputs = len(inputFeatureNames) - len(inputFeaturesToDiscard)
+
     labels = np.empty(0)
-    inputs = np.asarray([[],[],[],[],[],[],[]])
+    inputs = np.asarray([[]] * numberOfInputs)
 
-    dir = "./features/*.npy"
+    for path in sorted(glob.iglob(directory + "*.npy"),reverse=False):
+        currentInput = np.load(path)
 
-    for path in sorted(glob.iglob(dir),reverse=False):
-        currentInput = np.load(path)[1:] # [speech rate, mean pitch, stDev pitch, mean intensity, stDev intensity, mean voice activity, stDev voice activity]
+        # Remove features that should be discarded.
+        for feature in inputFeaturesToDiscard:
+            currentInput = np.delete(currentInput, inputFeatureNames.index(feature), 0)
 
         condition = path[:-4][-2:]
         assert condition in ["ul", "nl", "ol"]
@@ -38,6 +57,7 @@ def loadData():
         else:
             currentLabels = olLabels
 
+        # Add extra zeros to the labels if inputs run over the length
         if len(currentInput[0]) > len(currentLabels):
             offsetSize = len(currentInput[0]) - len(currentLabels)
             offset = np.zeros(offsetSize)
@@ -46,6 +66,10 @@ def loadData():
         if len(currentLabels) == len(currentInput[0]):
             labels = np.append(labels, currentLabels)
             inputs = np.append(inputs, currentInput, axis=-1)
+        else:
+            print("WARNING: Shapes of labels and inputs do not match.", currentLabels.shape, currentInput.shape)
+
+    assert not np.isnan(inputs).any(), "Invalid values in inputs."
 
     # Rearrange the feature data to have all feature values together for each
     # time instance instead of lists of features.
@@ -54,16 +78,14 @@ def loadData():
     labels = np.reshape(labels, (-1, 1))
 
     print(len(inputs), len(labels))
-    print(inputs[0], labels[0])
-    print(inputs[12000], labels[12000])
-    print(inputs[1650], labels[1650])
+    print(inputs.shape)
 
 
     return inputs, labels
 
 def trainNetwork(inputs, labels):
     # Neural network characteristics
-    input_neurons = 7
+    input_neurons = inputs.shape[1] # Size in the second dimension
     hidden_neurons = 128
     output_neurons = 1
 
@@ -76,36 +98,36 @@ def trainNetwork(inputs, labels):
         tf.reset_default_graph()
         tflearn.init_graph()
 
-        #
+        # Shuffle data
         inputs, labels = tflearn.data_utils.shuffle(inputs, labels)
 
         # Input layer
-        net = tflearn.input_data(shape=[None,input_neurons])
+        net = tflearn.input_data(shape=[None, input_neurons])
 
         # Hidden layers
-        net = tflearn.fully_connected(net, hidden_neurons, bias=True, activation = 'relu')
-        net = tflearn.fully_connected(net, hidden_neurons, bias=True, activation = 'relu')
-        net = tflearn.fully_connected(net, hidden_neurons, bias=True, activation = 'relu')
+        net = tflearn.fully_connected(net, hidden_neurons, bias=True, activation='relu')
+        net = tflearn.fully_connected(net, hidden_neurons, bias=True, activation='relu')
+        net = tflearn.fully_connected(net, hidden_neurons, bias=True, activation='relu')
 
         # Output layer
         net = tflearn.fully_connected(net, output_neurons)
 
-        # Confused ???
-        net = tflearn.regression(net, optimizer='Adam', learning_rate=0.001,  loss='mean_square' ,metric = 'R2', restore=True, batch_size=64)
+        # Set the method for regression
+        net = tflearn.regression(net, optimizer='Adam', learning_rate=0.001,  loss='mean_square', metric = 'R2', restore=True, batch_size=64)
 
-        # Confused ???
+        print(net)
+
+        # Create the model from the network
         model = tflearn.DNN(net, tensorboard_verbose=0)
 
         # Fit the data, `validation_set=` sets asside a proportion of the data to validate with
         model.fit(inputs, labels, n_epoch=n_epoch, validation_set=0.10, show_metric=True)
 
-        predictions = model.predict(inputs)
-        print(predictions)
-
     model.save(name + '.tflearn')
 
+
 def main():
-    inputs, labels = loadData()
+    inputs, labels = loadData("./features/")
     trainNetwork(inputs, labels)
 
 if __name__ == "__main__":
