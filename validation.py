@@ -301,6 +301,6 @@ def filledPauses():
           "Recall:", recall, "F1", fMeasure)
 
 def main():
-    filledPauses()
+    syllable()
 
 main()

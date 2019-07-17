@@ -36,7 +36,7 @@ class SpeechAnalyzer:
         self.lookBackSize = 30 # Time interval to examine looking backward for features, in seconds.
 
         # Parameters for all features
-        self.features = ["meanIntensity", "stDevIntensity", "meanPitch", "stDevPitch", "stDevVoiceActivity", "meanVoiceActivity", "syllablesPerSecond", "filledPauses"]
+        self.features = ["meanIntensity", "stDevIntensity", "meanPitch", "stDevPitch", "stDevVoiceActivity", "meanVoiceActivity", "syllablesPerSecond"]
         self.featureStepSize = 10 # Step size for all features, in milliseconds.
         self.energyThresholdRatio = 4
 
