@@ -252,11 +252,11 @@ def filledPauses():
 
             path = None
 
-            for filePath in sorted(glob.iglob("../media/filled_pauses_validation_participant_audio/" + "*.wav")):
-                fileName = os.path.basename(filePath)[:-4]
-
-                if fileName == name:
-                    path = filePath
+            # for filePath in sorted(glob.iglob("../media/filled_pauses_validation_participant_audio/" + "*.wav")):
+            #     fileName = os.path.basename(filePath)[:-4]
+            #
+            #     if fileName == name:
+            #         path = filePath
 
             for filePath in sorted(glob.iglob(audioDirectory + "*.wav")):
                 fileName = os.path.basename(filePath)[:-4]
