@@ -2,6 +2,10 @@ Started 2019-07-16
 
 Description --------------------------------------------------
 
+First run at producing the new features to use for training 
+and analyzing. Validated on random validation set on July 
+16th. Standard parameters with 30 second window size.
+
 Parameters ---------------------------------------------------
 
 stepSize (seconds) = 1
