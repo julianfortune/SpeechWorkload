@@ -165,10 +165,7 @@ def getVoiceActivityFeatures(data, sampleRate, windowSizeInMS, stepSizeInMS, use
             minEnergy = ( (silenceCount * minEnergy) + energy[i] ) / ( silenceCount + 1 )
             energyThreshold = energyPrimaryThreshold * math.log(minEnergy)
 
-    # Get stats on voice activity
-    average = numpy.mean(voiceActivity)
-    stDev = numpy.std(voiceActivity)
-    return average, stDev
+    return voiceActivity
 
 # | Computes the absolute value of the raw data values then calculates
 # | the mean, max, min, and standard deviation of those data values

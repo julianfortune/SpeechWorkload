@@ -200,13 +200,7 @@ def syllable():
                     if audio.numberOfChannels != 1:
                         audio.makeMono()
 
-                    syllables, _ = speechAnalyzer.getSyllablesFromAudio(audio)
-
-                    voiceActivity = speechAnalyzer.getVoiceActivityFromAudio(audio)
-                    bufferFrames = int(speechAnalyzer.voiceActivityMaskBufferSize / speechAnalyzer.featureStepSize)
-                    mask = np.invert(featureModule.createBufferedBinaryArrayFromArray(voiceActivity.astype(bool), bufferFrames))
-
-                    syllables[mask] = 0
+                    syllables = speechAnalyzer.getSyllablesFromAudio(audio)
 
                     syllableCount = int(sum(syllables))
 
