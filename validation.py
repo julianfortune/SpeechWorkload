@@ -122,7 +122,7 @@ def voiceActivity():
                     rawVoiceActivity = speechAnalyzer.getVoiceActivityFromAudio(audio)
 
                     frameSizeInSeconds = 1
-                    frameSizeInSteps = int(frameSizeInSeconds / (speechAnalyzer.featureStepSize / 1000))
+                    frameSizeInSteps = int(frameSizeInSeconds / (speechAnalyzer.voiceActivityStepSize / 1000))
                     voiceActivity = []
 
                     originalNumberOfFalseAlarms = totalNumberOfFalseAlarms
@@ -202,7 +202,7 @@ def syllable():
 
                     syllables = speechAnalyzer.getSyllablesFromAudio(audio)
 
-                    syllableCount = int(sum(syllables))
+                    syllableCount = int(len(syllables))
 
                     print(name, "\t", actualSyllableCount, syllableCount)
 
@@ -295,6 +295,6 @@ def filledPauses():
           "Recall:", recall, "F1", fMeasure)
 
 def main():
-    syllable()
+    voiceActivity()
 
 main()

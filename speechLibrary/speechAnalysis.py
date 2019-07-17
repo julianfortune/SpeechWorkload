@@ -29,59 +29,38 @@ FEATURE_NAMES = ["meanIntensity", "stDevIntensity", "meanPitch", "stDevPitch", "
 class SpeechAnalyzer:
 
     def __init__(self):
+        # Set defaults for all parameters
         self.printStatus = True
 
         # Windowing parameters
-        self.stepSize = 1 # Time interval between extracting features, in seconds.
-        self.lookBackSize = 30 # Time interval to examine looking backward for features, in seconds.
+        self.stepSize = 1 #how big to step in seconds
+        self.lookBackSize = 30  #how big of interval to wait until looking for transcript, pitch/intensity features in seconds
 
-        # Parameters for all features
-        self.features = ["meanIntensity", "stDevIntensity", "meanPitch", "stDevPitch", "stDevVoiceActivity", "meanVoiceActivity", "syllablesPerSecond"]
-        self.featureStepSize = 10 # Step size for all features, in milliseconds.
-        self.energyThresholdRatio = 4
-
-        self.voiceActivityMaskBufferSize = 100 # In milliseconds
-
-        self.maskEnergyWithVoiceActivity = False
-        self.maskPitchWIthVoiceActivity = False
-        self.maskSyllablesWithVoiceActivity = False
-        self.maskFilledPausesWithVoiceActivity = False
-
-        # Energy parameters
-        self.energyWindowSize = 50
-
-        # Pitch parameters
-        self.pitchMinimumRunLength = 4
+        # Syllable detection parameters
+        self.syllableWindowSize = 64 # In milliseconds
+        self.syllableStepSize = 16 # In milliseconds
+        self.syllablePeakMinDistance = 5
+        self.syllablePeakMinWidth = 2
+        self.syllableZcrThreshold = 0.06
+        self.syllableDominantFreqThreshold = 200
+        self.syllableDominantFreqTolerance = 8
 
         # Voice activity Parameters
         self.voiceActivityIsAdaptive = True
-        self.voiceActivityWindowSize = 50 # In milliseconds
-        self.voiceActivityZCRMaximumThreshold = 0.04 # Originally 0.06
-        self.voiceActivityZCRMinimumThreshold = 0.008
+        # From "A Simple but efficient..."
+        self.voiceActivityWindowSize = 10 # In milliseconds
+        self.voiceActivityStepSize = 10 # In milliseconds
+        self.voiceActivityZCRThreshold = 0.06
         self.voiceActivityEnergyThreshold = 40
-        self.voiceActivityPitchTolerance = 8
-        self.voiceActivityMinimumRunLength = 10
-
-        # Syllable detection parameters
-        self.syllableWindowSize = 50 # In milliseconds
-        self.syllablePeakMinimumDistance = 4
-        self.syllablePeakMinimumWidth = 2
-        self.syllablePitchDistanceTolerance = 4
-        self.syllableZcrThreshold = 0.06
-
-        # Filled pause parameters
-        self.filledPauseWindowSize = 50 # In milliseconds
-        self.filledPauseMinimumLength = 250 # In milliseconds
-        self.filledPauseMinimumDistanceToPrevious = 1000 # In milliseconds
-        self.filledPauseF1MaximumVariance = 60
-        self.filledPauseF2MaximumVariance = 30
-        self.filledPauseMaximumFormantDistance = 1000 # In Hz
+        self.voiceActivityFreqThreshold = 18
+        self.voiceActivityFreqTolerance = 8
 
         # Recording parameters
-        self.recordingDeviceIndex = -1 # Default to asking user
-        self.recordingBufferSize = 4096 # In samples
+        self.recordingDeviceIndex = -1
+        self.recordingBufferSize = 4096
         self.recordingFormat = pyaudio.paInt16
         self.recordingChannels = 2
+
 
 
 
