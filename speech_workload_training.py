@@ -77,13 +77,14 @@ def loadData(directory, inputFeaturesToDiscard=[]):
 
     labels = np.reshape(labels, (-1, 1))
 
-    print(len(inputs), len(labels))
-    print(inputs.shape)
+    for feature in inputFeaturesToDiscard:
+        inputFeatureNames.remove(feature)
 
+    print("Using", inputFeatureNames)
 
     return inputs, labels
 
-def trainNetwork(inputs, labels):
+def trainNetwork(inputs, labels, directory):
     # Neural network characteristics
     input_neurons = inputs.shape[1] # Size in the second dimension
     hidden_neurons = 128
@@ -115,20 +116,19 @@ def trainNetwork(inputs, labels):
         # Set the method for regression
         net = tflearn.regression(net, optimizer='Adam', learning_rate=0.001,  loss='mean_square', metric = 'R2', restore=True, batch_size=64)
 
-        print(net)
-
         # Create the model from the network
         model = tflearn.DNN(net, tensorboard_verbose=0)
 
         # Fit the data, `validation_set=` sets asside a proportion of the data to validate with
         model.fit(inputs, labels, n_epoch=n_epoch, validation_set=0.10, show_metric=True)
 
-    model.save(name + '.tflearn')
-
+        model.save(directory + name + '.tflearn')
 
 def main():
-    inputs, labels = loadData("./features/")
-    trainNetwork(inputs, labels)
+    directory = "./features/"
+
+    inputs, labels = loadData(directory)
+    trainNetwork(inputs, labels, directory)
 
 if __name__ == "__main__":
     main()
