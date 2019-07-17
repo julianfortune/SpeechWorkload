@@ -8,6 +8,7 @@
 import os, glob, sys # file io
 import time
 import numpy as np
+from datetime import datetime
 
 import pyaudio # microphone io
 import wavio # microphone decoding
@@ -46,7 +47,7 @@ class SpeechAnalyzer:
         self.maskSyllablesWithVoiceActivity = False
         self.maskFilledPausesWithVoiceActivity = False
 
-        # Pitch parameters
+        # Energy parameters
         self.energyWindowSize = 50
 
         # Pitch parameters
@@ -344,6 +345,85 @@ class SpeechAnalyzer:
 
         return featureArray
 
+    # | Write array of feature names to file to label each column.
+    def saveLabelsToFile(self, directory):
+        with open(directory + 'labels.csv', 'w') as outputFile:
+            writer = csv.writer(outputFile)
+            writer.writerow(["time"] + self.features)
+
+    # | Write array of feature names to file to label each column.
+    def saveInfoToFile(self, directory):
+        with open(directory + 'about.txt', 'w+') as aboutFile:
+            aboutFile.write("Started " + str(datetime.today().strftime('%Y-%m-%d')) + "\n")
+            aboutFile.write("" + "\n")
+            aboutFile.write("Description --------------------------------------------------" + "\n")
+            aboutFile.write("" + "\n")
+            aboutFile.write("Parameters ---------------------------------------------------" + "\n")
+            aboutFile.write("" + "\n")
+
+            # Windowing parameters
+            aboutFile.write("stepSize (seconds) = " + str(self.stepSize) + "\n")
+            aboutFile.write("lookBackSize (seconds) = " + str(self.lookBackSize) + "\n")
+            aboutFile.write("" + "\n")
+
+            # Parameters for all features
+            aboutFile.write("features = " + str(self.features) + "\n")
+            aboutFile.write("featureStepSize (milliseconds) = " + str(self.featureStepSize) + "\n")
+            aboutFile.write("energyThresholdRatio = " + str(self.energyThresholdRatio) + "\n")
+            aboutFile.write("" + "\n")
+
+            aboutFile.write("voiceActivityMaskBufferSize (milliseconds) = " + str(self.voiceActivityMaskBufferSize) + "\n")
+            aboutFile.write("" + "\n")
+
+            aboutFile.write("maskEnergyWithVoiceActivity = " + str(self.maskEnergyWithVoiceActivity) + "\n")
+            aboutFile.write("maskPitchWIthVoiceActivity = " + str(self.maskPitchWIthVoiceActivity) + "\n")
+            aboutFile.write("maskSyllablesWithVoiceActivity = " + str(self.maskSyllablesWithVoiceActivity) + "\n")
+            aboutFile.write("maskFilledPausesWithVoiceActivity = " + str(self.maskFilledPausesWithVoiceActivity) + "\n")
+            aboutFile.write("" + "\n")
+
+            # Pitch parameters
+            aboutFile.write("energyWindowSize = " + str(self.energyWindowSize) + "\n")
+            aboutFile.write("" + "\n")
+
+            # Pitch parameters
+            aboutFile.write("pitchMinimumRunLength = " + str(self.pitchMinimumRunLength) + "\n")
+            aboutFile.write("" + "\n")
+
+            # Voice activity Parameters
+            aboutFile.write("voiceActivityIsAdaptive = " + str(self.voiceActivityIsAdaptive) + "\n")
+            aboutFile.write("voiceActivityMaskBufferSize (milliseconds) = " + str(self.voiceActivityWindowSize) + "\n")
+            aboutFile.write("voiceActivityZCRMaximumThreshold (milliseconds) = " + str(self.voiceActivityZCRMaximumThreshold) + "\n")
+            aboutFile.write("voiceActivityZCRMinimumThreshold (milliseconds) = " + str(self.voiceActivityZCRMinimumThreshold) + "\n")
+            aboutFile.write("voiceActivityEnergyThreshold (milliseconds) = " + str(self.voiceActivityEnergyThreshold) + "\n")
+            aboutFile.write("voiceActivityPitchTolerance (milliseconds) = " + str(self.voiceActivityPitchTolerance) + "\n")
+            aboutFile.write("voiceActivityMinimumRunLength (milliseconds) = " + str(self.voiceActivityMinimumRunLength) + "\n")
+            aboutFile.write("" + "\n")
+
+            # Syllable detection parameters
+            aboutFile.write("syllableWindowSize (milliseconds) = " + str(self.syllableWindowSize) + "\n")
+            aboutFile.write("syllablePeakMinimumDistance = " + str(self.syllablePeakMinimumDistance) + "\n")
+            aboutFile.write("syllablePeakMinimumWidth = " + str(self.syllablePeakMinimumWidth) + "\n")
+            aboutFile.write("syllablePitchDistanceTolerance = " + str(self.syllablePitchDistanceTolerance) + "\n")
+            aboutFile.write("syllableZcrThreshold = " + str(self.syllableZcrThreshold) + "\n")
+            aboutFile.write("" + "\n")
+
+            # Filled pause parameters
+            aboutFile.write("filledPauseWindowSize (milliseconds) = " + str(self.filledPauseWindowSize) + "\n")
+            aboutFile.write("filledPauseMinimumLength (milliseconds) = " + str(self.filledPauseMinimumLength) + "\n")
+            aboutFile.write("filledPauseMinimumDistanceToPrevious (milliseconds) = " + str(self.filledPauseMinimumDistanceToPrevious) + "\n")
+            aboutFile.write("filledPauseF1MaximumVariance = " + str(self.filledPauseF1MaximumVariance) + "\n")
+            aboutFile.write("filledPauseF2MaximumVariance = " + str(self.filledPauseF2MaximumVariance) + "\n")
+            aboutFile.write("filledPauseMaximumFormantDistance (Hz) = " + str(self.filledPauseMaximumFormantDistance) + "\n")
+            aboutFile.write("" + "\n")
+
+            # Recording parameters
+            aboutFile.write("recordingDeviceIndex = " + str(self.recordingDeviceIndex) + "\n")
+            aboutFile.write("recordingBufferSize (samples) = " + str(self.recordingBufferSize) + "\n")
+            aboutFile.write("recordingFormat = " + str(self.recordingFormat) + "\n")
+            aboutFile.write("recordingChannels = " + str(self.recordingChannels) + "\n")
+            aboutFile.write("" + "\n")
+
+
     # | Extracts features from all files in a directory and saves to numpy files.
     # | Parameters:
     # |   - inDirectory: directory for audio files
@@ -352,9 +432,8 @@ class SpeechAnalyzer:
         for featureName in self.features:
             assert featureName in FEATURE_NAMES, 'Invalid feature name in list.'
 
-        with open(outDirectory + 'labels.csv', 'w') as outputFile:
-            writer = csv.writer(outputFile)
-            writer.writerow(["time"] + self.features)
+        self.saveLabelsToFile(outDirectory)
+        self.saveInfoToFile(outDirectory)
 
         # Keep track of running stats
         startTime = time.time()
