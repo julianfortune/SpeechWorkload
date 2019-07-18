@@ -168,39 +168,44 @@ class SpeechAnalyzer:
         # Get amplitude envelope feature.
         energy = self.getEnergyFromAudio(audio)
 
-        if DEBUG:
-            print("Time to get amplitude:", time.time() - startTime)
-            startTime = time.time()
+        if __debug__:
+            if DEBUG:
+                print("Time to get amplitude:", time.time() - startTime)
+                startTime = time.time()
 
         # Get pitch feature.
         pitches = self.getPitchFromAudio(audio, energy)
 
-        if DEBUG:
-            print("Time to get pitch:", time.time() - startTime)
-            startTime = time.time()
+        if __debug__:
+            if DEBUG:
+                print("Time to get pitch:", time.time() - startTime)
+                startTime = time.time()
 
         # Get voice activity feature.
         voiceActivity = self.getVoiceActivityFromAudio(audio, pitches)
 
-        if DEBUG:
-            print("Time to get voice activity:", time.time() - startTime)
-            startTime = time.time()
+        if __debug__:
+            if DEBUG:
+                print("Time to get voice activity:", time.time() - startTime)
+                startTime = time.time()
 
         # Get syllables feature if needed as binary array for easy masking.
         if "syllablesPerSecond" in self.features:
             syllables, _ = self.getSyllablesFromAudio(audio, pitches)
 
-            if DEBUG:
-                print("Time to get syllables:", time.time() - startTime)
-                startTime = time.time()
+            if __debug__:
+                if DEBUG:
+                    print("Time to get syllables:", time.time() - startTime)
+                    startTime = time.time()
 
         # Get filled pauses feature if needed as binary array for easy masking.
         if "filledPauses" in self.features:
             filledPauses, _ = self.getFilledPausesFromAudio(audio)
 
-            if DEBUG:
-                print("Time to get filled pauses:", time.time() - startTime)
-                print("Time to get features:", time.time() - totalStartTime)
+            if __debug__:
+                if DEBUG:
+                    print("Time to get filled pauses:", time.time() - startTime)
+                    print("Time to get features:", time.time() - totalStartTime)
 
 
 

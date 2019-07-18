@@ -11,10 +11,13 @@ import librosa
 import scipy.signal # Extracts power spectrum
 import parselmouth # Formants
 
+import time
+
 import matplotlib.pyplot as plt
 
-VOICE_ACTIVITY_DEBUG = False
-FILLED_PAUSE_DEBUG = False
+DEBUG_VOICE_ACTIVITY_GRAPH = False
+DEBUG_FILLED_PAUSE_GRAPH = False
+DEBUG_TIME = False
 
 class FeatureSet:
 
@@ -227,7 +230,7 @@ def getVoiceActivity(data, sampleRate, pitchValues, windowSize, stepSize, useAda
     voiceActivity = []
     silenceCount = 0
 
-    for i in range(0,len(energy)):
+    for i in range(0, len(energy)):
         currentActivity = 0
 
         if (zcr[i] < zcrMaximumThreshold and zcr[i] > zcrMinimumThreshold and
@@ -248,21 +251,22 @@ def getVoiceActivity(data, sampleRate, pitchValues, windowSize, stepSize, useAda
 
     removeSmallRunsOfValues(voiceActivity, minimumRunLength)
 
-    if VOICE_ACTIVITY_DEBUG:
-        # Show graph if debugging
-        times = np.arange(0, len(data)/sampleRate, stepSize/1000)
-        energyTimes = np.arange(0, len(data)/sampleRate, stepSize/1000)[:len(energy)]
-        zcrTimes = np.arange(0, len(data)/sampleRate, stepSize/1000)[:len(zcr)]
-        pitchTimes = np.arange(0, len(data)/sampleRate, stepSize/1000)[:len(pitchValues)]
-        plotVoiceActivity = np.copy(voiceActivity)
-        plotVoiceActivity[plotVoiceActivity == 0] = np.nan
-        pitchValues[pitchValues == 0] = np.nan
+    if __debug__:
+        if DEBUG_VOICE_ACTIVITY_GRAPH:
+            # Show graph if debugging
+            times = np.arange(0, len(data)/sampleRate, stepSize/1000)
+            energyTimes = np.arange(0, len(data)/sampleRate, stepSize/1000)[:len(energy)]
+            zcrTimes = np.arange(0, len(data)/sampleRate, stepSize/1000)[:len(zcr)]
+            pitchTimes = np.arange(0, len(data)/sampleRate, stepSize/1000)[:len(pitchValues)]
+            plotVoiceActivity = np.copy(voiceActivity)
+            plotVoiceActivity[plotVoiceActivity == 0] = np.nan
+            pitchValues[pitchValues == 0] = np.nan
 
-        plt.figure(figsize=[16, 8])
-        plt.plot(energyTimes, energy / 100000000, zcrTimes, zcr * 10000, pitchTimes, pitchValues)
-        plt.plot(energyTimes, plotVoiceActivity * -100)
-        plt.show()
-        plt.close()
+            plt.figure(figsize=[16, 8])
+            plt.plot(energyTimes, energy / 100000000, zcrTimes, zcr * 10000, pitchTimes, pitchValues)
+            plt.plot(energyTimes, plotVoiceActivity * -100)
+            plt.show()
+            plt.close()
 
     return voiceActivity
 
@@ -330,15 +334,16 @@ def getFilledPauses(data, sampleRate, windowSize, stepSize, minumumLength, minim
         else:
             fillerUtteranceInitiated = False
 
-    if FILLED_PAUSE_DEBUG:
-        # Show graph if debugging
-        filledPausesMarkers = np.full(len(timeStamps), 0)
-        energyTimes = np.arange(0, len(data)/sampleRate, stepSize/1000)[:len(energy)]
+    if __debug__:
+        if DEBUG_FILLED_PAUSE_GRAPH:
+            # Show graph if debugging
+            filledPausesMarkers = np.full(len(timeStamps), 0)
+            energyTimes = np.arange(0, len(data)/sampleRate, stepSize/1000)[:len(energy)]
 
-        plt.figure(figsize=[16, 8])
-        plt.plot(energyTimes, energy)
-        plt.plot(times, firstFormant, times, secondFormant, np.array(timeStamps), filledPausesMarkers, 'go')
-        plt.show()
-        plt.close()
+            plt.figure(figsize=[16, 8])
+            plt.plot(energyTimes, energy)
+            plt.plot(times, firstFormant, times, secondFormant, np.array(timeStamps), filledPausesMarkers, 'go')
+            plt.show()
+            plt.close()
 
     return filledPauses, np.array(timeStamps)
