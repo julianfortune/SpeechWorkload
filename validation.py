@@ -102,6 +102,8 @@ def voiceActivity():
         for row in lines:
             transcript.append(row.strip().split(', '))
 
+    times = []
+
     for line in transcript:
         name = line[0]
 
@@ -119,7 +121,11 @@ def voiceActivity():
                     if audio.numberOfChannels != 1:
                         audio.makeMono()
 
-                    rawVoiceActivity = speechAnalyzer.getVoiceActivityFromAudio(audio)
+                    pitches = speechAnalyzer.getPitchFromAudio(audio)
+
+                    startTime = time.time()
+                    rawVoiceActivity = speechAnalyzer.getVoiceActivityFromAudio(audio, pitches= pitches)
+                    times.append(time.time() - startTime)
 
                     frameSizeInSeconds = 1
                     frameSizeInSteps = int(frameSizeInSeconds / (speechAnalyzer.featureStepSize / 1000))
@@ -169,6 +175,8 @@ def voiceActivity():
 
     fMeasure = 2 * precision * recall / (precision + recall)
 
+    print("    Time      |", np.mean(times))
+
     print("   Actual     | Seconds with voice activity:", totalNumberOfVoiceActivityInstances)
     print("  Algorithm   | Correct detectsions:", totalNumberOfCorrectlyDetectedVoiceActivityInstances, "False alarms:", totalNumberOfFalseAlarms, "Precision:", precision, "Recall:", recall, "F-measure", fMeasure)
 
@@ -186,6 +194,8 @@ def syllable():
     totalNumberOfCorrectlyDetectedSyllables = 0
     totalNumberOfFalseAlarms = 0
 
+    times = []
+
     for line in transcript:
         name = line[0]
 
@@ -200,13 +210,18 @@ def syllable():
                     if audio.numberOfChannels != 1:
                         audio.makeMono()
 
-                    syllables, _ = speechAnalyzer.getSyllablesFromAudio(audio)
 
-                    voiceActivity = speechAnalyzer.getVoiceActivityFromAudio(audio)
-                    bufferFrames = int(speechAnalyzer.voiceActivityMaskBufferSize / speechAnalyzer.featureStepSize)
-                    mask = np.invert(featureModule.createBufferedBinaryArrayFromArray(voiceActivity.astype(bool), bufferFrames))
+                    pitches = speechAnalyzer.getPitchFromAudio(audio)
 
-                    syllables[mask] = 0
+                    startTime = time.time()
+                    syllables, _ = speechAnalyzer.getSyllablesFromAudio(audio, pitches= pitches)
+                    times.append(time.time() - startTime)
+
+                    if True:
+                        voiceActivity = speechAnalyzer.getVoiceActivityFromAudio(audio)
+                        bufferFrames = int(speechAnalyzer.voiceActivityMaskBufferSize / speechAnalyzer.featureStepSize)
+                        mask = np.invert(featureModule.createBufferedBinaryArrayFromArray(voiceActivity.astype(bool), bufferFrames))
+                        syllables[mask] = 0
 
                     syllableCount = int(sum(syllables))
 
@@ -224,6 +239,8 @@ def syllable():
     recall = totalNumberOfCorrectlyDetectedSyllables / totalNumberOfSyllables
 
     fMeasure = 2 * precision * recall / (precision + recall)
+
+    print("    Time      |", np.mean(times))
 
     print("    Total     | Syllables:", totalNumberOfSyllables)
     print("     New      | Correct syllables:", totalNumberOfCorrectlyDetectedSyllables,
@@ -271,11 +288,11 @@ def filledPauses():
 
                 filledPauses, timeStamps = speechAnalyzer.getFilledPausesFromAudio(audio)
 
-                voiceActivity = speechAnalyzer.getVoiceActivityFromAudio(audio)
-                bufferFrames = int(speechAnalyzer.voiceActivityMaskBufferSize / speechAnalyzer.featureStepSize)
-                mask = np.invert(featureModule.createBufferedBinaryArrayFromArray(voiceActivity.astype(bool), bufferFrames))
-
-                filledPauses[mask] = 0
+                if True:
+                    voiceActivity = speechAnalyzer.getVoiceActivityFromAudio(audio)
+                    bufferFrames = int(speechAnalyzer.voiceActivityMaskBufferSize / speechAnalyzer.featureStepSize)
+                    mask = np.invert(featureModule.createBufferedBinaryArrayFromArray(voiceActivity.astype(bool), bufferFrames))
+                    filledPauses[mask] = 0
 
                 filledPausesMarkers = np.full(int(sum(filledPauses)), 0)
                 filledPausesCount = int(sum(filledPauses))
