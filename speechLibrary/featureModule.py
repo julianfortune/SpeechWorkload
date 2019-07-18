@@ -171,9 +171,8 @@ def getVoiceActivityFeatures(data, sampleRate, windowSizeInMS, stepSizeInMS, use
 # | the mean, max, min, and standard deviation of those data values
 def getIntensityFeatures(data):
     absVal = numpy.absolute(data)
-    average = numpy.mean(absVal)
-    stDev = numpy.std(absVal)
-    return average, stDev
+
+    return absVal
 
 # | Computes welch looking back and for number of sampleRate in length of data
 # | and returns the average of the loudest pitch in each window
@@ -188,7 +187,5 @@ def getPitchFeatures(data,sampleRate,windowSize):
 
         # Increment to next step
         step += sampleWindowSize
-    average = numpy.mean(loudestPitch)
-    stDev = numpy.std(loudestPitch)
 
-    return average, stDev
+    return loudestPitch
