@@ -132,107 +132,45 @@ class SpeechAnalyzer:
     def getFeaturesFromAudio(self, audio):
         features = featureModule.FeatureSet()
 
-        totalStartTime = time.time()
-        startTime = time.time()
-
-        # Get amplitude envelope feature.
-        energy = self.getEnergyFromAudio(audio)
-
-        if DEBUG:
-            print("Time to get amplitude:", time.time() - startTime)
-            startTime = time.time()
-
-        # Get pitch feature.
-        pitches = self.getPitchFromAudio(audio, energy)
-
-        if DEBUG:
-            print("Time to get pitch:", time.time() - startTime)
-            startTime = time.time()
-
-        # Get voice activity feature.
-        voiceActivity = self.getVoiceActivityFromAudio(audio, pitches)
-
-        if DEBUG:
-            print("Time to get voice activity:", time.time() - startTime)
-            startTime = time.time()
-
-        # Get syllables feature if needed as binary array for easy masking.
-        if "syllablesPerSecond" in self.features:
-            syllables, _ = self.getSyllablesFromAudio(audio, pitches)
-
-            if DEBUG:
-                print("Time to get syllables:", time.time() - startTime)
-                startTime = time.time()
-
-        # Get filled pauses feature if needed as binary array for easy masking.
-        if "filledPauses" in self.features:
-            filledPauses, _ = self.getFilledPausesFromAudio(audio)
-
-            if DEBUG:
-                print("Time to get filled pauses:", time.time() - startTime)
-                print("Time to get features:", time.time() - totalStartTime)
-
-
-
-        # Expand voice activity to have a margin for error to catch speech features
-        # and create boolean array with True for no activity to set no activity
-        # to all zeros.
-        bufferFrames = int(self.voiceActivityMaskBufferSize / self.featureStepSize)
-        mask = np.invert(featureModule.createBufferedBinaryArrayFromArray(voiceActivity.astype(bool), bufferFrames))
-
-        # Mask features with voice activity but setting regions with no voice
-        # activity (incl. buffered margin of error) to zero.
-        if self.maskEnergyWithVoiceActivity:
-            energy[mask] = 0
-
-        if self.maskPitchWIthVoiceActivity:
-            pitches[mask] = np.nan
-
-        if self.maskSyllablesWithVoiceActivity:
-            syllables[mask] = 0
-
-        if self.maskFilledPausesWithVoiceActivity:
-            filledPauses[mask] = 0
-
-
-
-        # Calculate statistics and add to feature arrays
-        ### AMPLITUDE
-        averageEnergy = np.mean(energy)
-        stDevEnergy = np.std(energy)
-
-        features.meanIntensity = np.append(features.meanIntensity, averageEnergy)
-        features.stDevIntensity = np.append(features.stDevIntensity, stDevEnergy)
-
-        ### PITCH
-        if max(pitches) > 0:
-            pitches[pitches == 0] = np.nan
-
-            averagePitch = np.nanmean(pitches)
-            stDevPitch = np.nanstd(pitches)
-        else:
-            averagePitch = 0
-            stDevPitch = 0
-
-        features.meanPitch = np.append(features.meanPitch, averagePitch)
-        features.stDevPitch = np.append(features.stDevPitch, stDevPitch)
-
-        ### VOICE ACTIVITY
-        averageVoiceActivity = np.mean(voiceActivity)
-        stDevVoiceActivity = np.std(voiceActivity)
-
-        features.meanVoiceActivity = np.append(features.meanVoiceActivity, averageVoiceActivity)
-        features.stDevVoiceActivity = np.append(features.stDevVoiceActivity, stDevVoiceActivity)
-
         ### WORDS PER MINUTE
-        if "syllablesPerSecond" in self.features:
-            currentSyllablesPerSecond = int(sum(syllables))/self.lookBackSize
+        syllables = featureModule.getSyllables(data=audio.data,
+                                               sampleRate=audio.sampleRate,
+                                               windowSize=self.syllableWindowSize,
+                                               stepSize=self.syllableStepSize,
+                                               peakMinDistance=self.syllablePeakMinDistance,
+                                               peakMinWidth=self.syllablePeakMinWidth,
+                                               zcrThreshold=self.syllableZcrThreshold,
+                                               dominantFreqThreshold=self.syllableDominantFreqThreshold,
+                                               dominantFreqTolerance=self.syllableDominantFreqTolerance)
 
-            features.syllablesPerSecond = np.append(features.syllablesPerSecond, currentSyllablesPerSecond)
+        currentSyllablesPerSecond = len(syllables)/self.lookBackSize
+        features.syllablesPerSecond = np.append(features.syllablesPerSecond, currentSyllablesPerSecond)
 
-        # FILLED PAUSES
-        if "filledPauses" in self.features:
-            features.filledPauses = np.append(features.filledPauses, int(sum(filledPauses)))
+        ### VAD
+        voiceActivity = featureModule.getVoiceActivityFeatures(data=audio.data,
+                                                                sampleRate=audio.sampleRate,
+                                                                windowSizeInMS=self.voiceActivityWindowSize,
+                                                                stepSizeInMS=self.voiceActivityStepSize,
+                                                                useAdaptiveThresholds=self.voiceActivityIsAdaptive,
+                                                                zcrThreshold=self.voiceActivityZCRThreshold,
+                                                                energyPrimaryThreshold=self.voiceActivityEnergyThreshold,
+                                                                dominantFreqThreshold=self.voiceActivityFreqThreshold,
+                                                                dominantFreqTolerance=self.voiceActivityFreqTolerance)
+
+        features.meanVoiceActivity = np.append(features.meanVoiceActivity, np.mean(voiceActivity))
+        features.stDevVoiceActivity = np.append(features.stDevVoiceActivity, np.std(voiceActivity))
+
+        ### AVERAGE PITCH
+        pitches = featureModule.getPitchFeatures(audio.data,
+                                                 audio.sampleRate,
+                                                 1)
+        features.meanPitch = np.append(features.meanPitch, np.mean(pitches))
+        features.stDevPitch = np.append(features.stDevPitch, np.std(pitches))
+
+        ### INTENSITY FEATURES
+        intensity = featureModule.getIntensityFeatures(audio.data)
+        features.meanIntensity = np.append(features.meanIntensity, np.mean(intensity))
+        features.stDevIntensity = np.append(features.stDevIntensity, np.std(intensity))
 
         return features
 
