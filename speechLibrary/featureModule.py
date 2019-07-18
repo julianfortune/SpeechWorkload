@@ -107,10 +107,15 @@ def getShortTermEnergy(data, sampleRate, windowSize, stepSize):
     windowSizeInSamples = int(sampleRate / 1000 * windowSize)
     stepSizeInSamples = int(sampleRate / 1000 * stepSize)
 
-    shortTermEnergy = np.array([
-        sum(data[step:step+windowSizeInSamples]**2)
-        for step in range(0, len(data), stepSizeInSamples)
-    ])
+    # Pad the end of the array
+    data = np.pad(data, (0, int(windowSizeInSamples - stepSizeInSamples)), mode='constant')
+
+    # Create frames using optimized algorithm
+    framedData = librosa.util.frame(data,
+                                    frame_length=windowSizeInSamples,
+                                    hop_length=stepSizeInSamples)
+
+    shortTermEnergy = np.sum((framedData)**2, axis=0, keepdims=True)[0]
 
     return shortTermEnergy
 
