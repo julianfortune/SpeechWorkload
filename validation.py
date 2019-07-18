@@ -102,6 +102,8 @@ def voiceActivity():
         for row in lines:
             transcript.append(row.strip().split(', '))
 
+    times = []
+
     for line in transcript:
         name = line[0]
 
@@ -119,7 +121,9 @@ def voiceActivity():
                     if audio.numberOfChannels != 1:
                         audio.makeMono()
 
+                    startTime = time.time()
                     rawVoiceActivity = speechAnalyzer.getVoiceActivityFromAudio(audio)
+                    times.append(time.time() - startTime)
 
                     frameSizeInSeconds = 1
                     frameSizeInSteps = int(frameSizeInSeconds / (speechAnalyzer.voiceActivityStepSize / 1000))
@@ -169,6 +173,8 @@ def voiceActivity():
 
     fMeasure = 2 * precision * recall / (precision + recall)
 
+    print("    Time      |", np.mean(times))
+
     print("   Actual     | Seconds with voice activity:", totalNumberOfVoiceActivityInstances)
     print("  Algorithm   | Correct detectsions:", totalNumberOfCorrectlyDetectedVoiceActivityInstances, "False alarms:", totalNumberOfFalseAlarms, "Precision:", precision, "Recall:", recall, "F-measure", fMeasure)
 
@@ -186,6 +192,8 @@ def syllable():
     totalNumberOfCorrectlyDetectedSyllables = 0
     totalNumberOfFalseAlarms = 0
 
+    times = []
+
     for line in transcript:
         name = line[0]
 
@@ -200,7 +208,9 @@ def syllable():
                     if audio.numberOfChannels != 1:
                         audio.makeMono()
 
+                    startTime = time.time()
                     syllables = speechAnalyzer.getSyllablesFromAudio(audio)
+                    times.append(time.time() - startTime)
 
                     syllableCount = int(len(syllables))
 
@@ -218,6 +228,8 @@ def syllable():
     recall = totalNumberOfCorrectlyDetectedSyllables / totalNumberOfSyllables
 
     fMeasure = 2 * precision * recall / (precision + recall)
+
+    print("    Time      |", np.mean(times))
 
     print("    Total     | Syllables:", totalNumberOfSyllables)
     print("     New      | Correct syllables:", totalNumberOfCorrectlyDetectedSyllables,
