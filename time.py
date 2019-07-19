@@ -1,5 +1,5 @@
 #
-# Created on July 11, 2019
+# Created on July 18, 2019
 #
 # @author: Julian Fortune
 # @Description: Functions for validating speech characteristics algorithms.

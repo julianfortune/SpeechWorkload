@@ -10,6 +10,7 @@ import tensorflow as tf
 import numpy as np
 import matplotlib.pyplot as plt
 import tflearn
+import pandas as pd
 
 np.set_printoptions(threshold=sys.maxsize)
 

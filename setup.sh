@@ -17,6 +17,7 @@ pip3 install pydub
 pip3 install pyaudio
 
 # Learning
+pip3 install pandas
 pip3 install tensorflow
 pip3 install tflearn
 
