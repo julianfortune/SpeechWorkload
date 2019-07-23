@@ -83,15 +83,19 @@ def loadData(directory, inputFeaturesToDiscard=[]):
 
     print("Using", inputFeatureNames)
 
+    acceptableTrainingSamples = (inputs[:,inputFeatureNames.index("meanVoiceActivity")] > 0.1) & (labels[:,0] > 0)
+    inputs = inputs[acceptableTrainingSamples]
+    labels = labels[acceptableTrainingSamples]
+
     return inputs, labels
 
 def trainNetwork(inputs, labels, directory):
     # Neural network characteristics
     input_neurons = inputs.shape[1] # Size in the second dimension
-    hidden_neurons = 128
+    hidden_neurons = 256
     output_neurons = 1
 
-    n_epoch = 50 #try 20 and 50
+    n_epoch = 500 #try 20 - 2000
 
     name = "SpeechWorkload"
 
