@@ -12,6 +12,8 @@ from datetime import datetime
 
 import pyaudio # microphone io
 import wavio # microphone decoding
+import threading # Background processing
+import multiprocessing
 
 import csv
 
@@ -462,6 +464,25 @@ class SpeechAnalyzer:
 
             count += 1
 
+
+    def getFeaturesInBackground(self, segment, sampleRate, startTime, featureExtractionStartTime, printLock):
+        # Create an object to pass around
+        audio = audioModule.Audio(data=segment)
+        audio.sampleRate = sampleRate
+        audio.numberOfChannels = 2 # TODO: Check if this should be 1
+
+        # Get all features for this window of audio
+        features = self.getFeaturesFromAudio(audio)
+
+        with printLock:
+            print("\u001b[31m• Live\u001b[0m", str((time.time() - startTime))[:5], "elapsed.",
+                  "Mean pitch:", round(features.meanPitch[0],2),
+                  "Voice activity:", round(features.meanVoiceActivity[0],2),
+                  "Speech Rate:", round(features.syllablesPerSecond[0],2),
+                  "Filled pauses:", round(features.filledPauses[0],2),
+                  "Time to run:", round(time.time() - featureExtractionStartTime,4),
+                  end="                    \r")
+
     # | Extracts features from live audio.
     def getFeaturesFromLiveInput(self):
         for featureName in self.features:
@@ -499,40 +520,31 @@ class SpeechAnalyzer:
         stepSampleSize = int(sampleRate * self.stepSize)
 
         startTime = time.time()
+        runTime = time.time()
+        printLock = threading.Lock()
 
         try:
             # Record until the user stops
             while True:
                 # Read in from microphone
                 buffer = audioStream.read(self.recordingBufferSize)
+                # print("reading from buffer", len(buffer), data.shape, time.time() - runTime)
+                # runTime = time.time()
 
                 # Convert to mono float data
                 waveData = wavio._wav2array(self.recordingChannels, audioController.get_sample_size(self.recordingFormat), buffer)
-                monoWaveData = np.mean(waveData,axis=1)
+                monoWaveData = np.mean(waveData, axis=1)
 
                 # Add the just-read buffer to the current running array of audio data
                 data = np.append(data, monoWaveData)
 
                 # Once enough time has passed to include an entire window
-                if data.size >= windowSampleSize:
+                if data.size >= windowSampleSize and data.size >= stepSampleSize:
                     # Chop out a window sized section of data
                     currentWindowSelection = data[0:windowSampleSize]
 
-                    # Create an object to pass around
-                    audio = audioModule.Audio(data=currentWindowSelection)
-                    audio.sampleRate = sampleRate
-                    audio.numberOfChannels = 2 # TODO: Check if this should be 1
-
-                    # Get all features for this window of audio
-                    features = self.getFeaturesFromAudio(audio)
-
-                    print("\u001b[31m• Live\u001b[0m", str((time.time() - startTime))[:5], "elapsed.",
-                          "Mean pitch:", features.meanPitch[0],
-                          "Voice activity:", features.meanVoiceActivity[0],
-                          "Speech Rate:", features.syllablesPerSecond[0],
-                          "Filled pauses:", features.filledPauses[0],
-                          "Time:", time.time() - startTime,
-                          end="                    \r")
+                    featureThread = multiprocessing.Process(target=self.getFeaturesInBackground, args=(currentWindowSelection, sampleRate, startTime, time.time(), printLock,))
+                    featureThread.start()
 
                     # Reduce the size of the audio data array to move the beggining
                     # forward by one step size so the next window is offset by this amount
@@ -540,7 +552,7 @@ class SpeechAnalyzer:
 
         # User stops with ctrl + c
         except KeyboardInterrupt:
-            print("\rStopped!                                                                     ")
+            print("    \nStopped!                                                                     ")
 
         # Clean up audio session
         audioStream.stop_stream()
