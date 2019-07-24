@@ -130,7 +130,7 @@ def trainNetwork(inputs, labels, directory):
         model.save(directory + name + '.tflearn')
 
 def main():
-    directory = "./features/"
+    directory = "./features/current30second/"
 
     inputs, labels = loadData(directory)
     trainNetwork(inputs, labels, directory)

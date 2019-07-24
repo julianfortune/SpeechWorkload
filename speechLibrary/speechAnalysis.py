@@ -354,7 +354,7 @@ class SpeechAnalyzer:
 
     # | Write array of feature names to file to label each column.
     def saveLabelsToFile(self, directory):
-        with open(directory + 'labels.csv', 'w') as outputFile:
+        with open(directory + 'labels.csv', 'w+') as outputFile:
             writer = csv.writer(outputFile)
             writer.writerow(["time"] + self.features)
 

@@ -8,4 +8,4 @@ analyzer = speechAnalysis.SpeechAnalyzer()
 
 analyzer.printStatus = True
 
-analyzer.createFeatureFilesFromDirectory("../media/Participant_Audio/", "./featuresCurrent/")
+analyzer.createFeatureFilesFromDirectory("../media/Participant_Audio/", "./features/current10second/")

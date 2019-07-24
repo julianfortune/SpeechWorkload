@@ -42,7 +42,7 @@ def compareArrays(oldLabels, oldFeatures, newLabels, newFeatures):
                     print(YELLOW + "~ '" + featureName + "' modified" + RESET)
 
                     numberChanged = newColumn.size - (oldColumn == newColumn).sum()
-                    differences = newColumn - oldColumn
+                    differences = abs(newColumn - oldColumn)
 
                     print(YELLOW + "    - " + str(numberChanged) + " out of "
                           + str(newColumn[1:].size) + " entries changed." + RESET )

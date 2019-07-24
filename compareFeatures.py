@@ -5,8 +5,8 @@ import matplotlib.pyplot as plt # Visualisation
 import csv
 
 def graphParticipants():
-    testDir = "./featuresTest/"
-    oldDir =  "./features/"
+    testDir = "./features/test/"
+    oldDir =  "./features/HFES"
 
     oldLabels = []
     with open(oldDir + 'labels.csv', 'r') as csvfile:
@@ -40,8 +40,8 @@ def graphParticipants():
 def compareParticipant():
     participant = 'p10_nl'
 
-    oldDir = "./featuresTest/"
-    testDir =  "./featuresCurrent/"
+    oldDir = "./features/HFES/"
+    testDir =  "./features/current30second/"
 
     oldLabels = []
     with open(oldDir + 'labels.csv', 'r') as csvfile:
