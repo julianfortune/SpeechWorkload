@@ -36,6 +36,8 @@ def loadData(directory, inputFeaturesToDiscard=[]):
     for feature in inputFeaturesToDiscard:
         assert feature in inputFeatureNames, "Invalid feature to discard."
 
+    inputFeaturesToDiscard.sort(key=lambda feature: inputFeatureNames.index(feature), reverse=True)
+
     numberOfInputs = len(inputFeatureNames) - len(inputFeaturesToDiscard)
 
     labels = np.empty(0)
@@ -132,7 +134,8 @@ def trainNetwork(inputs, labels, directory):
 def main():
     directory = "./features/current30second/"
 
-    inputs, labels = loadData(directory)
+    inputs, labels = loadData(directory,
+                              inputFeaturesToDiscard=["meanIntensity", "stDevIntensity", "syllablesPerSecond", "filledPauses"])
     trainNetwork(inputs, labels, directory)
 
 if __name__ == "__main__":

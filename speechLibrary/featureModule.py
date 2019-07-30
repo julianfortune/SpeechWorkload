@@ -15,6 +15,7 @@ import time
 
 import matplotlib.pyplot as plt
 
+DEBUG_VOICE_SYLLABLE_GRAPH = False
 DEBUG_VOICE_ACTIVITY_GRAPH = False
 DEBUG_FILLED_PAUSE_GRAPH = False
 DEBUG_TIME = False
@@ -122,14 +123,19 @@ def getShortTermEnergy(data, sampleRate, windowSize, stepSize):
 
     return shortTermEnergy
 
-def getRMSPower(data, sampleRate, windowSize, stepSize):
+def getRMSIntensity(data, sampleRate, windowSize, stepSize):
     windowSizeInSamples = int(sampleRate / 1000 * windowSize)
     stepSizeInSamples = int(sampleRate / 1000 * stepSize)
 
-    rms = np.array([
-        math.sqrt(sum(data[step:step+windowSizeInSamples]**2) / windowSizeInSamples)
-        for step in range(0, len(data), stepSizeInSamples)
-    ])
+    # Pad the end of the array
+    data = np.pad(data, (0, int(windowSizeInSamples)), mode='constant')
+
+    # Create frames using optimized algorithm
+    framedData = librosa.util.frame(data,
+                                    frame_length=windowSizeInSamples,
+                                    hop_length=stepSizeInSamples)
+
+    rms = np.sqrt(np.mean((framedData)**2, axis=0, keepdims=True))[0]
 
     return rms
 
@@ -206,6 +212,23 @@ def getSyllables(data, sampleRate, pitchValues, windowSize, stepSize, energyPeak
                                                                           tolerance=pitchDistanceTolerance):
             validPeaks = np.append(validPeaks, peaks[i])
             syllables[peaks[i]] = 1
+
+    if __debug__:
+        if DEBUG_VOICE_SYLLABLE_GRAPH:
+            # Show graph if debugging
+            times = np.arange(0, len(data)/sampleRate, stepSize/1000)
+            energyTimes = np.arange(0, len(data)/sampleRate, stepSize/1000)[:len(energy)]
+            zcrTimes = np.arange(0, len(data)/sampleRate, stepSize/1000)[:len(zcr)]
+            pitchTimes = np.arange(0, len(data)/sampleRate, stepSize/1000)[:len(pitchValues)]
+            pitchValues[pitchValues == 0] = np.nan
+
+            syllableMarkers = np.full(len(validPeaks), 0)
+
+            plt.figure(figsize=[16, 8])
+            plt.plot(energyTimes, energy / 100000000, zcrTimes, zcr * 10000, pitchTimes, pitchValues)
+            plt.plot(np.array(validPeaks) * stepSizeInSamples / sampleRate, syllableMarkers, 'go')
+            plt.show()
+            plt.close()
 
     # Return syllables & candidate peaks that didn't meet voicing requirements.
     return syllables, np.array(validPeaks) * stepSizeInSamples / sampleRate
@@ -341,7 +364,7 @@ def getFilledPauses(data, sampleRate, windowSize, stepSize, minumumLength, minim
             energyTimes = np.arange(0, len(data)/sampleRate, stepSize/1000)[:len(energy)]
 
             plt.figure(figsize=[16, 8])
-            plt.plot(energyTimes, energy)
+            plt.plot(energyTimes, energy[:len(energyTimes)] / 10)
             plt.plot(times, firstFormant, times, secondFormant, np.array(timeStamps), filledPausesMarkers, 'go')
             plt.show()
             plt.close()

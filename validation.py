@@ -180,7 +180,7 @@ def voiceActivity():
     print("   Actual     | Seconds with voice activity:", totalNumberOfVoiceActivityInstances)
     print("  Algorithm   | Correct detectsions:", totalNumberOfCorrectlyDetectedVoiceActivityInstances, "False alarms:", totalNumberOfFalseAlarms, "Precision:", precision, "Recall:", recall, "F-measure", fMeasure)
 
-def syllable():
+def syllableUsingTranscript():
     speechAnalyzer = speechAnalysis.SpeechAnalyzer()
 
     transcript = []
@@ -247,7 +247,232 @@ def syllable():
           "False alarms:", totalNumberOfFalseAlarms,
           "Precision:", precision, "Recall:", recall, "F1", fMeasure)
 
-def filledPauses():
+def syllablesUsingPRAATScript():
+    validationTopLevelPath = "../media/validation/"
+
+    speechAnalyzer = speechAnalysis.SpeechAnalyzer()
+
+    print("name\t", "praatSyllableCount", "syllableCount")
+
+    praat = []
+    algorithm = []
+
+    # Iterate through sub directories
+    for validationSetPath in sorted(glob.iglob(validationTopLevelPath + '*/')):
+
+        praatOutput = []
+
+        with open(validationSetPath + "praat_script_output.txt") as transcriptFile:
+            lines = transcriptFile.readlines()
+            for row in lines:
+                praatOutput.append(row.strip().split(', '))
+
+        # Remove the header row
+        praatOutput.pop(0)
+
+        # Clean up the data a bit
+        for index in range(0, len(praatOutput)):
+            oringinalFileName = '_'.join(praatOutput[index][0].split('_')[:3]) + '.' + '.'.join(praatOutput[index][0].split('_')[3:])
+
+            praatOutput[index] = praatOutput[index][:2]
+            praatOutput[index][1] = int(praatOutput[index][1])
+            praatOutput[index][0] = oringinalFileName
+
+        for filePath in sorted(glob.iglob(validationSetPath + "*.wav")):
+            fileName = os.path.basename(filePath)[:-4]
+
+            existsInPraat = False
+
+            for sample in praatOutput:
+                name = sample[0]
+
+                if name == fileName:
+                    existsInPraat = True
+
+                    praatSyllableCount = sample[1]
+
+                    audio = audioModule.Audio(filePath=filePath)
+                    audio.makeMono()
+
+                    pitches = speechAnalyzer.getPitchFromAudio(audio)
+                    syllables, _ = speechAnalyzer.getSyllablesFromAudio(audio, pitches= pitches)
+
+                    if True:
+                        voiceActivity = speechAnalyzer.getVoiceActivityFromAudio(audio, pitches= pitches)
+                        bufferFrames = int(speechAnalyzer.voiceActivityMaskBufferSize / speechAnalyzer.featureStepSize)
+                        mask = np.invert(featureModule.createBufferedBinaryArrayFromArray(voiceActivity.astype(bool), bufferFrames))
+                        syllables[mask] = 0
+
+                    syllableCount = int(sum(syllables))
+
+                    praat.append(praatSyllableCount)
+                    algorithm.append(syllableCount)
+
+                    print('_'.join(name.split('_')[:2]), "\t", praatSyllableCount, syllableCount)
+
+            if not existsInPraat:
+                print("WARNING: Couldn't find " + fileName + " in PRAAT output.")
+
+    print(praat, algorithm)
+
+    plt.figure(figsize=[16, 8])
+    plt.plot(praat, algorithm, 'o', alpha=0.15, label="30 second audio sample")
+    plt.title('Comparison between PRAAT and the syllable algorithm')
+    plt.ylabel('Syllables detected by our algorithm')
+    plt.xlabel('Syllables detected by PRAAT script')
+    plt.legend(loc='upper left')
+    plt.show()
+
+def syllablesUsingHarvardSentences():
+    validationTopLevelPath = "../media/validation/"
+
+    speechAnalyzer = speechAnalysis.SpeechAnalyzer()
+
+    print("name\t", "praatSyllableCount", "syllableCount")
+
+    praat = []
+    algorithm = []
+
+    # Iterate through sub directories
+    for validationSetPath in sorted(glob.iglob(validationTopLevelPath + '*/')):
+
+        praatOutput = []
+
+        with open(validationSetPath + "praat_script_output.txt") as transcriptFile:
+            lines = transcriptFile.readlines()
+            for row in lines:
+                praatOutput.append(row.strip().split(', '))
+
+        # Remove the header row
+        praatOutput.pop(0)
+
+        # Clean up the data a bit
+        for index in range(0, len(praatOutput)):
+            oringinalFileName = '_'.join(praatOutput[index][0].split('_')[:3]) + '.' + '.'.join(praatOutput[index][0].split('_')[3:])
+
+            praatOutput[index] = praatOutput[index][:2]
+            praatOutput[index][1] = int(praatOutput[index][1])
+            praatOutput[index][0] = oringinalFileName
+
+        for filePath in sorted(glob.iglob(validationSetPath + "*.wav")):
+            fileName = os.path.basename(filePath)[:-4]
+
+            existsInPraat = False
+
+            for sample in praatOutput:
+                name = sample[0]
+
+                if name == fileName:
+                    existsInPraat = True
+
+                    praatSyllableCount = sample[1]
+
+                    audio = audioModule.Audio(filePath=filePath)
+                    audio.makeMono()
+
+                    pitches = speechAnalyzer.getPitchFromAudio(audio)
+                    syllables, _ = speechAnalyzer.getSyllablesFromAudio(audio, pitches= pitches)
+
+                    if True:
+                        voiceActivity = speechAnalyzer.getVoiceActivityFromAudio(audio, pitches= pitches)
+                        bufferFrames = int(speechAnalyzer.voiceActivityMaskBufferSize / speechAnalyzer.featureStepSize)
+                        mask = np.invert(featureModule.createBufferedBinaryArrayFromArray(voiceActivity.astype(bool), bufferFrames))
+                        syllables[mask] = 0
+
+                    syllableCount = int(sum(syllables))
+
+                    praat.append(praatSyllableCount)
+                    algorithm.append(syllableCount)
+
+                    print('_'.join(name.split('_')[:2]), "\t", praatSyllableCount, syllableCount)
+
+            if not existsInPraat:
+                print("WARNING: Couldn't find " + fileName + " in PRAAT output.")
+
+    print(praat, algorithm)
+
+    plt.figure(figsize=[16, 8])
+    plt.plot(praat, algorithm, 'o', alpha=0.15, label="30 second audio sample")
+    plt.title('Comparison between PRAAT and the syllable algorithm')
+    plt.ylabel('Syllables detected by our algorithm')
+    plt.xlabel('Syllables detected by PRAAT script')
+    plt.legend(loc='upper left')
+    plt.show()
+
+def testingWithSilentNonSilentAudio():
+    speechAnalyzer = speechAnalysis.SpeechAnalyzer()
+
+    praat = []
+    algorithm = []
+
+    praatOutput = []
+
+    validationSetPath = "../media/silent_praat_testing/"
+
+    with open(validationSetPath + "praat_script_output.txt") as transcriptFile:
+        lines = transcriptFile.readlines()
+        for row in lines:
+            praatOutput.append(row.strip().split(', '))
+
+    # Remove the header row
+    praatOutput.pop(0)
+
+    # Clean up the data a bit
+    for index in range(0, len(praatOutput)):
+        oringinalFileName = '_'.join(praatOutput[index][0].split('_')[:3]) + '.' + '.'.join(praatOutput[index][0].split('_')[3:])
+
+        praatOutput[index] = praatOutput[index][:2]
+        praatOutput[index][1] = int(praatOutput[index][1])
+        praatOutput[index][0] = oringinalFileName
+
+    for filePath in sorted(glob.iglob(validationSetPath + "*.wav")):
+        fileName = os.path.basename(filePath)[:-4]
+
+        existsInPraat = False
+
+        for sample in praatOutput:
+            name = sample[0]
+
+            if name == fileName:
+                existsInPraat = True
+
+                praatSyllableCount = sample[1]
+
+                audio = audioModule.Audio(filePath=filePath)
+                audio.makeMono()
+
+                pitches = speechAnalyzer.getPitchFromAudio(audio)
+                syllables, _ = speechAnalyzer.getSyllablesFromAudio(audio, pitches= pitches)
+
+                if True:
+                    voiceActivity = speechAnalyzer.getVoiceActivityFromAudio(audio, pitches= pitches)
+                    bufferFrames = int(speechAnalyzer.voiceActivityMaskBufferSize / speechAnalyzer.featureStepSize)
+                    mask = np.invert(featureModule.createBufferedBinaryArrayFromArray(voiceActivity.astype(bool), bufferFrames))
+                    syllables[mask] = 0
+
+                syllableCount = int(sum(syllables))
+
+                praat.append(praatSyllableCount)
+                algorithm.append(syllableCount)
+
+                print('_'.join(name.split('_')[:2]), "\t", praatSyllableCount, syllableCount)
+
+        if not existsInPraat:
+            print("WARNING: Couldn't find " + fileName + " in PRAAT output.")
+
+    print(praat, algorithm)
+
+    plt.figure(figsize=[16, 8])
+    plt.plot(praat, algorithm, 'o', alpha=0.15, label="30 second audio sample")
+    plt.title('Comparison between PRAAT and the syllable algorithm')
+    plt.ylabel('Syllables detected by our algorithm')
+    plt.xlabel('Syllables detected by PRAAT script')
+    plt.legend(loc='upper left')
+    plt.xlim(-0.5, 80)
+    plt.ylim(-0.5, 40)
+    plt.show()
+
+def filledPausesUsingTranscript():
     speechAnalyzer = speechAnalysis.SpeechAnalyzer()
 
     transcript = []
@@ -317,7 +542,81 @@ def filledPauses():
           "False alarms:", totalNumberOfFalseAlarms, "Precision:", precision,
           "Recall:", recall, "F1", fMeasure)
 
+def filledPausesWithSVCCorpus():
+    speechAnalyzer = speechAnalysis.SpeechAnalyzer()
+
+    corpusPath = "../media/vocalizationcorpus"
+    labelsPath = corpusPath + "/labels.txt"
+
+    transcript = []
+
+    totalNumberOfFilledPauses = 0
+    totalNumberOfCorrectlyDetectedPauses = 0
+    totalNumberOfFalseAlarms = 0
+
+    with open(labelsPath) as transcriptFile:
+        lines = transcriptFile.readlines()
+        for row in lines:
+            transcript.append(row.strip().split(','))
+
+    # Remove header line
+    transcript.pop(0)
+
+    for row in transcript:
+        fileName = row[0]
+
+        utterances = row[4:]
+
+        # print(fileName, utterances)
+
+        utterances = np.array(utterances)
+        utterances = utterances.reshape((int(utterances.shape[0]/3)), 3)
+
+        if 'filler' in utterances:
+            filePath = corpusPath + "/data/" + fileName + ".wav"
+
+            audio = audioModule.Audio(filePath=filePath)
+            if audio.numberOfChannels != 1:
+                audio.makeMono()
+
+            filledPauses, timeStamps = speechAnalyzer.getFilledPausesFromAudio(audio)
+
+            for utterance in utterances:
+                if utterance[0] == "filler":
+                    totalNumberOfFilledPauses += 1
+
+            for filledPauseDetectedTime in timeStamps:
+                correctDetection = False
+                for utterance in utterances:
+                    if utterance[0] == "filler" and abs(float(utterance[1]) - filledPauseDetectedTime) < 0.5:
+                        correctDetection = True
+
+                if correctDetection:
+                    totalNumberOfCorrectlyDetectedPauses += 1
+                else:
+                    totalNumberOfFalseAlarms += 1
+
+            print(fileName, totalNumberOfFilledPauses, totalNumberOfCorrectlyDetectedPauses, totalNumberOfFalseAlarms)
+
+def testing():
+    speechAnalyzer = speechAnalysis.SpeechAnalyzer()
+
+    # audio = audioModule.Audio(filePath="../media/SBC001.wav")
+    audio = audioModule.Audio(filePath="../media/cchp_english/p102/p102_en_pd.wav")
+    if audio.numberOfChannels != 1:
+        audio.makeMono()
+
+    filledPauses, timeStamps = speechAnalyzer.getFilledPausesFromAudio(audio)
+    print(timeStamps)
+
 def main():
-    filledPauses()
+    # createMultipleValidationSets(participantDirectoryPath= "../media/Participant_Audio/",
+    #                              outputDirectoryPath= "../media/validationTesting/",
+    #                              numberOfSets= 10,
+    #                              segmentLengthInSeconds= 30)
+
+    # filledPausesWithSVCCorpus()
+
+    testingWithSilentNonSilentAudio()
 
 main()

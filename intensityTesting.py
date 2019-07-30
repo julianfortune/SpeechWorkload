@@ -66,7 +66,37 @@ def compareEnergyAndIntensity():
     plt.title(name)
     plt.show()
 
+def compareLibrosaAndRMS():
+    filePath = "../media/Participant_Audio/p10_ol.wav"
+    name = os.path.basename(filePath)[:-4]
+
+    stepSize = 10 # In milliseconds
+    windowSize = 10
+
+    audio = audioModule.Audio(filePath=filePath)
+    if audio.numberOfChannels != 1:
+        audio.makeMono()
+
+    librosaRMS = featureModule.getEnergy(data= audio.data,
+                                         sampleRate= audio.sampleRate,
+                                         windowSize= windowSize,
+                                         stepSize= stepSize)
+
+    rms = featureModule.getRMSIntensity(data= audio.data,
+                                        sampleRate= audio.sampleRate,
+                                        windowSize= windowSize,
+                                        stepSize= stepSize)
+
+    times = np.arange(0, len(audio.data)/audio.sampleRate, stepSize/1000)
+
+    plt.figure(figsize=[16, 8])
+    plt.plot(times, librosaRMS)
+    plt.plot(times, rms)
+    plt.title(name)
+    plt.show()
+
+
 def main():
-    compareEnergyAndIntensity()
+    compareLibrosaAndRMS()
 
 main()
