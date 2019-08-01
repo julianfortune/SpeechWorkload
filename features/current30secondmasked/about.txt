@@ -2,10 +2,10 @@ Started 2019-08-01
 
 Description --------------------------------------------------
 
-Features extracted with a 30 second window, but with the pitch
-and syllable features masked. The pitch and syllable features
-are masked with voice activity so pitch is always 0 when no
-voice activity is present, and syllables cannot occur.
+Same as other 30 second window features except all of the
+features are masked with voice activity. This way, if any
+need to be masked, they can be drawn from these npy files
+and slotted in to the normal arrays.
 
 Parameters ---------------------------------------------------
 
@@ -18,10 +18,10 @@ energyThresholdRatio = 4
 
 voiceActivityMaskBufferSize (milliseconds) = 100
 
-maskEnergyWithVoiceActivity = False
+maskEnergyWithVoiceActivity = True
 maskPitchWIthVoiceActivity = True
 maskSyllablesWithVoiceActivity = True
-maskFilledPausesWithVoiceActivity = False
+maskFilledPausesWithVoiceActivity = True
 
 energyWindowSize = 50
 
