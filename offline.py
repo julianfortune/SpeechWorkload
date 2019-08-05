@@ -7,5 +7,6 @@ analyzer = speechAnalysis.SpeechAnalyzer()
 #Leave default parameters
 
 analyzer.printStatus = True
+analyzer.lookBackSize = 5
 
-analyzer.createFeatureFilesFromDirectory("../media/Participant_Audio/", "./features/current30secondmasked/")
+analyzer.createFeatureFilesFromDirectory("../media/Participant_Audio/", "./features/current5second/")

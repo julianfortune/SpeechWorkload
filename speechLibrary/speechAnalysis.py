@@ -44,10 +44,10 @@ class SpeechAnalyzer:
 
         self.voiceActivityMaskBufferSize = 100 # In milliseconds
 
-        self.maskEnergyWithVoiceActivity = True
+        self.maskEnergyWithVoiceActivity = False
         self.maskPitchWIthVoiceActivity = True
         self.maskSyllablesWithVoiceActivity = True
-        self.maskFilledPausesWithVoiceActivity = True
+        self.maskFilledPausesWithVoiceActivity = False
 
         # Energy parameters
         self.energyWindowSize = 50

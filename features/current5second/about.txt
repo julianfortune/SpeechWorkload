@@ -1,10 +1,9 @@
-Started 2019-07-26
+Started 2019-08-05
 
 Description --------------------------------------------------
 
-Most up to date anlgorithms (after HFES, before official
-validation) with a 5 sec window size. Has speed-up 
-improvements same as 10 sec features.
+Most up to date features with masking. Ready to go for
+analyses.
 
 Parameters ---------------------------------------------------
 
@@ -18,8 +17,8 @@ energyThresholdRatio = 4
 voiceActivityMaskBufferSize (milliseconds) = 100
 
 maskEnergyWithVoiceActivity = False
-maskPitchWIthVoiceActivity = False
-maskSyllablesWithVoiceActivity = False
+maskPitchWIthVoiceActivity = True
+maskSyllablesWithVoiceActivity = True
 maskFilledPausesWithVoiceActivity = False
 
 energyWindowSize = 50
