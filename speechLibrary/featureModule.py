@@ -370,3 +370,86 @@ def getFilledPauses(data, sampleRate, windowSize, stepSize, minumumLength, minim
             plt.close()
 
     return filledPauses, np.array(timeStamps)
+
+# | The start of an implementation of Garg and Ward's filled pause algorithm
+def getFilledPausesGargAndWard(data, sampleRate):
+    # Convert window and step sizes to samples for Librosa and to prevent rounding issues with RMSE.
+    windowSizeInSamples = int(sampleRate / 1000 * windowSize)
+    stepSizeInSamples = int(sampleRate / 1000 * stepSize)
+
+    timeStamps = []
+
+    # The number of steps in the feature arrays.
+    numberOfSteps = int(len(data) / stepSizeInSamples)
+
+    # Convert to the parselmouth custom sound type (req'd for formant function).
+    parselSound = parselmouth.Sound(values=data, sampling_frequency=sampleRate)
+
+    # Get the pitch values using PRAAT auto-correlation.
+    pitchData = parselSound.to_pitch_ac(time_step=stepSize/1000,
+                                        pitch_ceiling=400.0)
+    pitchValues = np.array(pitchData.selected_array['frequency'])
+
+    # Used for finding time stamp.
+    times = np.arange(0, len(data)/sampleRate, stepSizeInSamples/sampleRate) # seconds
+
+    # Step through each data point in formant and energy arrays and check for
+    # filler utterances over the next 'minimumLength' size window of features.
+    for step in range(0, numberOfSteps-utteranceWindowSize):
+
+        previousFilledPause = 0
+        if len(timeStamps) > 0:
+            previousFilledPause = timeStamps[-1]
+        else:
+            previousFilledPause = -10
+
+    if __debug__:
+        if DEBUG_FILLED_PAUSE_GRAPH:
+            # Show graph if debugging
+            filledPausesMarkers = np.full(len(timeStamps), 0)
+            energyTimes = np.arange(0, len(data)/sampleRate, stepSize/1000)[:len(energy)]
+
+            plt.figure(figsize=[16, 8])
+            plt.plot(energyTimes, energy, energyTimes, pitch)
+            plt.plot(np.array(timeStamps), filledPausesMarkers, 'go')
+            plt.show()
+            plt.close()
+
+    return filledPauses, np.array(timeStamps)
+
+# | The start of an implementation of "A Simple but Efficient...".
+def getVoiceActivityMoattarAndHomayounpour(data, sampleRate):
+    # Primary thresholds
+    energyPrimaryThreshold = 40
+    frequencyPrimaryThreshold = 185
+    spectralFlatnessMeasurePrimaryThreshold = 5
+
+    frameSize = 10 # Milliseconds
+    numberOfFrames = len(data) / sampleRate * 1000
+
+    # Convert window and step sizes to samples for Librosa.
+    frameSizeInSamples = int(sampleRate / 1000 * frameSize)
+
+    dataFrames = librosa.util.frame(data, frame_length=frameSizeInSamples, hop_length=frameSizeInSamples)
+
+    voiceActivity = []
+
+    energies = []
+    dominantFrequencies = []
+    spectralFlatnessMeasures = []
+
+    silenceCount = 0
+
+    for frame in dataFrames:
+        currentActivity = 0
+
+        if counter > 1:
+            voiceActivity.append(1)
+        else:
+            voiceActivity.append(0)
+            silenceCount += 1
+            minEnergy = ( (silenceCount * minEnergy) + energy[i] ) / ( silenceCount + 1 )
+
+        energyThreshold = energyPrimaryThreshold * math.log(minEnergy)
+
+    return voiceActivity
