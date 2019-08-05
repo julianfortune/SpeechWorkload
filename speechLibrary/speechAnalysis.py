@@ -220,15 +220,20 @@ class SpeechAnalyzer:
         # Mask features with voice activity but setting regions with no voice
         # activity (incl. buffered margin of error) to zero.
         if self.maskEnergyWithVoiceActivity:
+            # Prevent mismatches in the lengths of the arrays
+            energy = energy[:len(mask)]
             energy[mask[:len(energy)]] = 0
 
         if self.maskPitchWIthVoiceActivity:
+            pitches = pitches[:len(mask)]
             pitches[mask[:len(pitches)]] = np.nan
 
         if self.maskSyllablesWithVoiceActivity:
+            syllables = syllales[:len(mask)]
             syllables[mask[:len(syllables)]] = 0
 
         if self.maskFilledPausesWithVoiceActivity:
+            filledPauses = filledPauses[:len(mask)]
             filledPauses[mask[:len(filledPauses)]] = 0
 
 
