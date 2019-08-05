@@ -229,7 +229,7 @@ class SpeechAnalyzer:
             pitches[mask[:len(pitches)]] = np.nan
 
         if self.maskSyllablesWithVoiceActivity:
-            syllables = syllales[:len(mask)]
+            syllables = syllables[:len(mask)]
             syllables[mask[:len(syllables)]] = 0
 
         if self.maskFilledPausesWithVoiceActivity:
