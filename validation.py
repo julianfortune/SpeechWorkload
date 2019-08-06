@@ -88,13 +88,8 @@ def graphValidationResults(validationAlgorithmValues, ourAlgorithmCorrectDetecti
     for xValue, yValue in enumerate(ourAlgorithmFalseAlarms):
         vShift = ourAlgorithmCorrectDetections[int(xValue)]
 
-        plt.text(xValue + hShift + spacing + width, yValue + vShift, " " + str(yValue),
+        plt.text(xValue + hShift + spacing + width, yValue + vShift, " " + str(yValue + vShift),
                  color='black', va='bottom', ha='center')
-
-    for xValue, yValue in enumerate(ourAlgorithmCorrectDetections):
-        if yValue > 5:
-            plt.text(xValue + hShift + spacing + width, yValue - correctDetectionShift, " " + str(yValue),
-                     color='black', va='top', ha='center')
 
     plt.ylabel(yLabel)
     plt.xlabel(xLabel)
@@ -152,15 +147,8 @@ def graphFilledPausesResults():
 
 
 def main():
-    # createMultipleValidationSets(participantDirectoryPath= "../media/Participant_Audio/",
-    #                              outputDirectoryPath= "../media/validationTesting/",
-    #                              numberOfSets= 10,
-    #                              segmentLengthInSeconds= 30)
-
-    # graphSyllableResults()
-    # graphVoiceActivityResults()
-    # graphFilledPausesResults()
-
-    createMultipleValidationSets()
+    graphSyllableResults()
+    graphVoiceActivityResults()
+    graphFilledPausesResults()
 
 main()
