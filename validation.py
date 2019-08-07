@@ -131,7 +131,7 @@ def graphVoiceActivityResults():
 def graphFilledPausesResults():
     actualFilledPausesCount =       [ 50, 76, 43, 51,  2, 64,  5, 77,  2, 22, 53]
     ourAlgorithmFilledPausesCount = [ 36,  9,  6, 29,  2, 14,  1,  1,  1, 17,  1]
-    ourAlgorithmFalseAlarms = [  0,  0,  0,  1, 17,  1,  0,  0,  5,  1,  0]
+    ourAlgorithmFalseAlarms =       [  0,  0,  0,  1, 17,  1,  0,  0,  5,  1,  0]
 
     graphValidationResults(actualFilledPausesCount,
                            ourAlgorithmFilledPausesCount,
