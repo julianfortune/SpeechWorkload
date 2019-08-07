@@ -284,6 +284,8 @@ class SpeechAnalyzer:
     # | Returns:
     # |   - Numpy array with features
     def getFeaturesFromFileUsingWindowing(self, filePath):
+        name = os.path.basename(filePath)
+
         # Read in the file
         audio = audioModule.Audio(filePath)
         if audio.numberOfChannels > 1:
@@ -305,7 +307,7 @@ class SpeechAnalyzer:
 
             if self.printStatus:
                 print("[", str(step/audio.length*100)[:4], "% ]",
-                      "Second", int(step/audio.sampleRate), "of", filePath,
+                      "Second", int(step/audio.sampleRate), "of", name,
                       end="")
                 if int(step/audio.sampleRate) > self.lookBackSize:
                     print(" - Time per second:", (time.time() - startTime)/(int(step/audio.sampleRate) - self.lookBackSize), end="\r")

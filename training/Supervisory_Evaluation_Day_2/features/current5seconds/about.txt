@@ -1,0 +1,53 @@
+Started 2019-08-07
+
+Description --------------------------------------------------
+
+Current feature extraction run on Day 2 audio files to start
+running analyses.
+
+Parameters ---------------------------------------------------
+
+stepSize (seconds) = 1
+lookBackSize (seconds) = 5
+
+features = ['meanIntensity', 'stDevIntensity', 'meanPitch', 'stDevPitch', 'stDevVoiceActivity', 'meanVoiceActivity', 'syllablesPerSecond', 'filledPauses']
+featureStepSize (milliseconds) = 10
+energyThresholdRatio = 4
+
+voiceActivityMaskBufferSize (milliseconds) = 100
+
+maskEnergyWithVoiceActivity = False
+maskPitchWIthVoiceActivity = True
+maskSyllablesWithVoiceActivity = True
+maskFilledPausesWithVoiceActivity = False
+
+energyWindowSize = 50
+
+pitchMinimumRunLength = 4
+
+voiceActivityIsAdaptive = True
+voiceActivityMaskBufferSize (milliseconds) = 50
+voiceActivityZCRMaximumThreshold (milliseconds) = 0.04
+voiceActivityZCRMinimumThreshold (milliseconds) = 0.008
+voiceActivityEnergyThreshold (milliseconds) = 40
+voiceActivityPitchTolerance (milliseconds) = 8
+voiceActivityMinimumRunLength (milliseconds) = 10
+
+syllableWindowSize (milliseconds) = 50
+syllablePeakMinimumDistance = 4
+syllablePeakMinimumWidth = 2
+syllablePitchDistanceTolerance = 4
+syllableZcrThreshold = 0.06
+
+filledPauseWindowSize (milliseconds) = 50
+filledPauseMinimumLength (milliseconds) = 250
+filledPauseMinimumDistanceToPrevious (milliseconds) = 1000
+filledPauseF1MaximumVariance = 60
+filledPauseF2MaximumVariance = 30
+filledPauseMaximumFormantDistance (Hz) = 1000
+
+recordingDeviceIndex = -1
+recordingBufferSize (samples) = 4096
+recordingFormat = 8
+recordingChannels = 2
+
