@@ -5,8 +5,8 @@ import matplotlib.pyplot as plt # Visualisation
 import csv
 
 def graphParticipants():
-    testDir = "./features/test/"
-    oldDir =  "./features/HFES"
+    testDir = "./training/Supervisory_Evaluation_Day_1/features/current5second/"
+    oldDir =  "./training/Supervisory_Evaluation_Day_1/features/HFES/"
 
     oldLabels = []
     with open(oldDir + 'labels.csv', 'r') as csvfile:
@@ -21,7 +21,7 @@ def graphParticipants():
             testLabels = row
 
     for testPath in sorted(glob.iglob(testDir + "*.npy")):
-        oldPath = oldDir + testPath.split('/')[2]
+        oldPath = oldDir + os.path.basename(testPath)
 
         newFeatures = numpy.load(testPath)
         oldFeatures = numpy.load(oldPath)
@@ -32,10 +32,8 @@ def graphParticipants():
                                oldFeatures= oldFeatures,
                                newLabels= testLabels,
                                newFeatures= newFeatures,
-                               filePath= testDir + name,
+                               filePath= "./figures/" + name,
                                name= name)
-
-
 
 def compareParticipant():
     participant = 'p10_nl'
@@ -65,6 +63,6 @@ def compareParticipant():
 
 
 def main():
-    compareParticipant()
+    graphParticipants()
 
 main()

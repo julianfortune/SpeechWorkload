@@ -56,6 +56,8 @@ class FeatureSet:
         self.filledPauses = np.append(self.filledPauses, secondFeatureSet.filledPauses)
 
 
+
+# | Removes consecutive values in runs less than the minimum length.
 def removeSmallRunsOfValues(npArray, minimumLength):
     currentlyInARun = False
     runStartingIndex = 0
@@ -70,6 +72,8 @@ def removeSmallRunsOfValues(npArray, minimumLength):
             if lengthOfRun < minimumLength:
                 np.put(npArray, range(runStartingIndex, index + 1), 0)
 
+# | Adds extra binary True values surrounding existing True values by the number
+# | of frames specified.
 def createBufferedBinaryArrayFromArray(npArray, frames):
     bufferedArray = np.full(len(npArray), False)
 
@@ -88,7 +92,7 @@ def createBufferedBinaryArrayFromArray(npArray, frames):
     return bufferedArray
 
 # | Checks surrounding values in an array around the index to check if
-# | any of them are above the threshold
+# | any of them are above the threshold.
 def aboveThresholdWithinTolerance(data, indexInQuestion, threshold, tolerance):
     window = tolerance * 2 - 1
     for index in range(indexInQuestion - tolerance,indexInQuestion + tolerance):
@@ -97,9 +101,11 @@ def aboveThresholdWithinTolerance(data, indexInQuestion, threshold, tolerance):
                 return True
     return False
 
+# | Returns the minimum energy threshold using custom metric.
 def getEnergyMinimumThreshold(energy, signalToNoiseRatio):
     return np.percentile(energy, 10) * signalToNoiseRatio
 
+# | Returns energy values using librosa RMS.
 def getEnergy(data, sampleRate, windowSize, stepSize):
     windowSizeInSamples = int(sampleRate / 1000 * windowSize)
     stepSizeInSamples = int(sampleRate / 1000 * stepSize)
@@ -107,6 +113,7 @@ def getEnergy(data, sampleRate, windowSize, stepSize):
     energy = librosa.feature.rms(data, frame_length=windowSizeInSamples, hop_length=stepSizeInSamples)[0]
     return energy
 
+# | Returns energy values using short term energy calculation.
 def getShortTermEnergy(data, sampleRate, windowSize, stepSize):
     windowSizeInSamples = int(sampleRate / 1000 * windowSize)
     stepSizeInSamples = int(sampleRate / 1000 * stepSize)
@@ -123,6 +130,7 @@ def getShortTermEnergy(data, sampleRate, windowSize, stepSize):
 
     return shortTermEnergy
 
+# | Returns energy values using RMS calculation.
 def getRMSIntensity(data, sampleRate, windowSize, stepSize):
     windowSizeInSamples = int(sampleRate / 1000 * windowSize)
     stepSizeInSamples = int(sampleRate / 1000 * stepSize)
@@ -139,6 +147,7 @@ def getRMSIntensity(data, sampleRate, windowSize, stepSize):
 
     return rms
 
+# | Returns pitch values from PRAAT to_pitch_ac.
 def getPitch(data, sampleRate, stepSize, silenceProportionThreshold, minimumRunLength):
     # Convert to the parselmouth custom sound type (req'd for formant function).
     parselSound = parselmouth.Sound(values=data, sampling_frequency=sampleRate)
@@ -190,8 +199,6 @@ def getSyllables(data, sampleRate, pitchValues, windowSize, stepSize, energyPeak
 
     # Get energy threshold
     energyMinThreshold = getEnergyMinimumThreshold(energy, energyThresholdRatio)
-    # Adjust energy threshold for pitch algorithm.
-    fractionEnergyMinThreshold = energyMinThreshold / max(energy)
 
     # Get zero-crossing Rate
     zcr = librosa.feature.zero_crossing_rate(data, frame_length=windowSizeInSamples, hop_length=stepSizeInSamples)[0]
@@ -257,10 +264,10 @@ def getVoiceActivity(data, sampleRate, pitchValues, windowSize, stepSize, useAda
         currentActivity = 0
 
         if (zcr[i] < zcrMaximumThreshold and zcr[i] > zcrMinimumThreshold and
-            energy[i] > energyThreshold and aboveThresholdWithinTolerance(data=pitchValues,
-                                                                          indexInQuestion=i,
-                                                                          threshold=0,
-                                                                          tolerance=pitchTolerance)):
+            energy[i] > energyThreshold and aboveThresholdWithinTolerance(data= pitchValues,
+                                                                          indexInQuestion= i,
+                                                                          threshold= 0,
+                                                                          tolerance= pitchTolerance)):
 
             currentActivity = 1 # Voice acitivty present
         else:
@@ -371,7 +378,7 @@ def getFilledPauses(data, sampleRate, windowSize, stepSize, minumumLength, minim
 
     return filledPauses, np.array(timeStamps)
 
-# | The start of an implementation of Garg and Ward's filled pause algorithm
+# | [WIP] The start of an implementation of Garg and Ward's filled pause algorithm.
 def getFilledPausesGargAndWard(data, sampleRate):
     # Convert window and step sizes to samples for Librosa and to prevent rounding issues with RMSE.
     windowSizeInSamples = int(sampleRate / 1000 * windowSize)
@@ -417,7 +424,7 @@ def getFilledPausesGargAndWard(data, sampleRate):
 
     return filledPauses, np.array(timeStamps)
 
-# | The start of an implementation of "A Simple but Efficient...".
+# | [WIP] The start of an implementation of "A Simple but Efficient...".
 def getVoiceActivityMoattarAndHomayounpour(data, sampleRate):
     # Primary thresholds
     energyPrimaryThreshold = 40

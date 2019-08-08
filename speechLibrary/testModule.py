@@ -59,7 +59,6 @@ def compareArrays(oldLabels, oldFeatures, newLabels, newFeatures):
 
     print()
 
-
 # | Compares two numpy arrays and displays graphs.
 def graphArrays(oldLabels, oldFeatures, newLabels, newFeatures, filePath, name=None):
     # Make sure labels match up in size to features
