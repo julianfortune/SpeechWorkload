@@ -172,8 +172,7 @@ def validateWithCCHP():
                 if fileName == transcriptName:
                     # Grab the number of filled pauses
                     transcriptFile  = open(transciptPath, 'r').read()
-                    filledPauseToken = "FILLED-PAUSE"
-                    actualFilledPausesCount = transcriptFile.count(filledPauseToken)
+                    actualFilledPausesCount = transcriptFile.count("uh</T>") + transcriptFile.count("um</T>")
 
                     audio = audioModule.Audio(filePath=filePath)
                     if audio.numberOfChannels == 2:
@@ -193,13 +192,14 @@ def validateWithCCHP():
 
                     print(fileName, actualFilledPausesCount, algorithmFilledPauseCount)
 
-        precision = totalNumberOfCorrectlyDetectedPauses / (totalNumberOfCorrectlyDetectedPauses + totalNumberOfFalseAlarms)
-        recall = totalNumberOfCorrectlyDetectedPauses / totalNumberOfFilledPauses
-
-        f1 = 2 * precision * recall / (precision + recall)
+        # precision = totalNumberOfCorrectlyDetectedPauses / (totalNumberOfCorrectlyDetectedPauses + totalNumberOfFalseAlarms)
+        # recall = totalNumberOfCorrectlyDetectedPauses / totalNumberOfFilledPauses
+        #
+        # f1 = 2 * precision * recall / (precision + recall)
 
         print("    Total     | Filled pauses:", totalNumberOfFilledPauses)
-        print("     New      | Correct filled pauses:", totalNumberOfCorrectlyDetectedPauses, "False alarms:", totalNumberOfFalseAlarms, "Precision:", precision, "Recall:", recall, "F1", f1)
+        print("     New      | Correct filled pauses:", totalNumberOfCorrectlyDetectedPauses, "False alarms:", totalNumberOfFalseAlarms)
+        # "Precision:", precision, "Recall:", recall, "F1", f1)
 
 def main():
     validateWithCCHP()

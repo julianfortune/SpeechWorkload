@@ -129,9 +129,9 @@ def graphVoiceActivityResults():
                            title= "Voice Activity Algorithm Comparison")
 
 def graphFilledPausesResults():
-    actualFilledPausesCount =       [ 50, 76, 43, 51,  2, 64,  5, 77,  2, 22, 53]
-    ourAlgorithmFilledPausesCount = [ 36,  9,  6, 29,  2, 14,  1,  1,  1, 17,  1]
-    ourAlgorithmFalseAlarms =       [  0,  0,  0,  1, 17,  1,  0,  0,  5,  1,  0]
+    actualFilledPausesCount =       [ 50, 72,  7, 48,  1, 27,  0,  8,  0,   0,  0]
+    ourAlgorithmFilledPausesCount = [ 36,  9,  6, 29,  1, 13,  0,  1,  0,   0,  0]
+    ourAlgorithmFalseAlarms =       [  0,  0,  0,  1, 18,  2,  1,  0,  6,  32,  1]
 
     graphValidationResults(actualFilledPausesCount,
                            ourAlgorithmFilledPausesCount,
@@ -147,8 +147,8 @@ def graphFilledPausesResults():
 
 
 def main():
-    graphSyllableResults()
-    graphVoiceActivityResults()
+    # graphSyllableResults()
+    # graphVoiceActivityResults()
     graphFilledPausesResults()
 
 main()

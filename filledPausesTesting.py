@@ -410,7 +410,31 @@ def compareAlgorithmToParticipants():
     print("    Total     | Filled pauses:", totalNumberOfFilledPauses)
     print("     New      | Correct filled pauses:", totalNumberOfCorrectlyDetectedPauses, "False alarms:", totalNumberOfFalseAlarms, "Precision:", precision, "Recall:", recall, "F1", f1)
 
+def printCCHPFilledPauseTypes():
+    corpusTopLevelPath = "../media/cchp_english/"
+    speechAnalyzer = speechAnalysis.SpeechAnalyzer()
+
+    filledPausesTypes = []
+
+    # Iterate through sub directories with participants.
+    for participantPath in sorted(glob.iglob(corpusTopLevelPath + '*/')):
+
+        # Find the matching transcript
+        for transciptPath in sorted(glob.iglob(participantPath + "*.xml")):
+
+            # Grab the number of filled pauses
+            transcriptFile  = open(transciptPath, 'r').read().split("\n")
+            for line in transcriptFile:
+                if "FILLED-PAUSE" in line:
+                    filledPause = line.strip().split(">")[1].split('<')[0]
+
+                    if filledPause not in filledPausesTypes:
+                        filledPausesTypes.append(filledPause)
+
+    for filledPause in filledPausesTypes:
+        print(filledPause)
+
 def main():
-    compareAlgorithmToDataset()
+    printCCHPFilledPauseTypes()
 
 main()
