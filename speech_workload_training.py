@@ -109,7 +109,7 @@ def trainNetwork(data, directory):
     hidden_neurons = 256
     output_neurons = 1
 
-    n_epoch = 5 #try 20 - 2000
+    n_epoch = 500 #try 20 - 2000
 
     name = "SpeechWorkload"
 
