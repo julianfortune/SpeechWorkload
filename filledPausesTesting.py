@@ -415,6 +415,7 @@ def printCCHPFilledPauseTypes():
     speechAnalyzer = speechAnalysis.SpeechAnalyzer()
 
     filledPausesTypes = []
+    allFilledPauses = []
 
     # Iterate through sub directories with participants.
     for participantPath in sorted(glob.iglob(corpusTopLevelPath + '*/')):
@@ -427,12 +428,13 @@ def printCCHPFilledPauseTypes():
             for line in transcriptFile:
                 if "FILLED-PAUSE" in line:
                     filledPause = line.strip().split(">")[1].split('<')[0]
+                    allFilledPauses.append(filledPause)
 
                     if filledPause not in filledPausesTypes:
                         filledPausesTypes.append(filledPause)
 
     for filledPause in filledPausesTypes:
-        print(filledPause)
+        print(filledPause, allFilledPauses.count(filledPause))
 
 def main():
     printCCHPFilledPauseTypes()
