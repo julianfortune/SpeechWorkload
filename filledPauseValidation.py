@@ -172,7 +172,7 @@ def validateWithCCHP():
                 if fileName == transcriptName:
                     # Grab the number of filled pauses
                     transcriptFile  = open(transciptPath, 'r').read()
-                    actualFilledPausesCount = transcriptFile.count("uh</T>") + transcriptFile.count("um</T>")
+                    actualFilledPausesCount = transcriptFile.count("uh</T>") + transcriptFile.count("um</T>")  +transcriptFile.count("mm</T>")
 
                     audio = audioModule.Audio(filePath=filePath)
                     if audio.numberOfChannels == 2:

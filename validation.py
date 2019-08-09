@@ -101,9 +101,9 @@ def graphValidationResults(validationAlgorithmValues, ourAlgorithmCorrectDetecti
     plt.show()
 
 def graphSyllableResults():
-    praatSyllables =                [1189, 1185, 1099, 1108, 1012,  955, 1079, 1109,  983,  903]
-    ourAlgorithmCorrectDetections = [ 802,  735,  712,  744,  693,  573,  761,  703,  710,  630]
-    ourAlgorithmFalseAlarms =       [ 109,   97,  105,   98,   81,   73,  102,   58,  100,  106]
+    praatSyllables =                [1189, 1099, 1108, 1012,  955, 1079, 1109,  983, 1185,  903]
+    ourAlgorithmCorrectDetections = [ 639,  565,  620,  534,  453,  587,  555,  580,  579,  486]
+    ourAlgorithmFalseAlarms =       [ 272,  252,  222,  240,  193,  276,  206,  230,  253,  250]
 
     graphValidationResults(praatSyllables,
                            ourAlgorithmCorrectDetections,
@@ -147,8 +147,8 @@ def graphFilledPausesResults():
 
 
 def main():
-    # graphSyllableResults()
+    graphSyllableResults()
     # graphVoiceActivityResults()
-    graphFilledPausesResults()
+    # graphFilledPausesResults()
 
 main()
