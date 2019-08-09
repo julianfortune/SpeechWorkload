@@ -159,8 +159,8 @@ def validateUsingPRAATScript():
     plt.legend(loc='upper left')
     plt.show()
 
-def runPRAATScript(directory, threshold=-25, intensityDip=2, captureOutput=True):
-    _, result = parselmouth.praat.run_file("../speechRateValidation/praat/Praat Script Syllable Nuclei v2", threshold, intensityDip, 0.3, False, directory, capture_output= captureOutput)
+def runPRAATScript(directory, threshold=-35, intensityDip=8, captureOutput=True):
+    _, result = parselmouth.praat.run_file("../validation/PRAAT/Praat Script Syllable Nuclei v2", threshold, intensityDip, 0.3, False, directory, capture_output= captureOutput)
 
     result = result.strip().split('\n')
     for i in range(0, len(result)):
@@ -192,26 +192,36 @@ def syllablesUsingPRAATScript():
         # Remove the header row
         praatOutput.pop(0)
 
+        # Make new container for PRAAT syllable data
+        praatSyllables = []
+
         # Clean up the data a bit
         for index in range(0, len(praatOutput)):
             oringinalFileName = '_'.join(praatOutput[index][0].split('_')[:3]) + '.' + '.'.join(praatOutput[index][0].split('_')[3:])
 
-            praatOutput[index] = praatOutput[index][:2]
-            praatOutput[index][1] = int(praatOutput[index][1])
             praatOutput[index][0] = oringinalFileName
+            praatOutput[index][1] = int(praatOutput[index][1].replace(",", ""))
+
+            praatOutput[index] = praatOutput[index][:2 + praatOutput[index][1]]
+
+            syllables = []
+            for subIndex in range(0, praatOutput[index][1]):
+                syllables.append(float(praatOutput[index][2 + subIndex].replace(",", "")))
+
+            praatSyllables.append([oringinalFileName, syllables])
 
         for filePath in sorted(glob.iglob(validationSetPath + "*.wav")):
             fileName = os.path.basename(filePath)[:-4]
 
             existsInPraat = False
 
-            for sample in praatOutput:
+            for sample in praatSyllables:
                 name = sample[0]
 
                 if name == fileName:
                     existsInPraat = True
 
-                    praatSyllableCount = sample[1]
+                    praatSyllableCount = len(sample[1])
 
                     audio = audioModule.Audio(filePath=filePath)
                     audio.makeMono()
@@ -221,24 +231,34 @@ def syllablesUsingPRAATScript():
 
                     if True:
                         voiceActivity = speechAnalyzer.getVoiceActivityFromAudio(audio, pitches= pitches)
+
                         bufferFrames = int(speechAnalyzer.voiceActivityMaskBufferSize / speechAnalyzer.featureStepSize)
                         mask = np.invert(featureModule.createBufferedBinaryArrayFromArray(voiceActivity.astype(bool), bufferFrames))
                         syllables[mask] = 0
 
-                    algorithmSyllableCount = int(sum(syllables))
+                    timeStamps = []
+
+                    for syllableInstanceIndex in range(0, len(syllables)):
+                        if syllables[syllableInstanceIndex] == 1:
+                            timeStamps.append(syllableInstanceIndex * speechAnalyzer.featureStepSize / 1000)
 
                     totalNumberOfSyllables += praatSyllableCount
 
-                    if algorithmSyllableCount > praatSyllableCount:
-                        totalNumberOfFalseAlarms += algorithmSyllableCount - praatSyllableCount
-                        totalNumberOfCorrectlyDetectedSyllables += praatSyllableCount
-                    else:
-                        totalNumberOfCorrectlyDetectedSyllables += algorithmSyllableCount
+                    ogCorrect = totalNumberOfCorrectlyDetectedSyllables
+                    ogFalseAlarms = totalNumberOfFalseAlarms
 
-                    praat.append(praatSyllableCount)
-                    algorithm.append(algorithmSyllableCount)
+                    for timeStamp in timeStamps:
+                        correspondsToPRAATTimeStamp = False
+                        for praatSyllable in sample[1]:
+                            if abs(timeStamp - praatSyllable) < 0.1:
+                                correspondsToPRAATTimeStamp = True
 
-                    print('_'.join(name.split('_')[:2]), "\t", praatSyllableCount, algorithmSyllableCount)
+                        if correspondsToPRAATTimeStamp:
+                            totalNumberOfCorrectlyDetectedSyllables += 1
+                        else:
+                            totalNumberOfFalseAlarms += 1
+
+                    print('_'.join(name.split('_')[:2]), "\t", praatSyllableCount, totalNumberOfCorrectlyDetectedSyllables - ogCorrect, totalNumberOfFalseAlarms - ogFalseAlarms)
 
             if not existsInPraat:
                 print("WARNING: Couldn't find " + fileName + " in PRAAT output.")
@@ -251,41 +271,41 @@ def syllablesUsingPRAATScript():
         print("  Algorithm   | Correct syllables:", totalNumberOfCorrectlyDetectedSyllables,
               "False alarms:", totalNumberOfFalseAlarms,
               "Precision:", precision, "Recall:", recall, "F1", fMeasure)
-
-    # Total for all sets
-    totalNumberOfSyllables = 0
-    totalNumberOfCorrectlyDetectedSyllables = 0
-    totalNumberOfFalseAlarms = 0
-
-    assert len(praat) == len(algorithm)
-    for indexOfAudioFileProcessed in range(0, len(praat)):
-        actualSyllableCount = praat[indexOfAudioFileProcessed]
-        algorithmSyllableCount = algorithm[indexOfAudioFileProcessed]
-
-        totalNumberOfSyllables += actualSyllableCount
-
-        if algorithmSyllableCount > actualSyllableCount:
-            totalNumberOfFalseAlarms += algorithmSyllableCount - actualSyllableCount
-            totalNumberOfCorrectlyDetectedSyllables += actualSyllableCount
-        else:
-            totalNumberOfCorrectlyDetectedSyllables += algorithmSyllableCount
-
-    precision = totalNumberOfCorrectlyDetectedSyllables / (totalNumberOfCorrectlyDetectedSyllables + totalNumberOfFalseAlarms)
-    recall = totalNumberOfCorrectlyDetectedSyllables / totalNumberOfSyllables
-    fMeasure = 2 * precision * recall / (precision + recall)
-
-    print("    Total     | Syllables:", totalNumberOfSyllables)
-    print("  Algorithm   | Correct syllables:", totalNumberOfCorrectlyDetectedSyllables,
-          "False alarms:", totalNumberOfFalseAlarms,
-          "Precision:", precision, "Recall:", recall, "F1", fMeasure)
-    if False:
-        plt.figure(figsize=[16, 8])
-        plt.plot(praat, algorithm, 'o', alpha=0.15, label="30 second audio sample")
-        plt.title('Comparison between PRAAT and the syllable algorithm')
-        plt.ylabel('Syllables detected by our algorithm')
-        plt.xlabel('Syllables detected by PRAAT script')
-        plt.legend(loc='upper left')
-        plt.show()
+    #
+    # # Total for all sets
+    # totalNumberOfSyllables = 0
+    # totalNumberOfCorrectlyDetectedSyllables = 0
+    # totalNumberOfFalseAlarms = 0
+    #
+    # assert len(praat) == len(algorithm)
+    # for indexOfAudioFileProcessed in range(0, len(praat)):
+    #     actualSyllableCount = praat[indexOfAudioFileProcessed]
+    #     algorithmSyllableCount = algorithm[indexOfAudioFileProcessed]
+    #
+    #     totalNumberOfSyllables += actualSyllableCount
+    #
+    #     if algorithmSyllableCount > actualSyllableCount:
+    #         totalNumberOfFalseAlarms += algorithmSyllableCount - actualSyllableCount
+    #         totalNumberOfCorrectlyDetectedSyllables += actualSyllableCount
+    #     else:
+    #         totalNumberOfCorrectlyDetectedSyllables += algorithmSyllableCount
+    #
+    # precision = totalNumberOfCorrectlyDetectedSyllables / (totalNumberOfCorrectlyDetectedSyllables + totalNumberOfFalseAlarms)
+    # recall = totalNumberOfCorrectlyDetectedSyllables / totalNumberOfSyllables
+    # fMeasure = 2 * precision * recall / (precision + recall)
+    #
+    # print("    Total     | Syllables:", totalNumberOfSyllables)
+    # print("  Algorithm   | Correct syllables:", totalNumberOfCorrectlyDetectedSyllables,
+    #       "False alarms:", totalNumberOfFalseAlarms,
+    #       "Precision:", precision, "Recall:", recall, "F1", fMeasure)
+    # if False:
+    #     plt.figure(figsize=[16, 8])
+    #     plt.plot(praat, algorithm, 'o', alpha=0.15, label="30 second audio sample")
+    #     plt.title('Comparison between PRAAT and the syllable algorithm')
+    #     plt.ylabel('Syllables detected by our algorithm')
+    #     plt.xlabel('Syllables detected by PRAAT script')
+    #     plt.legend(loc='upper left')
+    #     plt.show()
 
 def main():
     syllablesUsingPRAATScript()
