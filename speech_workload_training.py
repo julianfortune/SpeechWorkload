@@ -200,9 +200,9 @@ def supervisoryLeaveOneOutCrossValidation():
 
         if trainModelsAndSave:
             model = neuralNetwork(train, directory)
-            model.save(directory + "models/leaveOut-" + os.path.basename(path) + ".tflearn")
+            model.save(directory + "models/leaveOut-" + str(participantNumber) + ".tflearn")
         else:
-            model.load(directory + "models/leaveOut-" + os.path.basename(path) + ".tflearn")
+            model.load(directory + "models/leaveOut-" + str(participantNumber) + ".tflearn")
             metrics = assessModelAccuracy(model, test)
 
 def main():
