@@ -153,7 +153,7 @@ def assessModelAccuracy(model, data):
     results['predictions'] = predictions
     results['actual'] = data.speechWorkload
 
-    # graphData = pd.concat([results, data.drop(columns=['speechWorkload'])], axis=1)
+    graphData = pd.concat([results, data.drop(columns=['speechWorkload'])], axis=1)
 
     # with pd.option_context('display.max_rows', None, 'display.max_columns', None):
     #     print(results)
@@ -167,17 +167,17 @@ def assessModelAccuracy(model, data):
     predictionsMean = np.mean(predictions)
     predictionsStandardDeviation = np.std(predictions)
 
-    print(correlationCoefficient, rmse, actualMean, actualStandardDeviation, predictionsMean, predictionsStandardDeviation)
+    pd.concat([results, data.meanIntensity, data.meanVoiceActivity], axis=1).plot()
+    plt.show()
 
-    # results.plot()
-    # plt.show()
+    return [correlationCoefficient, rmse, actualMean, actualStandardDeviation, predictionsMean, predictionsStandardDeviation]
 
 def supervisoryLeaveOneOutCrossValidation():
     directory = "./training/Supervisory_Evaluation_Day_1/"
 
-    results = pd.DataFrame(columns=["file"])
+    results = pd.DataFrame(columns=["participant", "coefficient", "RMSE", "actualMean", "actualStDev", "predMean", "predStDev"])
 
-    trainModelsAndSave = True
+    trainModelsAndSave = False
     participants = []
 
     for participantNumber in range(1, 31):
@@ -202,8 +202,13 @@ def supervisoryLeaveOneOutCrossValidation():
             model = neuralNetwork(train, directory)
             model.save(directory + "models/leaveOut-" + str(participantNumber) + ".tflearn")
         else:
+            model = neuralNetwork(train, directory, train= False)
             model.load(directory + "models/leaveOut-" + str(participantNumber) + ".tflearn")
             metrics = assessModelAccuracy(model, test)
+
+            results.loc[len(results)] = [participantNumber] + metrics
+
+    print(results)
 
 def main():
     supervisoryLeaveOneOutCrossValidation()
