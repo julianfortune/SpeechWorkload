@@ -360,13 +360,7 @@ class SpeechAnalyzer:
 
         return featureArray
 
-    # | Write array of feature names to file to label each column.
-    def saveLabelsToFile(self, directory):
-        with open(directory + 'labels.csv', 'w+') as outputFile:
-            writer = csv.writer(outputFile)
-            writer.writerow(["time"] + self.features)
-
-    # | Write array of feature names to file to label each column.
+    # | Write parameters used to generate the features.
     def saveInfoToFile(self, directory):
         with open(directory + 'about.txt', 'w+') as aboutFile:
             aboutFile.write("Started " + str(datetime.today().strftime('%Y-%m-%d')) + "\n")
@@ -447,7 +441,6 @@ class SpeechAnalyzer:
         for featureName in self.features:
             assert featureName in FEATURE_NAMES, 'Invalid feature name in list.'
 
-        self.saveLabelsToFile(outDirectory)
         self.saveInfoToFile(outDirectory)
 
         # Keep track of running stats
