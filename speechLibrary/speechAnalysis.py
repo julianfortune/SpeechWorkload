@@ -8,6 +8,7 @@
 import os, glob, sys # file io
 import time
 import numpy as np
+import pandas as pd
 from datetime import datetime
 
 import pyaudio # microphone io
@@ -461,8 +462,11 @@ class SpeechAnalyzer:
 
             featureArray = self.getFeaturesFromFileUsingWindowing(path)
 
-            # Save the numpy array
-            np.save(outDirectory + os.path.basename(path)[:-4], featureArray)
+            # Save the numpy array by swapping into row major and saving as a
+            # pandas-ready csv.
+            featureArray = np.swapaxes(featureArray, 0, 1)
+            frame = pd.DataFrame(featureArray, columns= ["time"] + self.features)
+            frame.to_csv(outDirectory + os.path.basename(path)[:-4] + ".csv", index= False)
 
             # Crunch some numbers and communicate to the user
             timeElapsed = time.time() - startTime

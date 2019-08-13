@@ -1,68 +1,110 @@
-from speechLibrary import testModule
-import numpy, os, glob
-import matplotlib.pyplot as plt # Visualisation
+#
+# Created on May 16, 2019
+#
+# @author: Julian Fortune
+# @Description: Functions for unit testing and comparing changes.
+#
 
-import csv
+import os, glob, csv
+
+import matplotlib.pyplot as plt # Visualisation
+import numpy as np
+import pandas as pd
+
+RED = "\u001b[31m"
+GREEN = "\u001b[32m"
+YELLOW = "\u001b[33m"
+BLUE = "\u001b[34m"
+RESET = "\u001b[0m"
+
+# | Compares two numpy arrays and displays information about their differences.
+def compareArrays(oldData, newData):
+    # Make sure no funny business with feature arrays
+    assert len(oldData.index) == len(newData.index), "Feature array lengths differ."
+
+    print()
+
+    if oldData.equals(newData):
+        print(GREEN + "  No changes!" + RESET)
+
+    else:
+        # Check for features modified or removed from old array
+        for featureName in list(oldData.columns):
+            if featureName in list(newData.columns):
+                oldColumn = oldData[featureName].to_numpy()
+                newColumn = newData[featureName].to_numpy()
+
+                # print(oldColumn, newColumn)
+
+                if np.array_equal(oldColumn, newColumn):
+                    print(GREEN + "  '" + featureName + "' unchanged" + RESET)
+
+                else:
+                    print(YELLOW + "~ '" + featureName + "' modified" + RESET)
+
+                    numberChanged = newColumn.size - (oldColumn == newColumn).sum()
+                    differences = abs(newColumn - oldColumn)
+
+                    print(YELLOW + "    - " + str(numberChanged) + " out of "
+                          + str(newColumn[1:].size) + " entries changed." + RESET )
+                    print(YELLOW + "    - " + "Average change: " +
+                          str(differences.sum()/numberChanged) + ", Max: " +
+                          str(max(differences)) + RESET)
+            else:
+                print(RED + "- '" + featureName + "' removed" + RESET)
+
+        # Check for features added to new array
+        for featureName in list(newData.columns):
+            if featureName not in list(oldData.columns):
+                print(BLUE + "+ '" + featureName + "' added" + RESET)
+
+    print()
+
+# | Compares two numpy arrays and displays graphs.
+def graphArrays(oldData, newData, filePath, name=None):
+    # Make sure no funny business with feature arrays
+    assert oldData.shape[1] == newData.shape[1], "Feature array lengths differ."
+    assert "time" in oldData.columns, "Time array missing from first position."
+
+    oldData = oldData.drop(columns=["time"])
+    newData = newData.drop(columns=["time"])
+
+    ax = oldData.plot(subplots= True, figsize=(16, 10), color= 'steelblue')
+    newData.plot(ax= ax, subplots= True, color= 'darkorange')
+    plt.subplots_adjust(hspace = 1)
+    plt.title(name)
+    plt.savefig(filePath + ".png")
+    plt.close()
 
 def graphParticipants():
-    testDir = "./training/Supervisory_Evaluation_Day_1/features/current5second/"
-    oldDir =  "./training/Supervisory_Evaluation_Day_1/features/HFES/"
+    oldDir = "./training/Supervisory_Evaluation_Day_1/current30second/"
+    testDir =  "./training/Supervisory_Evaluation_Day_1/features/"
 
-    oldLabels = []
-    with open(oldDir + 'labels.csv', 'r') as csvfile:
-        reader = csv.reader(csvfile)
-        for row in reader:
-            oldLabels = row
-
-    testLabels = []
-    with open(testDir + 'labels.csv', 'r') as csvfile:
-        reader = csv.reader(csvfile)
-        for row in reader:
-            testLabels = row
-
-    for testPath in sorted(glob.iglob(testDir + "*.npy")):
+    for testPath in sorted(glob.iglob(testDir + "*.csv")):
+        name = os.path.basename(testPath)[:-4]
         oldPath = oldDir + os.path.basename(testPath)
 
-        newFeatures = numpy.load(testPath)
-        oldFeatures = numpy.load(oldPath)
+        testData = pd.read_csv(testPath)
+        oldData = pd.read_csv(oldPath)
 
-        name = os.path.basename(oldPath)[:-4]
-
-        testModule.graphArrays(oldLabels= oldLabels,
-                               oldFeatures= oldFeatures,
-                               newLabels= testLabels,
-                               newFeatures= newFeatures,
-                               filePath= "./figures/" + name,
-                               name= name)
+        graphArrays(oldData= oldData,
+                    newData= testData,
+                    filePath= "./figures/comparison/" + name,
+                    name= name)
 
 def compareParticipant():
     participant = 'p10_nl'
 
-    oldDir = "./features/HFES/"
-    testDir =  "./features/current30second/"
+    oldDir = "./training/Supervisory_Evaluation_Day_1/HFES/"
+    testDir =  "./training/Supervisory_Evaluation_Day_1/current30second/"
 
-    oldLabels = []
-    with open(oldDir + 'labels.csv', 'r') as csvfile:
-        reader = csv.reader(csvfile)
-        for row in reader:
-            oldLabels = row
+    testData = pd.read_csv(testDir + participant + ".csv")
+    oldData = pd.read_csv(oldDir  + participant + ".csv")
 
-    testLabels = []
-    with open(testDir + 'labels.csv', 'r') as csvfile:
-        reader = csv.reader(csvfile)
-        for row in reader:
-            testLabels = row
-
-    testFeatures = numpy.load(testDir + participant + '.npy')
-    oldFeatures = numpy.load(oldDir  + participant + '.npy')
-
-    testModule.compareArrays(oldLabels= oldLabels,
-                             oldFeatures= oldFeatures,
-                             newLabels= testLabels,
-                             newFeatures= testFeatures)
-
+    compareArrays(oldData= oldData,
+                  newData= testData)
 
 def main():
-    graphParticipants()
+    compareParticipant()
 
 main()

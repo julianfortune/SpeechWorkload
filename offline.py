@@ -2,8 +2,8 @@ from speechLibrary import speechAnalysis
 from speechLibrary import audioModule
 import numpy
 
-audioDirectory = "../media/Jamison_Evaluations/Supervisory/Day2/"
-outputDirectory = "./training/Supervisory_Evaluation_Day_2/features/current5seconds/"
+audioDirectory = "../media/Jamison_Evaluations/Supervisory/Day1/"
+outputDirectory = "./training/Supervisory_Evaluation_Day_1/features/"
 
 analyzer = speechAnalysis.SpeechAnalyzer()
 analyzer.printStatus = True
