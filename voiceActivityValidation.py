@@ -129,6 +129,8 @@ def validateOnRandomValidationSetsWithRVAD():
         totalNumberOfVoiceActivityInstances = 0
         totalNumberOfCorrectlyDetectedVoiceActivityInstances = 0
         totalNumberOfFalseAlarms = 0
+        totalNumberOfCorrectRejections = 0
+        totalInstances = 0
 
         for filePath in sorted(glob.iglob(validationSetPath + "*.wav")):
             fileName = os.path.basename(filePath)[:-4]
@@ -162,6 +164,9 @@ def validateOnRandomValidationSetsWithRVAD():
                         totalNumberOfFalseAlarms += 1
                     if rVADVoiceActivityValue == 1:
                         totalNumberOfCorrectlyDetectedVoiceActivityInstances += 1
+                else:
+                    if rVADVoiceActivityValue == 0:
+                        totalNumberOfCorrectRejections += 1
 
             # if algorithmVoiceActivityBins != rVADVoiceActivityBins:
 
@@ -189,15 +194,17 @@ def validateOnRandomValidationSetsWithRVAD():
             algorithm.append(algorithmVoiceActivityBins)
             rVAD.append(rVADVoiceActivityBins)
 
+            totalInstances += len(rVADVoiceActivityBins)
             totalNumberOfVoiceActivityInstances += int(sum(rVADVoiceActivityBins))
 
         precision = totalNumberOfCorrectlyDetectedVoiceActivityInstances / (totalNumberOfCorrectlyDetectedVoiceActivityInstances + totalNumberOfFalseAlarms)
         recall = totalNumberOfCorrectlyDetectedVoiceActivityInstances / totalNumberOfVoiceActivityInstances
+        accuracy = (totalNumberOfCorrectlyDetectedVoiceActivityInstances + totalNumberOfCorrectRejections) / totalInstances
 
         fMeasure = 2 * precision * recall / (precision + recall)
 
         print("   This Set   | Seconds with voice activity:", totalNumberOfVoiceActivityInstances)
-        print("  Algorithm   | Correct detectsions:", totalNumberOfCorrectlyDetectedVoiceActivityInstances, "False alarms:", totalNumberOfFalseAlarms, "Precision:", precision, "Recall:", recall, "F-measure", fMeasure)
+        print("  Algorithm   | Correct detectsions:", totalNumberOfCorrectlyDetectedVoiceActivityInstances, "False alarms:", totalNumberOfFalseAlarms, "Precision:", precision, "Recall:", recall, "F-measure:", fMeasure, "Accuracy:", accuracy)
 
 def voiceActivityFromRVAD(wavFile):
     return rVAD_fast.voiceActivity(finwav= wavFile, vadThres= 1.2)
