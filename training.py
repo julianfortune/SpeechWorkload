@@ -16,34 +16,15 @@ from scipy import stats
 
 
 def loadData(directory, trainingFiles=None, filter=True, threshold= 0.1, inputFeatures=["meanIntensity", "stDevIntensity", "meanPitch", "stDevPitch", "stDevVoiceActivity", "meanVoiceActivity", "syllablesPerSecond", "filledPauses"]):
-
-    ulLabels = pd.read_csv(directory + "labels/ul.csv", index_col= 0)
-    nlLabels = pd.read_csv(directory + "labels/nl.csv", index_col= 0)
-    olLabels = pd.read_csv(directory + "labels/ol.csv", index_col= 0)
-
     data = pd.DataFrame(columns= inputFeatures + ["speechWorkload"])
 
     for path in sorted(glob.iglob(directory + "features/*.csv")):
         # Check if the file should be used in the training set, if a subset of
         # files is specified.
         if (not trainingFiles) or (path in trainingFiles):
+            name = os.path.basename(path)[:-4]
             currentData = pd.read_csv(path, index_col= 0)
-
-            condition = path[:-4][-2:]
-            assert condition in ["ul", "nl", "ol"]
-
-            if condition == "ul":
-                currentLabels = ulLabels.values
-            elif condition == "nl":
-                currentLabels = nlLabels.values
-            else:
-                currentLabels = olLabels.values
-
-            # Add extra zeros to the labels if inputs run over the length
-            if len(currentData.index) > len(currentLabels):
-                offsetSize = len(currentData.index) - len(currentLabels)
-                fill = np.zeros(offsetSize)
-                currentLabels = np.append(currentLabels, fill)
+            currentLabels = pd.read_csv(directory + "labels/" + name + ".csv", index_col= 0)
 
             if len(currentLabels) == len(currentData.index):
                 # Add the speech workload values
@@ -51,7 +32,7 @@ def loadData(directory, trainingFiles=None, filter=True, threshold= 0.1, inputFe
 
                 data = data.append(currentData[data.columns], ignore_index= True)
             else:
-                print("WARNING: Shapes of labels and inputs do not match.", currentLabels.shape, currentInput.shape)
+                print("WARNING: Shapes of labels and inputs do not match.", currentLabels.shape, currentData.shape)
 
     print("Using", list(data.columns))
 
@@ -132,7 +113,7 @@ def assessModelAccuracy(model, data):
     return [correlationCoefficient, rmse, actualMean, actualStandardDeviation, predictionsMean, predictionsStandardDeviation]
 
 def supervisoryLeaveOneOutCrossValidation():
-    directory = "./training/Supervisory_Evaluation_Day_1/"
+    directory = "./training/Supervisory_Evaluation_Day_2/"
 
     results = pd.DataFrame(columns=["participant", "coefficient", "RMSE", "actualMean", "actualStDev", "predMean", "predStDev"])
 
