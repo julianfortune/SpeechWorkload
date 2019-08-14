@@ -134,6 +134,8 @@ def graphFilledPausesResults():
     ourAlgorithmFalseAlarms =       [  0,  0,  0,  1, 17,  2,  1,  0,  6,  32,  1]
 
     graphValidationResults(actualFilledPausesCount,
+                           # np.add(ourAlgorithmFilledPausesCount, ourAlgorithmFalseAlarms).astype(int),
+                           # np.zeros(len(ourAlgorithmFalseAlarms)).astype(int),
                            ourAlgorithmFilledPausesCount,
                            ourAlgorithmFalseAlarms,
                            validationAlgorithmLabel= "Actual",

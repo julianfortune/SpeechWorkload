@@ -168,11 +168,7 @@ def validateOnRandomValidationSetsWithRVAD():
                     if rVADVoiceActivityValue == 0:
                         totalNumberOfCorrectRejections += 1
 
-            # if algorithmVoiceActivityBins != rVADVoiceActivityBins:
-
             print(fileName)
-            # print(fileName, "x")
-            # if totalNumberOfFalseAlarms - originalNumberOfFalseAlarms > 2:
             print("      rVAD ", end="")
             for element in rVADVoiceActivityBins:
                 if element == 0:
@@ -188,9 +184,6 @@ def validateOnRandomValidationSetsWithRVAD():
                     print("█", end="")
             print()
 
-            # else:
-            #     print(fileName, "✓")
-
             algorithm.append(algorithmVoiceActivityBins)
             rVAD.append(rVADVoiceActivityBins)
 
@@ -203,7 +196,7 @@ def validateOnRandomValidationSetsWithRVAD():
 
         fMeasure = 2 * precision * recall / (precision + recall)
 
-        print("   This Set   | Seconds with voice activity:", totalNumberOfVoiceActivityInstances)
+        print("   This Set   | Seconds with voice activity:", totalNumberOfVoiceActivityInstances, "Total seconds:", totalInstances)
         print("  Algorithm   | Correct detectsions:", totalNumberOfCorrectlyDetectedVoiceActivityInstances, "False alarms:", totalNumberOfFalseAlarms, "Precision:", precision, "Recall:", recall, "F-measure:", fMeasure, "Accuracy:", accuracy)
 
 def voiceActivityFromRVAD(wavFile):
