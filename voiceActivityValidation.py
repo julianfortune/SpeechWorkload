@@ -14,6 +14,7 @@ from speechLibrary import featureModule, speechAnalysis, audioModule
 sys.path.append("../validation/rVADfast_py_2.0/")
 import rVAD_fast
 
+
 np.set_printoptions(threshold=sys.maxsize)
 
 def validateOnCherrypickedSet():
@@ -110,27 +111,40 @@ def validateOnCherrypickedSet():
     print("   Actual     | Seconds with voice activity:", totalNumberOfVoiceActivityInstances)
     print("  Algorithm   | Correct detectsions:", totalNumberOfCorrectlyDetectedVoiceActivityInstances, "False alarms:", totalNumberOfFalseAlarms, "Precision:", precision, "Recall:", recall, "F-measure", fMeasure)
 
-
-def validateOnRandomValidationSetsWithRVAD():
+def validateOnRandomValidationSetsWithRVAD(visuals= True):
     validationTopLevelPath = "../media/validation/"
 
     speechAnalyzer = speechAnalysis.SpeechAnalyzer()
 
-    print("name\t", "praatSyllableCount", "syllableCount")
-
     rVAD = []
     algorithm = []
+
+    praatCorrectDetectionsTotals = []
+    praatFalseAlarmsTotals = []
+    praatCorrectRejectionsTotals = []
+
+    ourCorrectDetectionsTotals = []
+    ourFalseAlarmsTotals = []
+    ourCorrectRejectionsTotals = []
+
+    classificationTotals = []
 
     # Iterate through sub directories
     for validationSetPath in sorted(glob.iglob(validationTopLevelPath + '*/')):
 
+        print()
         print(validationSetPath)
+        print()
 
-        totalNumberOfVoiceActivityInstances = 0
-        totalNumberOfCorrectlyDetectedVoiceActivityInstances = 0
-        totalNumberOfFalseAlarms = 0
-        totalNumberOfCorrectRejections = 0
-        totalInstances = 0
+        praatCorrectDetections = 0
+        praatFalseAlarms = 0
+        praatCorrectRejections = 0
+
+        ourCorrectDetections = 0
+        ourFalseAlarms = 0
+        ourCorrectRejections = 0
+
+        totalClassifications = 0
 
         for filePath in sorted(glob.iglob(validationSetPath + "*.wav")):
             fileName = os.path.basename(filePath)[:-4]
@@ -147,8 +161,6 @@ def validateOnRandomValidationSetsWithRVAD():
             algorithmVoiceActivityBins = []
             rVADVoiceActivityBins = []
 
-            originalNumberOfFalseAlarms = totalNumberOfFalseAlarms
-
             for frame in range (0, int(len(audio.data) / audio.sampleRate / (frameSizeInSeconds))):
                 start = frame * frameSizeInSteps
                 end = frame * frameSizeInSteps + frameSizeInSteps
@@ -160,44 +172,99 @@ def validateOnRandomValidationSetsWithRVAD():
                 rVADVoiceActivityBins.append(rVADVoiceActivityValue)
 
                 if algorithmVoiceActivityValue == 1:
-                    if rVADVoiceActivityValue == 0:
-                        totalNumberOfFalseAlarms += 1
                     if rVADVoiceActivityValue == 1:
-                        totalNumberOfCorrectlyDetectedVoiceActivityInstances += 1
+                        ourCorrectDetections += 1
+                    else:
+                        ourFalseAlarms += 1
                 else:
                     if rVADVoiceActivityValue == 0:
-                        totalNumberOfCorrectRejections += 1
+                        ourCorrectRejections += 1
 
-            print(fileName)
-            print("      rVAD ", end="")
-            for element in rVADVoiceActivityBins:
-                if element == 0:
-                    print("-", end="")
+                if rVADVoiceActivityValue == 1:
+                    if algorithmVoiceActivityValue == 1:
+                        praatCorrectDetections += 1
+                    else:
+                        praatFalseAlarms += 1
                 else:
-                    print("█", end="")
-            print()
-            print(" algorithm ", end="")
-            for element in algorithmVoiceActivityBins:
-                if element == 0:
-                    print("-", end="")
-                else:
-                    print("█", end="")
-            print()
+                    if algorithmVoiceActivityValue == 0:
+                        praatCorrectRejections += 1
 
-            algorithm.append(algorithmVoiceActivityBins)
-            rVAD.append(rVADVoiceActivityBins)
+            totalClassifications += len(rVADVoiceActivityBins)
 
-            totalInstances += len(rVADVoiceActivityBins)
-            totalNumberOfVoiceActivityInstances += int(sum(rVADVoiceActivityBins))
+            if visuals:
+                print(fileName)
+                print("      rVAD ", end="")
+                for element in rVADVoiceActivityBins:
+                    if element == 0:
+                        print("-", end="")
+                    else:
+                        print("█", end="")
+                print()
+                print(" algorithm ", end="")
+                for element in algorithmVoiceActivityBins:
+                    if element == 0:
+                        print("-", end="")
+                    else:
+                        print("█", end="")
+                print()
 
-        precision = totalNumberOfCorrectlyDetectedVoiceActivityInstances / (totalNumberOfCorrectlyDetectedVoiceActivityInstances + totalNumberOfFalseAlarms)
-        recall = totalNumberOfCorrectlyDetectedVoiceActivityInstances / totalNumberOfVoiceActivityInstances
-        accuracy = (totalNumberOfCorrectlyDetectedVoiceActivityInstances + totalNumberOfCorrectRejections) / totalInstances
+        praatCorrectDetectionsTotals.append(praatCorrectDetections)
+        praatFalseAlarmsTotals.append(praatFalseAlarms)
+        praatCorrectRejectionsTotals.append(praatCorrectRejections)
 
-        fMeasure = 2 * precision * recall / (precision + recall)
+        ourCorrectDetectionsTotals.append(ourCorrectDetections)
+        ourFalseAlarmsTotals.append(ourFalseAlarms)
+        ourCorrectRejectionsTotals.append(ourCorrectRejections)
 
-        print("   This Set   | Seconds with voice activity:", totalNumberOfVoiceActivityInstances, "Total seconds:", totalInstances)
-        print("  Algorithm   | Correct detectsions:", totalNumberOfCorrectlyDetectedVoiceActivityInstances, "False alarms:", totalNumberOfFalseAlarms, "Precision:", precision, "Recall:", recall, "F-measure:", fMeasure, "Accuracy:", accuracy)
+        classificationTotals.append(totalClassifications)
+
+    # Add on a column with the total
+    praatCorrectDetectionsTotals.append(sum(praatCorrectDetectionsTotals))
+    praatFalseAlarmsTotals.append(sum(praatFalseAlarmsTotals))
+    praatCorrectRejectionsTotals.append(sum(praatCorrectRejectionsTotals))
+
+    ourCorrectDetectionsTotals.append(sum(ourCorrectDetectionsTotals))
+    ourFalseAlarmsTotals.append(sum(ourFalseAlarmsTotals))
+    ourCorrectRejectionsTotals.append(sum(ourCorrectRejectionsTotals))
+
+    classificationTotals.append(sum(classificationTotals))
+
+    praatDetectionsTotals = list(np.add(praatCorrectDetectionsTotals, praatFalseAlarmsTotals))
+    ourDetectionsTotals = list(np.add(ourCorrectDetectionsTotals, ourFalseAlarmsTotals))
+
+    # Print out all the crap
+    print("praatTotals:                 ", praatDetectionsTotals, "\t", " & ".join(str(e) for e in praatDetectionsTotals))
+    print("praatCorrectDetectionsTotals:", praatCorrectDetectionsTotals, "\t", " & ".join(str(e) for e in praatCorrectDetectionsTotals))
+    print("praatFalseAlarmsTotals:      ", praatFalseAlarmsTotals, "\t", " & ".join(str(e) for e in praatFalseAlarmsTotals))
+    print("praatCorrectRejectionsTotals:", praatCorrectRejectionsTotals, "\t", " & ".join(str(e) for e in praatCorrectRejectionsTotals))
+
+    praatPrecision = [round(e, 2) for e in np.divide(praatCorrectDetectionsTotals, np.add(praatCorrectDetectionsTotals, praatFalseAlarmsTotals))]
+    praatRecall = [round(e, 2) for e in np.divide(praatCorrectDetectionsTotals, ourDetectionsTotals)]
+    praatAccuracy = [round(e, 2) for e in np.divide(np.add(praatCorrectDetectionsTotals, praatCorrectRejectionsTotals), classificationTotals)]
+    praatFMeasure = [round(e, 2) for e in 2 * np.divide(np.multiply(praatPrecision, praatRecall), np.add(praatPrecision, praatRecall))]
+
+    print("praatPrecision:              ", praatPrecision, "\t", " & ".join(str(e) for e in praatPrecision))
+    print("praatRecall:                 ", praatRecall, "\t", " & ".join(str(e) for e in praatRecall))
+    print("praatAccuracy:               ", praatAccuracy, "\t", " & ".join(str(e) for e in praatAccuracy))
+    print("praatFMeasure:               ", praatFMeasure, "\t", " & ".join(str(e) for e in praatFMeasure))
+
+    print("ourTotals:                   ", ourDetectionsTotals, "\t", " & ".join(str(e) for e in ourDetectionsTotals))
+    print("ourCorrectDetectionsTotals:  ", ourCorrectDetectionsTotals, "\t", " & ".join(str(e) for e in ourCorrectDetectionsTotals))
+    print("ourFalseAlarmsTotals:        ", ourFalseAlarmsTotals, "\t", " & ".join(str(e) for e in ourFalseAlarmsTotals))
+    print("ourCorrectRejectionsTotals:  ", ourCorrectRejectionsTotals, "\t", " & ".join(str(e) for e in ourCorrectRejectionsTotals))
+
+    ourPrecision = [round(e, 2) for e in np.divide(ourCorrectDetectionsTotals, np.add(ourCorrectDetectionsTotals, ourFalseAlarmsTotals))]
+    ourRecall = [round(e, 2) for e in np.divide(ourCorrectDetectionsTotals, praatDetectionsTotals)]
+    ourAccuracy = [round(e, 2) for e in np.divide(np.add(ourCorrectDetectionsTotals, ourCorrectRejectionsTotals), classificationTotals)]
+    ourFMeasure = [round(e, 2) for e in 2 * np.divide(np.multiply(ourPrecision, ourRecall), np.add(ourPrecision, ourRecall))]
+
+    print("ourPrecision:                ", ourPrecision, "\t", " & ".join(str(e) for e in ourPrecision))
+    print("ourRecall:                   ", ourRecall, "\t", " & ".join(str(e) for e in ourRecall))
+    print("ourAccuracy:                 ", ourAccuracy, "\t", " & ".join(str(e) for e in ourAccuracy))
+    print("ourFMeasure:                 ", ourFMeasure, "\t", " & ".join(str(e) for e in ourFMeasure))
+
+    print("classificationTotals:        ", classificationTotals, "\t", " & ".join(str(e) for e in classificationTotals))
+
 
 def voiceActivityFromRVAD(wavFile):
     return rVAD_fast.voiceActivity(finwav= wavFile, vadThres= 1.2)

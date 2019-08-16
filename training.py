@@ -15,8 +15,8 @@ from scipy import stats
 
 
 
-def loadData(directory, trainingFiles=None, filter=True, threshold= 0.1, inputFeatures=["meanIntensity", "stDevIntensity", "meanPitch", "stDevPitch", "stDevVoiceActivity", "meanVoiceActivity", "syllablesPerSecond", "filledPauses"]):
-    data = pd.DataFrame(columns= inputFeatures + ["speechWorkload"])
+def loadData(directory, trainingFiles= None, filter= True, threshold= 0.1, audioFeatures= ["meanIntensity", "stDevIntensity", "meanPitch", "stDevPitch", "stDevVoiceActivity", "meanVoiceActivity", "syllablesPerSecond", "filledPauses"], respirationRate= True):
+    data = pd.DataFrame(columns= audioFeatures + (["respirationRate"] if respirationRate else None) + ["speechWorkload"])
 
     for path in sorted(glob.iglob(directory + "features/*.csv")):
         # Check if the file should be used in the training set, if a subset of
@@ -29,6 +29,11 @@ def loadData(directory, trainingFiles=None, filter=True, threshold= 0.1, inputFe
             if len(currentLabels) == len(currentData.index):
                 # Add the speech workload values
                 currentData['speechWorkload'] = currentLabels
+
+                if respirationRate:
+                    respirationRateData = currentLabels = pd.read_csv(directory + "physiological/" + name + ".csv", index_col= 0)
+                    currentData["respirationRate"] = respirationRateData
+                    currentData = currentData.dropna()
 
                 data = data.append(currentData[data.columns], ignore_index= True)
             else:
@@ -151,8 +156,14 @@ def supervisoryLeaveOneOutCrossValidation():
 
     print(results)
 
+def testPhysio():
+    directory = "./training/Supervisory_Evaluation_Day_2/"
+
+    train = loadData(directory)
+
+
 def main():
-    supervisoryLeaveOneOutCrossValidation()
+    testPhysio()
 
 if __name__ == "__main__":
     main()
