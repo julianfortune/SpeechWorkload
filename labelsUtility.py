@@ -2,7 +2,7 @@
 # Created on August 12, 2018
 #
 # @author: Julian Fortune
-# @Description: File for testing and converting to Pandas data storage.
+# @Description: File for creating Pandas .csv files from workload and phsysio data.
 #
 
 import glob, sys, csv, os
@@ -10,6 +10,7 @@ import glob, sys, csv, os
 import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
+import math
 
 def openNumpyFile():
     path = "./training/Supervisory_Evaluation_Day_2/features/current5seconds/"
@@ -135,7 +136,6 @@ def createDay2LabelFiles():
 
         workloadFrame.to_csv("./training/Supervisory_Evaluation_Day_2/labels/" + fileName + ".csv", index= False)
 
-
 def createPeerBasedLabelFiles():
     modelsPath = "../media/Jamison_Evaluations/Models/"
     feauresPath = "./training/Peer_Based/features/"
@@ -157,16 +157,16 @@ def createPeerBasedLabelFiles():
 
     # Data on which participant gets which model file
     T1HighParticipants = ['P3', 'P4', 'P5', 'P8', 'P12', 'P14', 'P16', 'P18']
-    T1LowParticipants = ['P2', 'P6', 'P7', 'P9', 'P10', 'P15', 'P17'] + ['P13']
+    T1LowParticipants = ['P2', 'P6', 'P7', 'P9', 'P10', 'P15', 'P17', 'P13']
 
     T2HighParticipants = ['P2', 'P4', 'P5', 'P8', 'P9', 'P10', 'P13', 'P14']
     T2LowParticipants = ['P3', 'P6', 'P7', 'P12', 'P15', 'P16', 'P17', 'P18']
 
-    T3HighParticipants = ['P4', 'P5', 'P12'] + ['P6', 'P7', 'P9', 'P10'] # Jamison only sent the first half, I assumed second half
+    T3HighParticipants = ['P4', 'P5', 'P12', 'P6', 'P7', 'P9', 'P10']
     T3LowParticipants = ['P2', 'P3', 'P8', 'P13', 'P14', 'P15', 'P16', 'P17']
 
-    T4HighParticipants = ['P2', 'P4',  'P8', 'P9', 'P12', 'P15', 'P16'] + ['P7']
-    T4LowParticipants = ['P3', 'P5', 'P6', 'P13', 'P14', 'P17', 'P18'] + ['P10']
+    T4HighParticipants = ['P2', 'P4',  'P8', 'P9', 'P12', 'P15', 'P16', 'P7']
+    T4LowParticipants = ['P3', 'P5', 'P6', 'P13', 'P14', 'P17', 'P18', 'P10']
 
     for filePath in sorted(glob.iglob(feauresPath + "*.csv")):
         fileName = os.path.basename(filePath)[:-4]
@@ -231,12 +231,66 @@ def createPeerBasedLabelFiles():
 
         workloadData = np.swapaxes(np.array([times, workload]), 0, 1)
         workloadFrame = pd.DataFrame(workloadData, columns= ['time', 'speechWorkload'])
-        # print(workloadFrame)
 
-        # workloadFrame.to_csv("./training/Supervisory_Evaluation_Day_2/labels/" + fileName + ".csv", index= False)
+        workloadFrame.to_csv("./training/Peer_Based/labels/" + fileName + ".csv", index= False)
 
+def createRealTimeLabelFiles():
+    modelsPath = "../media/Jamison_Evaluations/Real_Time_Evaluation/"
+    feauresPath = "./training/Real_Time/"
 
-def makePhysioDataTrainingFiles():
+    timeStep = 1
+
+    for filePath in sorted(glob.iglob(feauresPath + "*/*.csv")):
+        fileName = os.path.basename(filePath)[:-4]
+
+        participantNumber = os.path.basename(filePath)[:-4].split("_")[0][1:]
+
+        if participantNumber == "19":
+            modelPath = modelsPath + "Participant_" + participantNumber + "/p" + participantNumber + "_baseline_wl.csv"
+        else:
+            modelPath = modelsPath + "Participant_" + participantNumber + "/p" + participantNumber + "_wl.csv"
+
+        print(modelPath)
+
+        modelData = pd.read_csv(modelPath)
+        modelData.rename(columns={"Unnamed: 0": "Clock"}, inplace=True )
+
+        fileIndex = 0
+        workload = []
+
+        clock = pd.to_datetime(modelData["Clock"]).astype(np.int64).to_numpy() / 1000000000
+        clock = [element - clock[0] for element in clock]
+
+        modelData["Clock"] = clock
+
+        lengthOfEvaluationInSeconds = math.ceil(list(modelData["Clock"])[len(modelData.index) - 1])
+
+        times = np.arange(0, lengthOfEvaluationInSeconds, timeStep)
+
+        for timeValue in times:
+            while fileIndex + 1 < len(modelData) and round(modelData.loc[fileIndex + 1]['Clock']) <= timeValue:
+                fileIndex += 1
+            workload.append(modelData.loc[fileIndex]['Speech'])
+            # print(timeValue, fileIndex, modelData.loc[fileIndex]['Speech'])
+
+        currentData = pd.read_csv(filePath, index_col= 0)
+
+        # Add extra zeros to the labels if inputs run over the length
+        if len(currentData.index) > len(workload):
+            offsetSize = len(currentData.index) - len(workload)
+            fill = np.zeros(offsetSize)
+            workload = np.append(workload, fill)
+
+        workload = workload[:len(currentData.index)]
+
+        times = np.arange(0, len(workload), timeStep)
+
+        workloadData = np.swapaxes(np.array([times, workload]), 0, 1)
+        workloadFrame = pd.DataFrame(workloadData, columns= ['time', 'speechWorkload'])
+
+        # workloadFrame.to_csv("./training/Real_Time/labels/" + fileName + ".csv", index= False)
+
+def makeSupervisoryPhysioDataTrainingFiles():
     physio = pd.read_csv("../media/Jamison_Evaluations/Supervisory/physiological.csv")[[ "Participant", "Condition", "Seconds", "Breathing Data"]]
     print(physio)
 
@@ -261,9 +315,28 @@ def makePhysioDataTrainingFiles():
         else:
             data.to_csv("./training/Supervisory_Evaluation_Day_1/physiological/" + fileName + ".csv")
 
+def makeRealTimePhysioDataTrainingFiles():
+    directory = "../media/Jamison_Evaluations/Real_Time_Evaluation/"
+    outputDirectoryPath = "/"
+
+    for participantNumber in range(1, 32):
+        if participantNumber not in [16, 19]:
+            physioPath = directory + "Participant_" + str(participantNumber) + "/p" + str(participantNumber) + "_physio.csv"
+            data = pd.read_csv(physioPath)
+
+            data = data.reset_index().drop(columns= ["index"])
+            data.index.name = "time"
+            data = data.rename(columns={"Respiration_Rate": "respirationRate"})
+            data = data[["respirationRate"]]
+
+            # Fill in missing NaN values with linear interpolation
+            data = data.interpolate(limit_direction='both')
+
+            data.to_csv("./training/Real_Time/physiological/" + "p" + str(participantNumber) + ".csv")
+
 
 
 def main():
-    createPeerBasedLabelFiles()
+    makeRealTimePhysioDataTrainingFiles()
 
 main()

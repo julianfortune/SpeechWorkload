@@ -15,29 +15,39 @@ from scipy import stats
 
 
 
-def loadData(directory, trainingFiles= None, filter= True, threshold= 0.1, audioFeatures= ["meanIntensity", "stDevIntensity", "meanPitch", "stDevPitch", "stDevVoiceActivity", "meanVoiceActivity", "syllablesPerSecond", "filledPauses"], respirationRate= True):
-    data = pd.DataFrame(columns= audioFeatures + (["respirationRate"] if respirationRate else None) + ["speechWorkload"])
+def loadData(directory= None, trainingFiles= None, filter= True, threshold= 0.1, audioFeatures= ["meanIntensity", "stDevIntensity", "meanPitch", "stDevPitch", "stDevVoiceActivity", "meanVoiceActivity", "syllablesPerSecond", "filledPauses"], respirationRate= True, trimToRespirationLength= True):
+    data = pd.DataFrame(columns= audioFeatures + (["respirationRate"] if respirationRate else list()) + ["speechWorkload"])
 
-    for path in sorted(glob.iglob(directory + "features/*.csv")):
-        # Check if the file should be used in the training set, if a subset of
-        # files is specified.
-        if (not trainingFiles) or (path in trainingFiles):
-            name = os.path.basename(path)[:-4]
-            currentData = pd.read_csv(path, index_col= 0)
-            currentLabels = pd.read_csv(directory + "labels/" + name + ".csv", index_col= 0)
+    files = []
 
-            if len(currentLabels) == len(currentData.index):
-                # Add the speech workload values
-                currentData['speechWorkload'] = currentLabels
+    if directory and not trainingFiles:
+        files = list(sorted(glob.iglob(directory + "features/*.csv")))
+    elif trainingFiles and not directory:
+        files = trainingFiles
+    else:
+        assert False, "Only directory or training files can be passed."
 
-                if respirationRate:
-                    respirationRateData = currentLabels = pd.read_csv(directory + "physiological/" + name + ".csv", index_col= 0)
-                    currentData["respirationRate"] = respirationRateData
-                    currentData = currentData.dropna()
+    for path in files:
+        name = os.path.basename(path)[:-4]
+        currentData = pd.read_csv(path, index_col= 0)
+        currentLabels = pd.read_csv(path.replace("features", "labels"), index_col= 0)
 
-                data = data.append(currentData[data.columns], ignore_index= True)
-            else:
-                print("WARNING: Shapes of labels and inputs do not match.", currentLabels.shape, currentData.shape)
+        if len(currentLabels) == len(currentData.index):
+            # Add the speech workload values
+            currentData['speechWorkload'] = currentLabels
+            respirationRateData = pd.read_csv(path.replace("features", "physiological"), index_col= 0)
+
+            # Adjust the data to include respiration rate or be the length of the
+            if respirationRate:
+                currentData["respirationRate"] = respirationRateData
+                currentData = currentData.dropna()
+            elif trimToRespirationLength:
+                # If doing a comparison without respirationRate make sure the samples are the same
+                currentData = currentData.iloc[0:len(respirationRateData.index), :]
+
+            data = data.append(currentData[data.columns], ignore_index= True)
+        else:
+            print("WARNING: Shapes of labels and inputs do not match.", currentLabels.shape, currentData.shape)
 
     print("Using", list(data.columns))
 
@@ -46,7 +56,7 @@ def loadData(directory, trainingFiles= None, filter= True, threshold= 0.1, audio
 
     return data
 
-def neuralNetwork(data, directory, train= True):
+def neuralNetwork(data, train= True, epochs= 50):
     inputs = data.drop(columns=['speechWorkload']).to_numpy()
     labels = np.reshape(data['speechWorkload'].to_numpy(), (-1, 1))
 
@@ -57,8 +67,6 @@ def neuralNetwork(data, directory, train= True):
     input_neurons = inputs.shape[1] # Size in the second dimension
     hidden_neurons = 256
     output_neurons = 1
-
-    n_epoch = 50 #try 20 - 2000
 
     with tf.device('/gpu:0'):
         # Set up
@@ -84,45 +92,107 @@ def neuralNetwork(data, directory, train= True):
 
         if train:
             # Fit the data, `validation_set=` sets asside a proportion of the data to validate with
-            model.fit(inputs, labels, n_epoch=n_epoch, validation_set=0.10, show_metric=True)
+            model.fit(inputs, labels, n_epoch= epochs, validation_set=0.10, show_metric=True)
 
         return model
 
-def assessModelAccuracy(model, data):
-    predictions = model.predict(data.drop(columns=['speechWorkload']).to_numpy())[:,0]
-    predictions[data.meanVoiceActivity < 0.1] = 0
+def assessModelAccuracy(model, data, shouldFilterOutMismatch= False, shouldGraph= False):
+    assessmentData = data
 
-    actual = data.speechWorkload.to_numpy()
+    if shouldFilterOutMismatch:
+        vocalData = assessmentData[(assessmentData["speechWorkload"] > 0) & (assessmentData["meanVoiceActivity"] >= 0.1)]
+        vocalData = vocalData.reset_index().drop(columns= ["index"])
+        print(len(vocalData.index))
+
+        silentData = assessmentData[(assessmentData["speechWorkload"] == 0) & (assessmentData["meanVoiceActivity"] < 0.1)]
+        silentData = silentData.sample(n= len(vocalData.index), random_state= 930123201)
+        silentData = silentData.reset_index().drop(columns= ["index"])
+
+        assessmentData = pd.concat([vocalData, silentData])
+        assessmentData = assessmentData.reset_index().drop(columns= ["index"])
+
+    predictions = model.predict(assessmentData.drop(columns=['speechWorkload']).to_numpy())[:,0]
+    predictions[assessmentData.meanVoiceActivity < 0.1] = 0
+
+    actual = assessmentData.speechWorkload.to_numpy()
 
     results = pd.DataFrame()
     results['predictions'] = predictions
-    results['actual'] = data.speechWorkload
+    results['actual'] = assessmentData.speechWorkload
 
-    graphData = pd.concat([results, data.drop(columns=['speechWorkload'])], axis=1)
-
-    # with pd.option_context('display.max_rows', None, 'display.max_columns', None):
-    #     print(results)
+    if shouldGraph:
+        pd.concat([results, assessmentData.meanIntensity, assessmentData.meanVoiceActivity], axis=1).plot()
+        plt.show()
 
     correlationCoefficient = stats.pearsonr(actual, predictions)[0]
-
     rmse = np.sqrt(np.mean((predictions - actual)**2, axis=0, keepdims=True))[0]
-
     actualMean = np.mean(actual)
     actualStandardDeviation = np.std(actual)
     predictionsMean = np.mean(predictions)
     predictionsStandardDeviation = np.std(predictions)
 
-    # pd.concat([results, data.meanIntensity, data.meanVoiceActivity], axis=1).plot()
-    # plt.show()
+    return [len(assessmentData.index), correlationCoefficient, rmse, actualMean, actualStandardDeviation, predictionsMean, predictionsStandardDeviation]
 
-    return [correlationCoefficient, rmse, actualMean, actualStandardDeviation, predictionsMean, predictionsStandardDeviation]
+# Emulated Real-World Conditions
+def supervisoryRealWorld(epochs, leaveOut= [], trainModelsAndSave= True, respirationRate= True):
+    features= ["meanIntensity", "stDevIntensity", "meanPitch", "stDevPitch", "stDevVoiceActivity", "meanVoiceActivity", "syllablesPerSecond", "filledPauses", "respirationRate"]
 
-def supervisoryLeaveOneOutCrossValidation():
-    directory = "./training/Supervisory_Evaluation_Day_2/"
+    for featureToLeaveOut in leaveOut:
+        features.remove(featureToLeaveOut)
 
-    results = pd.DataFrame(columns=["participant", "coefficient", "RMSE", "actualMean", "actualStDev", "predMean", "predStDev"])
+    includeRespirationRate = "respirationRate" in features
 
-    trainModelsAndSave = False
+    audioFeatures = features
+    if includeRespirationRate:
+        audioFeatures.remove("respirationRate")
+
+    modelDirectory = "./models/Supervisory_Real_World/"
+    day1Directory = "./training/Supervisory_Evaluation_Day_1/"
+    day2Directory = "./training/Supervisory_Evaluation_Day_2/"
+
+    if len(leaveOut) > 0:
+        modelDirectory = "./models/Supervisory_Real_World-LeaveOut" + str(leaveOut) + "/"
+
+    train = loadData(directory= day1Directory, audioFeatures= audioFeatures, respirationRate= includeRespirationRate)
+    test = loadData(directory= day2Directory, audioFeatures= audioFeatures, respirationRate= includeRespirationRate, filter=False)
+
+    if trainModelsAndSave:
+        model = neuralNetwork(train, epochs= epochs)
+        model.save(modelDirectory + "realWorld" + str(epochs) + "epochs.tflearn")
+    else:
+        model = neuralNetwork(train, train= False)
+        model.load(modelDirectory + "realWorld" + str(epochs) + "epochs.tflearn")
+
+    metrics = [[False] + assessModelAccuracy(model, test), [True] + assessModelAccuracy(model, test, shouldFilterOutMismatch= True)]
+
+    # Append results to the end of the data frame
+    results = pd.DataFrame(metrics, columns=["filtered", "samples", "coefficient", "RMSE", "actualMean", "actualStDev", "predMean", "predStDev"])
+
+    print(results)
+    results.to_csv("./analyses/realWorldResults-LeaveOut" + str(leaveOut) + "-" + str(epochs) + "epochs.csv")
+
+# Population Generalizability
+def supervisoryLeaveOneOutCrossValidation(epochs, leaveOut= [], trainModelsAndSave= True, respirationRate= True):
+    features = ["meanIntensity", "stDevIntensity", "meanPitch", "stDevPitch", "stDevVoiceActivity", "meanVoiceActivity", "syllablesPerSecond", "filledPauses", "respirationRate"]
+
+    for featureToLeaveOut in leaveOut:
+        features.remove(featureToLeaveOut)
+
+    includeRespirationRate = "respirationRate" in features
+
+    audioFeatures = features
+    if includeRespirationRate:
+        audioFeatures.remove("respirationRate")
+
+    modelDirectory = "./models/Supervisory_Leave_One_Out/"
+    day1Directory = "./training/Supervisory_Evaluation_Day_1/"
+    day2Directory = "./training/Supervisory_Evaluation_Day_2/"
+
+    if len(leaveOut) > 0:
+        modelDirectory = "./models/Supervisory_Leave_One_Out-LeaveOut" + str(leaveOut) + "/"
+
+    results = pd.DataFrame(columns=["participant", "filtered", "samples", "coefficient", "RMSE", "actualMean", "actualStDev", "predMean", "predStDev"])
+
     participants = []
 
     for participantNumber in range(1, 31):
@@ -130,40 +200,88 @@ def supervisoryLeaveOneOutCrossValidation():
 
         participantPaths = []
 
-        for path in sorted(glob.iglob(directory + "features/*.csv")):
+        featurePaths = list(sorted(glob.iglob(day1Directory + "features/*.csv"))) + list(sorted(glob.iglob(day2Directory + "features/*.csv")))
 
+        for path in featurePaths:
             if str(participantNumber) == os.path.basename(path).split('_')[0][1:]:
                 participantPaths.append(path)
-
-        featurePaths = sorted(glob.iglob(directory + "features/*.csv"))
 
         for path in participantPaths:
             featurePaths.remove(path)
 
-        train = loadData(directory, trainingFiles=featurePaths)
-        test = loadData(directory, trainingFiles=participantPaths, filter=False)
+        train = loadData(trainingFiles=featurePaths, audioFeatures= audioFeatures, respirationRate= includeRespirationRate)
+        test = loadData(trainingFiles=participantPaths, audioFeatures= audioFeatures, respirationRate= includeRespirationRate, filter=False)
 
-        # if trainModelsAndSave:
-        model = neuralNetwork(train, directory)
-        model.save(directory + "models/leaveOut-" + str(participantNumber) + ".tflearn")
-        # else:
-        # model = neuralNetwork(train, directory, train= False)
-        # model.load(directory + "models/leaveOut-" + str(participantNumber) + ".tflearn")
-        metrics = assessModelAccuracy(model, test)
+        if trainModelsAndSave:
+            model = neuralNetwork(train, epochs= epochs)
+            model.save(modelDirectory + "leaveOut-" + str(participantNumber) + "-" + str(epochs) + "epochs.tflearn")
+        else:
+            model = neuralNetwork(train, train= False)
+            model.load(modelDirectory + "leaveOut-" + str(participantNumber) + "-" + str(epochs) + "epochs.tflearn")
 
         # Append results to the end of the data frame
-        results.loc[len(results)] = [participantNumber] + metrics
+        results.loc[len(results)] = [participantNumber, False] + assessModelAccuracy(model, test)
+        results.loc[len(results)] = [participantNumber, True] + assessModelAccuracy(model, test, shouldFilterOutMismatch= True)
 
     print(results)
+    results.to_csv("./analyses/supervisoryResults-LeaveOut" + str(leaveOut) + "-" + str(epochs) + "epochs.csv")
 
-def testPhysio():
-    directory = "./training/Supervisory_Evaluation_Day_2/"
+# Emulated Real-World Conditions
+def supervisoryHumanRobot(epochs, leaveOut= [], trainModelsAndSave= True, respirationRate= True):
+    features= ["meanIntensity", "stDevIntensity", "meanPitch", "stDevPitch", "stDevVoiceActivity", "meanVoiceActivity", "syllablesPerSecond", "filledPauses", "respirationRate"]
 
-    train = loadData(directory)
+    for featureToLeaveOut in leaveOut:
+        features.remove(featureToLeaveOut)
 
+    includeRespirationRate = "respirationRate" in features
+
+    audioFeatures = features
+    if includeRespirationRate:
+        audioFeatures.remove("respirationRate")
+
+    modelDirectory = "./models/Supervisory_Human_Robot/"
+
+    # Training
+    day1Directory = "./training/Supervisory_Evaluation_Day_1/"
+    day2Directory = "./training/Supervisory_Evaluation_Day_2/"
+
+    # Testing
+    realTimeDirectory = "./training/Peer_Based/"
+
+    if len(leaveOut) > 0:
+        modelDirectory = "./models/Supervisory_Real_World-LeaveOut" + str(leaveOut) + "/"
+
+    train = loadData(directory= day1Directory, audioFeatures= audioFeatures, respirationRate= includeRespirationRate)
+    test = loadData(directory= day2Directory, audioFeatures= audioFeatures, respirationRate= includeRespirationRate, filter=False)
+
+    # print(train)
+
+    # if trainModelsAndSave:
+    #     model = neuralNetwork(train, epochs= epochs)
+    #     model.save(modelDirectory + "realWorld" + str(epochs) + "epochs.tflearn")
+    # else:
+    #     model = neuralNetwork(train, train= False)
+    #     model.load(modelDirectory + "realWorld" + str(epochs) + "epochs.tflearn")
+    #
+    # metrics = [[False] + assessModelAccuracy(model, test), [True] + assessModelAccuracy(model, test, shouldFilterOutMismatch= True)]
+    #
+    # # Append results to the end of the data frame
+    # results = pd.DataFrame(metrics, columns=["filtered", "samples", "coefficient", "RMSE", "actualMean", "actualStDev", "predMean", "predStDev"])
+    #
+    # print(results)
+    # results.to_csv("./analyses/realWorldResults-LeaveOut" + str(leaveOut) + "-" + str(epochs) + "epochs.csv")
 
 def main():
-    testPhysio()
+    supervisoryRealWorld(100, trainModelsAndSave= True)
+    supervisoryRealWorld(100, trainModelsAndSave= True, leaveOut= ["filledPauses"])
+    supervisoryRealWorld(100, trainModelsAndSave= True, leaveOut= ["respirationRate"])
+
+    supervisoryLeaveOneOutCrossValidation(50, trainModelsAndSave= True)
+    supervisoryLeaveOneOutCrossValidation(50, trainModelsAndSave= True, leaveOut= ["filledPauses"])
+    supervisoryLeaveOneOutCrossValidation(50, trainModelsAndSave= True, leaveOut= ["respirationRate"])
+
+    # supervisoryHumanRobot(50, trainModelsAndSave= True)
+    # supervisoryHumanRobot(50, leaveOut= ["respirationRate"], trainModelsAndSave= True)
 
 if __name__ == "__main__":
     main()

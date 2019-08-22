@@ -7,6 +7,7 @@
 
 import sys, time, glob, os
 import numpy as np
+import pandas as pd
 import matplotlib.pyplot as plt
 
 import random
@@ -168,18 +169,23 @@ def runPRAATScript(directory, threshold=-35, intensityDip=8, captureOutput=True)
 
     return result
 
-def syllablesUsingPRAATScript():
+def validateOnRandomValidationSetsWithPRAATScript():
     validationTopLevelPath = "../media/validation/"
 
     speechAnalyzer = speechAnalysis.SpeechAnalyzer()
+
+    syllablesData = pd.DataFrame({}, columns = ["validationSet", "participant", "condition", "times", "rVAD", "ourAlgorithm"])
 
     praat = []
     algorithm = []
 
     # Iterate through sub directories
     for validationSetPath in sorted(glob.iglob(validationTopLevelPath + '*/')):
+        validationSet = validationSetPath.split('/')[-2]
 
+        print()
         print(validationSetPath)
+        print()
 
         totalNumberOfSyllables = 0
         totalNumberOfCorrectlyDetectedSyllables = 0
@@ -212,6 +218,12 @@ def syllablesUsingPRAATScript():
 
         for filePath in sorted(glob.iglob(validationSetPath + "*.wav")):
             fileName = os.path.basename(filePath)[:-4]
+
+            participant = fileName.split('_')[0][1:]
+            condition = fileName.split('_')[1]
+            times = fileName.split('_')[2]
+
+            print(participant, condition, times)
 
             existsInPraat = False
 
@@ -258,6 +270,9 @@ def syllablesUsingPRAATScript():
                         else:
                             totalNumberOfFalseAlarms += 1
 
+                    # Save syllable arrays.
+                    syllablesData = syllablesData.append(pd.Series([validationSet, participant, condition, times, sample[1], timeStamps], index=syllablesData.columns ), ignore_index=True)
+
                     print('_'.join(name.split('_')[:2]), "\t", praatSyllableCount, totalNumberOfCorrectlyDetectedSyllables - ogCorrect, totalNumberOfFalseAlarms - ogFalseAlarms)
 
             if not existsInPraat:
@@ -271,6 +286,9 @@ def syllablesUsingPRAATScript():
         print("  Algorithm   | Correct syllables:", totalNumberOfCorrectlyDetectedSyllables,
               "False alarms:", totalNumberOfFalseAlarms,
               "Precision:", precision, "Recall:", recall, "F1", fMeasure)
+
+    syllablesData.to_csv("../validation/results/syllables.csv", index= False)
+
     #
     # # Total for all sets
     # totalNumberOfSyllables = 0
@@ -308,6 +326,6 @@ def syllablesUsingPRAATScript():
     #     plt.show()
 
 def main():
-    syllablesUsingPRAATScript()
+    validateOnRandomValidationSetsWithPRAATScript()
 
 main()

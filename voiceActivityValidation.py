@@ -7,6 +7,7 @@
 
 import sys, time, glob, os
 import numpy as np
+import pandas as pd
 import matplotlib.pyplot as plt
 
 from speechLibrary import featureModule, speechAnalysis, audioModule
@@ -116,12 +117,14 @@ def validateOnRandomValidationSetsWithRVAD(visuals= True):
 
     speechAnalyzer = speechAnalysis.SpeechAnalyzer()
 
+    voiceActivityData = pd.DataFrame({}, columns = ["validationSet", "participant", "condition", "times", "rVAD", "ourAlgorithm"])
+
     rVAD = []
     algorithm = []
 
-    praatCorrectDetectionsTotals = []
-    praatFalseAlarmsTotals = []
-    praatCorrectRejectionsTotals = []
+    rVADCorrectDetectionsTotals = []
+    rVADFalseAlarmsTotals = []
+    rVADCorrectRejectionsTotals = []
 
     ourCorrectDetectionsTotals = []
     ourFalseAlarmsTotals = []
@@ -129,16 +132,19 @@ def validateOnRandomValidationSetsWithRVAD(visuals= True):
 
     classificationTotals = []
 
+    paths = [validationTopLevelPath + str(element) + '/' for element in list(range(1,11))]
+
     # Iterate through sub directories
-    for validationSetPath in sorted(glob.iglob(validationTopLevelPath + '*/')):
+    for validationSetPath in paths:
+        validationSet = validationSetPath.split('/')[-2]
 
         print()
         print(validationSetPath)
         print()
 
-        praatCorrectDetections = 0
-        praatFalseAlarms = 0
-        praatCorrectRejections = 0
+        rVADCorrectDetections = 0
+        rVADFalseAlarms = 0
+        rVADCorrectRejections = 0
 
         ourCorrectDetections = 0
         ourFalseAlarms = 0
@@ -148,6 +154,10 @@ def validateOnRandomValidationSetsWithRVAD(visuals= True):
 
         for filePath in sorted(glob.iglob(validationSetPath + "*.wav")):
             fileName = os.path.basename(filePath)[:-4]
+
+            participant = fileName.split('_')[0][1:]
+            condition = fileName.split('_')[1]
+            times = fileName.split('_')[2]
 
             audio = audioModule.Audio(filePath=filePath)
             if audio.numberOfChannels != 1:
@@ -182,14 +192,17 @@ def validateOnRandomValidationSetsWithRVAD(visuals= True):
 
                 if rVADVoiceActivityValue == 1:
                     if algorithmVoiceActivityValue == 1:
-                        praatCorrectDetections += 1
+                        rVADCorrectDetections += 1
                     else:
-                        praatFalseAlarms += 1
+                        rVADFalseAlarms += 1
                 else:
                     if algorithmVoiceActivityValue == 0:
-                        praatCorrectRejections += 1
+                        rVADCorrectRejections += 1
 
             totalClassifications += len(rVADVoiceActivityBins)
+
+            # Save voice activity arrays.
+            voiceActivityData = voiceActivityData.append(pd.Series([validationSet, participant, condition, times, rVADVoiceActivityBins, algorithmVoiceActivityBins], index=voiceActivityData.columns ), ignore_index=True)
 
             if visuals:
                 print(fileName)
@@ -208,9 +221,9 @@ def validateOnRandomValidationSetsWithRVAD(visuals= True):
                         print("█", end="")
                 print()
 
-        praatCorrectDetectionsTotals.append(praatCorrectDetections)
-        praatFalseAlarmsTotals.append(praatFalseAlarms)
-        praatCorrectRejectionsTotals.append(praatCorrectRejections)
+        rVADCorrectDetectionsTotals.append(rVADCorrectDetections)
+        rVADFalseAlarmsTotals.append(rVADFalseAlarms)
+        rVADCorrectRejectionsTotals.append(rVADCorrectRejections)
 
         ourCorrectDetectionsTotals.append(ourCorrectDetections)
         ourFalseAlarmsTotals.append(ourFalseAlarms)
@@ -219,9 +232,9 @@ def validateOnRandomValidationSetsWithRVAD(visuals= True):
         classificationTotals.append(totalClassifications)
 
     # Add on a column with the total
-    praatCorrectDetectionsTotals.append(sum(praatCorrectDetectionsTotals))
-    praatFalseAlarmsTotals.append(sum(praatFalseAlarmsTotals))
-    praatCorrectRejectionsTotals.append(sum(praatCorrectRejectionsTotals))
+    rVADCorrectDetectionsTotals.append(sum(rVADCorrectDetectionsTotals))
+    rVADFalseAlarmsTotals.append(sum(rVADFalseAlarmsTotals))
+    rVADCorrectRejectionsTotals.append(sum(rVADCorrectRejectionsTotals))
 
     ourCorrectDetectionsTotals.append(sum(ourCorrectDetectionsTotals))
     ourFalseAlarmsTotals.append(sum(ourFalseAlarmsTotals))
@@ -229,47 +242,48 @@ def validateOnRandomValidationSetsWithRVAD(visuals= True):
 
     classificationTotals.append(sum(classificationTotals))
 
-    praatDetectionsTotals = list(np.add(praatCorrectDetectionsTotals, praatFalseAlarmsTotals))
+    rVADDetectionsTotals = list(np.add(rVADCorrectDetectionsTotals, rVADFalseAlarmsTotals))
     ourDetectionsTotals = list(np.add(ourCorrectDetectionsTotals, ourFalseAlarmsTotals))
 
     # Print out all the crap
-    print("praatTotals:                 ", praatDetectionsTotals, "\t", " & ".join(str(e) for e in praatDetectionsTotals))
-    print("praatCorrectDetectionsTotals:", praatCorrectDetectionsTotals, "\t", " & ".join(str(e) for e in praatCorrectDetectionsTotals))
-    print("praatFalseAlarmsTotals:      ", praatFalseAlarmsTotals, "\t", " & ".join(str(e) for e in praatFalseAlarmsTotals))
-    print("praatCorrectRejectionsTotals:", praatCorrectRejectionsTotals, "\t", " & ".join(str(e) for e in praatCorrectRejectionsTotals))
+    print("rVADTotals:                 ", rVADDetectionsTotals, "\t", " & ".join(str(e) for e in rVADDetectionsTotals))
+    print("rVADCorrectDetectionsTotals:", rVADCorrectDetectionsTotals, "\t", " & ".join(str(e) for e in rVADCorrectDetectionsTotals))
+    print("rVADFalseAlarmsTotals:      ", rVADFalseAlarmsTotals, "\t", " & ".join(str(e) for e in rVADFalseAlarmsTotals))
+    print("rVADCorrectRejectionsTotals:", rVADCorrectRejectionsTotals, "\t", " & ".join(str(e) for e in rVADCorrectRejectionsTotals))
 
-    praatPrecision = [round(e, 2) for e in np.divide(praatCorrectDetectionsTotals, np.add(praatCorrectDetectionsTotals, praatFalseAlarmsTotals))]
-    praatRecall = [round(e, 2) for e in np.divide(praatCorrectDetectionsTotals, ourDetectionsTotals)]
-    praatAccuracy = [round(e, 2) for e in np.divide(np.add(praatCorrectDetectionsTotals, praatCorrectRejectionsTotals), classificationTotals)]
-    praatFMeasure = [round(e, 2) for e in 2 * np.divide(np.multiply(praatPrecision, praatRecall), np.add(praatPrecision, praatRecall))]
+    rVADPrecision = [round(e, 2) for e in np.divide(rVADCorrectDetectionsTotals, np.add(rVADCorrectDetectionsTotals, rVADFalseAlarmsTotals))]
+    rVADRecall = [round(e, 2) for e in np.divide(rVADCorrectDetectionsTotals, ourDetectionsTotals)]
+    rVADAccuracy = [round(e, 2) for e in np.divide(np.add(rVADCorrectDetectionsTotals, rVADCorrectRejectionsTotals), classificationTotals)]
+    rVADFMeasure = [round(e, 2) for e in 2 * np.divide(np.multiply(rVADPrecision, rVADRecall), np.add(rVADPrecision, rVADRecall))]
 
-    print("praatPrecision:              ", praatPrecision, "\t", " & ".join(str(e) for e in praatPrecision))
-    print("praatRecall:                 ", praatRecall, "\t", " & ".join(str(e) for e in praatRecall))
-    print("praatAccuracy:               ", praatAccuracy, "\t", " & ".join(str(e) for e in praatAccuracy))
-    print("praatFMeasure:               ", praatFMeasure, "\t", " & ".join(str(e) for e in praatFMeasure))
+    print("rVADPrecision:              ", rVADPrecision, "\t", " & ".join(str(e) for e in rVADPrecision))
+    print("rVADRecall:                 ", rVADRecall, "\t", " & ".join(str(e) for e in rVADRecall))
+    print("rVADAccuracy:               ", rVADAccuracy, "\t", " & ".join(str(e) for e in rVADAccuracy))
+    print("rVADFMeasure:               ", rVADFMeasure, "\t", " & ".join(str(e) for e in rVADFMeasure))
 
-    print("ourTotals:                   ", ourDetectionsTotals, "\t", " & ".join(str(e) for e in ourDetectionsTotals))
-    print("ourCorrectDetectionsTotals:  ", ourCorrectDetectionsTotals, "\t", " & ".join(str(e) for e in ourCorrectDetectionsTotals))
-    print("ourFalseAlarmsTotals:        ", ourFalseAlarmsTotals, "\t", " & ".join(str(e) for e in ourFalseAlarmsTotals))
-    print("ourCorrectRejectionsTotals:  ", ourCorrectRejectionsTotals, "\t", " & ".join(str(e) for e in ourCorrectRejectionsTotals))
+    print("ourTotals:                  ", ourDetectionsTotals, "\t", " & ".join(str(e) for e in ourDetectionsTotals))
+    print("ourCorrectDetectionsTotals: ", ourCorrectDetectionsTotals, "\t", " & ".join(str(e) for e in ourCorrectDetectionsTotals))
+    print("ourFalseAlarmsTotals:       ", ourFalseAlarmsTotals, "\t", " & ".join(str(e) for e in ourFalseAlarmsTotals))
+    print("ourCorrectRejectionsTotals: ", ourCorrectRejectionsTotals, "\t", " & ".join(str(e) for e in ourCorrectRejectionsTotals))
 
     ourPrecision = [round(e, 2) for e in np.divide(ourCorrectDetectionsTotals, np.add(ourCorrectDetectionsTotals, ourFalseAlarmsTotals))]
-    ourRecall = [round(e, 2) for e in np.divide(ourCorrectDetectionsTotals, praatDetectionsTotals)]
+    ourRecall = [round(e, 2) for e in np.divide(ourCorrectDetectionsTotals, rVADDetectionsTotals)]
     ourAccuracy = [round(e, 2) for e in np.divide(np.add(ourCorrectDetectionsTotals, ourCorrectRejectionsTotals), classificationTotals)]
     ourFMeasure = [round(e, 2) for e in 2 * np.divide(np.multiply(ourPrecision, ourRecall), np.add(ourPrecision, ourRecall))]
 
-    print("ourPrecision:                ", ourPrecision, "\t", " & ".join(str(e) for e in ourPrecision))
-    print("ourRecall:                   ", ourRecall, "\t", " & ".join(str(e) for e in ourRecall))
-    print("ourAccuracy:                 ", ourAccuracy, "\t", " & ".join(str(e) for e in ourAccuracy))
-    print("ourFMeasure:                 ", ourFMeasure, "\t", " & ".join(str(e) for e in ourFMeasure))
+    print("ourPrecision:               ", ourPrecision, "\t", " & ".join(str(e) for e in ourPrecision))
+    print("ourRecall:                  ", ourRecall, "\t", " & ".join(str(e) for e in ourRecall))
+    print("ourAccuracy:                ", ourAccuracy, "\t", " & ".join(str(e) for e in ourAccuracy))
+    print("ourFMeasure:                ", ourFMeasure, "\t", " & ".join(str(e) for e in ourFMeasure))
 
-    print("classificationTotals:        ", classificationTotals, "\t", " & ".join(str(e) for e in classificationTotals))
+    print("classificationTotals:       ", classificationTotals, "\t", " & ".join(str(e) for e in classificationTotals))
 
+    voiceActivityData.to_csv("../validation/results/voiceActivity.csv", index= False)
 
 def voiceActivityFromRVAD(wavFile):
     return rVAD_fast.voiceActivity(finwav= wavFile, vadThres= 1.2)
 
 def main():
-    validateOnRandomValidationSetsWithRVAD()
+    validateOnRandomValidationSetsWithRVAD(visuals= False)
 
 main()

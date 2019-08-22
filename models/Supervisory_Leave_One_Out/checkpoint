@@ -1,0 +1,2 @@
+model_checkpoint_path: "/Users/julianfortune/Desktop/speech workload project/speechWorkload/models/Supervisory_Leave_One_Out/leaveOut-30-50epochs.tflearn"
+all_model_checkpoint_paths: "/Users/julianfortune/Desktop/speech workload project/speechWorkload/models/Supervisory_Leave_One_Out/leaveOut-30-50epochs.tflearn"
