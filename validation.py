@@ -60,97 +60,9 @@ def createValidationSetFromParticipants(participantDirectory, outputDir, segment
 
         segment.export(outputPath + ".wav", format="wav")
 
-def graphValidationResults(validationAlgorithmValues, ourAlgorithmCorrectDetections, ourAlgorithmFalseAlarms, validationAlgorithmLabel, algorithmLabel, yLabel, xLabel, title, tickLabels=None, correctDetectionShift=15):
-    x = np.linspace(0, len(validationAlgorithmValues) - 1, len(validationAlgorithmValues))
-
-    width = .3
-    spacing = 0.05
-
-    hShift = -0.01
-
-    plt.rc('font',**{'family':'serif','serif':['Palatino']})
-
-    figure = plt.figure(figsize=(14,5))
-
-    plt.bar(x, validationAlgorithmValues, width, label=validationAlgorithmLabel, color="white", edgecolor="black")
-    plt.bar(x + width + spacing, ourAlgorithmCorrectDetections, width, label=algorithmLabel, color="lightgrey", edgecolor="black")
-    plt.bar(x + width + spacing, ourAlgorithmFalseAlarms, width, label=algorithmLabel + " False Alarms", bottom=ourAlgorithmCorrectDetections, hatch="////", color="lightgrey", edgecolor="black")
-
-    if tickLabels:
-        plt.xticks(x + (width + spacing) / 2, tickLabels)
-    else:
-        plt.xticks(x + (width + spacing) / 2, x.astype(int) + 1)
-
-    for xValue, yValue in enumerate(validationAlgorithmValues):
-        plt.text(xValue + hShift, yValue, " " + str(yValue),
-                 color= "black", va= "bottom", ha= "center")
-
-    for xValue, yValue in enumerate(ourAlgorithmFalseAlarms):
-        vShift = ourAlgorithmCorrectDetections[int(xValue)]
-
-        plt.text(xValue + hShift + spacing + width, yValue + vShift, " " + str(yValue + vShift),
-                 color='black', va='bottom', ha='center')
-
-    plt.ylabel(yLabel)
-    plt.xlabel(xLabel)
-    plt.legend(loc='lower center', bbox_to_anchor=(0.5, -0.25), ncol=5)
-    plt.margins(0.05, 0.1)
-    plt.subplots_adjust(bottom=0.2)
-    plt.title(title)
-
-    plt.show()
-
-def graphSyllableResults():
-    praatSyllables =                [1189, 1099, 1108, 1012,  955, 1079, 1109,  983, 1185,  903]
-    ourAlgorithmCorrectDetections = [ 639,  565,  620,  534,  453,  587,  555,  580,  579,  486]
-    ourAlgorithmFalseAlarms =       [ 272,  252,  222,  240,  193,  276,  206,  230,  253,  250]
-
-    graphValidationResults(praatSyllables,
-                           ourAlgorithmCorrectDetections,
-                           ourAlgorithmFalseAlarms,
-                           validationAlgorithmLabel= "PRAAT Script",
-                           algorithmLabel= "Algorithm",
-                           yLabel= "Syllables detected",
-                           xLabel= "Validation Set",
-                           title= "Syllable Algorithm Comparison")
-
-def graphVoiceActivityResults():
-    rVADVoiceActivityInstances = [ 654, 609, 585, 601, 611, 605, 603, 602, 629, 588]
-    ourAlgorithmVoiceActivity =  [ 271, 249, 265, 262, 237, 272, 233, 250, 268, 224]
-    ourAlgorithmFalseAlarms =    [  77,  66,  53,  41,  49,  69,  70,  61,  45,  73]
-
-    graphValidationResults(rVADVoiceActivityInstances,
-                           ourAlgorithmVoiceActivity,
-                           ourAlgorithmFalseAlarms,
-                           validationAlgorithmLabel= "rVAD",
-                           algorithmLabel= "Algorithm",
-                           yLabel= "Positive Voice Activity Classifications",
-                           xLabel= "Validation Set",
-                           title= "Voice Activity Algorithm Comparison")
-
-def graphFilledPausesResults():
-    actualFilledPausesCount =       [ 50, 78,  7, 48,  2, 29,  2,  8,  0,   0,  0]
-    ourAlgorithmFilledPausesCount = [ 36,  9,  6, 29,  2, 13,  0,  1,  0,   0,  0]
-    ourAlgorithmFalseAlarms =       [  0,  0,  0,  1, 17,  2,  1,  0,  6,  32,  1]
-
-    graphValidationResults(actualFilledPausesCount,
-                           # np.add(ourAlgorithmFilledPausesCount, ourAlgorithmFalseAlarms).astype(int),
-                           # np.zeros(len(ourAlgorithmFalseAlarms)).astype(int),
-                           ourAlgorithmFilledPausesCount,
-                           ourAlgorithmFalseAlarms,
-                           validationAlgorithmLabel= "Actual",
-                           algorithmLabel= "Algorithm",
-                           yLabel= "Filled Pauses (Detected)",
-                           xLabel= "Participant",
-                           title= "Filled Pauses Algorithm Comparison",
-                           tickLabels=["102", "103", "104", "106", "107", "108", "109", "110", "111", "113", "114"],
-                           correctDetectionShift=2)
-
 
 
 def main():
-    # graphSyllableResults()
-    # graphVoiceActivityResults()
-    graphFilledPausesResults()
+    createValidationSetFromParticipants()
 
 main()
