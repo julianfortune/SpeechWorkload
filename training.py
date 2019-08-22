@@ -35,15 +35,19 @@ def loadData(directory= None, trainingFiles= None, filter= True, threshold= 0.1,
         if len(currentLabels) == len(currentData.index):
             # Add the speech workload values
             currentData['speechWorkload'] = currentLabels
-            respirationRateData = pd.read_csv(path.replace("features", "physiological"), index_col= 0)
 
             # Adjust the data to include respiration rate or be the length of the
             if respirationRate:
+                respirationRateData = pd.read_csv(path.replace("features", "physiological"), index_col= 0)
                 currentData["respirationRate"] = respirationRateData
                 currentData = currentData.dropna()
             elif trimToRespirationLength:
                 # If doing a comparison without respirationRate make sure the samples are the same
+                respirationRateData = pd.read_csv(path.replace("features", "physiological"), index_col= 0)
                 currentData = currentData.iloc[0:len(respirationRateData.index), :]
+
+            # currentData.plot()
+            # plt.show()
 
             data = data.append(currentData[data.columns], ignore_index= True)
         else:
@@ -102,7 +106,6 @@ def assessModelAccuracy(model, data, shouldFilterOutMismatch= False, shouldGraph
     if shouldFilterOutMismatch:
         vocalData = assessmentData[(assessmentData["speechWorkload"] > 0) & (assessmentData["meanVoiceActivity"] >= 0.1)]
         vocalData = vocalData.reset_index().drop(columns= ["index"])
-        print(len(vocalData.index))
 
         silentData = assessmentData[(assessmentData["speechWorkload"] == 0) & (assessmentData["meanVoiceActivity"] < 0.1)]
         silentData = silentData.sample(n= len(vocalData.index), random_state= 930123201)
@@ -158,10 +161,10 @@ def supervisoryRealWorld(epochs, leaveOut= [], trainModelsAndSave= True, respira
 
     if trainModelsAndSave:
         model = neuralNetwork(train, epochs= epochs)
-        model.save(modelDirectory + "realWorld" + str(epochs) + "epochs.tflearn")
+        model.save(modelDirectory + "realWorld-" + str(epochs) + "epochs.tflearn")
     else:
         model = neuralNetwork(train, train= False)
-        model.load(modelDirectory + "realWorld" + str(epochs) + "epochs.tflearn")
+        model.load(modelDirectory + "realWorld-" + str(epochs) + "epochs.tflearn")
 
     metrics = [[False] + assessModelAccuracy(model, test), [True] + assessModelAccuracy(model, test, shouldFilterOutMismatch= True)]
 
@@ -226,7 +229,7 @@ def supervisoryLeaveOneOutCrossValidation(epochs, leaveOut= [], trainModelsAndSa
     print(results)
     results.to_csv("./analyses/supervisoryResults-LeaveOut" + str(leaveOut) + "-" + str(epochs) + "epochs.csv")
 
-# Emulated Real-World Conditions
+# Human-Robot Teaming Generalizability - Train on Supervisory, test on Peer-Based
 def supervisoryHumanRobot(epochs, leaveOut= [], trainModelsAndSave= True, respirationRate= True):
     features= ["meanIntensity", "stDevIntensity", "meanPitch", "stDevPitch", "stDevVoiceActivity", "meanVoiceActivity", "syllablesPerSecond", "filledPauses", "respirationRate"]
 
@@ -246,42 +249,102 @@ def supervisoryHumanRobot(epochs, leaveOut= [], trainModelsAndSave= True, respir
     day2Directory = "./training/Supervisory_Evaluation_Day_2/"
 
     # Testing
-    realTimeDirectory = "./training/Peer_Based/"
+    peerDirectory = "./training/Peer_Based/"
 
     if len(leaveOut) > 0:
-        modelDirectory = "./models/Supervisory_Real_World-LeaveOut" + str(leaveOut) + "/"
+        modelDirectory = "./models/Supervisory_Human_Robot-LeaveOut" + str(leaveOut) + "/"
 
-    train = loadData(directory= day1Directory, audioFeatures= audioFeatures, respirationRate= includeRespirationRate)
-    test = loadData(directory= day2Directory, audioFeatures= audioFeatures, respirationRate= includeRespirationRate, filter=False)
+    trainDay1 = loadData(directory= day1Directory, audioFeatures= audioFeatures, respirationRate= includeRespirationRate, trimToRespirationLength= False)
+    trainDay2 = loadData(directory= day2Directory, audioFeatures= audioFeatures, respirationRate= includeRespirationRate, trimToRespirationLength= False)
+    train = pd.concat([trainDay1, trainDay2])
 
-    # print(train)
+    test = loadData(directory= peerDirectory, audioFeatures= audioFeatures, trimToRespirationLength= False, respirationRate= includeRespirationRate, filter=False)
 
-    # if trainModelsAndSave:
-    #     model = neuralNetwork(train, epochs= epochs)
-    #     model.save(modelDirectory + "realWorld" + str(epochs) + "epochs.tflearn")
-    # else:
-    #     model = neuralNetwork(train, train= False)
-    #     model.load(modelDirectory + "realWorld" + str(epochs) + "epochs.tflearn")
-    #
-    # metrics = [[False] + assessModelAccuracy(model, test), [True] + assessModelAccuracy(model, test, shouldFilterOutMismatch= True)]
-    #
-    # # Append results to the end of the data frame
-    # results = pd.DataFrame(metrics, columns=["filtered", "samples", "coefficient", "RMSE", "actualMean", "actualStDev", "predMean", "predStDev"])
-    #
-    # print(results)
-    # results.to_csv("./analyses/realWorldResults-LeaveOut" + str(leaveOut) + "-" + str(epochs) + "epochs.csv")
+    print(train)
+
+    if trainModelsAndSave:
+        model = neuralNetwork(train, epochs= epochs)
+        model.save(modelDirectory + "supervisoryHumanRobot" + str(epochs) + "epochs.tflearn")
+    else:
+        model = neuralNetwork(train, train= False)
+        model.load(modelDirectory + "supervisoryHumanRobot" + str(epochs) + "epochs.tflearn")
+
+    metrics = [[False] + assessModelAccuracy(model, test), [True] + assessModelAccuracy(model, test, shouldFilterOutMismatch= True)]
+
+    # Append results to the end of the data frame
+    results = pd.DataFrame(metrics, columns=["filtered", "samples", "coefficient", "RMSE", "actualMean", "actualStDev", "predMean", "predStDev"])
+
+    print(results)
+    results.to_csv("./analyses/supervisoryHumanRobot-LeaveOut" + str(leaveOut) + "-" + str(epochs) + "epochs.csv")
+
+# Human-Robot Teaming Generalizability - Train on Peer-Based, test on Supervisory
+def peerHumanRobot(epochs, leaveOut= [], trainModelsAndSave= True, respirationRate= True):
+    features= ["meanIntensity", "stDevIntensity", "meanPitch", "stDevPitch", "stDevVoiceActivity", "meanVoiceActivity", "syllablesPerSecond", "filledPauses", "respirationRate"]
+
+    for featureToLeaveOut in leaveOut:
+        features.remove(featureToLeaveOut)
+
+    includeRespirationRate = "respirationRate" in features
+
+    audioFeatures = features
+    if includeRespirationRate:
+        audioFeatures.remove("respirationRate")
+
+    modelDirectory = "./models/Peer_Human_Robot/"
+
+    # Training
+    peerDirectory = "./training/Peer_Based/"
+
+    # Testing
+    day1Directory = "./training/Supervisory_Evaluation_Day_1/"
+    day2Directory = "./training/Supervisory_Evaluation_Day_2/"
+
+    if len(leaveOut) > 0:
+        modelDirectory = "./models/Peer_Human_Robot-LeaveOut" + str(leaveOut) + "/"
+        # modelDirectory.replace("\'", "\\\'")
+
+    # print(modelDirectory, os.path.exists(modelDirectory))
+
+    train = loadData(directory= peerDirectory, audioFeatures= audioFeatures, trimToRespirationLength= False,
+                     respirationRate= includeRespirationRate)
+
+    testDay1 = loadData(directory= day1Directory, audioFeatures= audioFeatures,
+                        respirationRate= includeRespirationRate, trimToRespirationLength= False, filter=False)
+    testDay2 = loadData(directory= day2Directory, audioFeatures= audioFeatures,
+                        respirationRate= includeRespirationRate, trimToRespirationLength= False, filter=False)
+    test = pd.concat([testDay1, testDay2],  ignore_index= True)
+
+    if trainModelsAndSave:
+        model = neuralNetwork(train, epochs= epochs)
+        model.save(modelDirectory + "peerHumanRobot" + str(epochs) + "epochs.tflearn")
+    else:
+        model = neuralNetwork(train, train= False)
+        model.load(modelDirectory + "peerHumanRobot" + str(epochs) + "epochs.tflearn")
+
+    metrics = [[False] + assessModelAccuracy(model, test), [True] + assessModelAccuracy(model, test, shouldFilterOutMismatch= True)]
+
+    # Append results to the end of the data frame
+    results = pd.DataFrame(metrics, columns=["filtered", "samples", "coefficient", "RMSE", "actualMean", "actualStDev", "predMean", "predStDev"])
+
+    print(results)
+    results.to_csv("./analyses/peerHumanRobot-LeaveOut" + str(leaveOut) + "-" + str(epochs) + "epochs.csv")
 
 def main():
-    supervisoryRealWorld(100, trainModelsAndSave= True)
-    supervisoryRealWorld(100, trainModelsAndSave= True, leaveOut= ["filledPauses"])
-    supervisoryRealWorld(100, trainModelsAndSave= True, leaveOut= ["respirationRate"])
+    # supervisoryRealWorld(10, trainModelsAndSave= False)
+    # supervisoryRealWorld(100, trainModelsAndSave= False, leaveOut= ["filledPauses"])
+    # supervisoryRealWorld(100, trainModelsAndSave= True, leaveOut= ["respirationRate"])
 
-    supervisoryLeaveOneOutCrossValidation(50, trainModelsAndSave= True)
-    supervisoryLeaveOneOutCrossValidation(50, trainModelsAndSave= True, leaveOut= ["filledPauses"])
-    supervisoryLeaveOneOutCrossValidation(50, trainModelsAndSave= True, leaveOut= ["respirationRate"])
+    # supervisoryLeaveOneOutCrossValidation(50, trainModelsAndSave= True)
+    # supervisoryLeaveOneOutCrossValidation(50, trainModelsAndSave= True, leaveOut= ["filledPauses"])
+    # supervisoryLeaveOneOutCrossValidation(50, trainModelsAndSave= True, leaveOut= ["respirationRate"])
 
-    # supervisoryHumanRobot(50, trainModelsAndSave= True)
-    # supervisoryHumanRobot(50, leaveOut= ["respirationRate"], trainModelsAndSave= True)
+    supervisoryHumanRobot(100, trainModelsAndSave= True, leaveOut= ["respirationRate"])
+    # supervisoryHumanRobot(100, trainModelsAndSave= True, leaveOut= ["respirationRate", "filledPauses"])
+
+    peerHumanRobot(100, trainModelsAndSave= True, leaveOut= ["respirationRate"])
+    # peerHumanRobot(100, trainModelsAndSave= True, leaveOut= ["respirationRate", "filledPauses"])
+
+
 
 if __name__ == "__main__":
     main()
