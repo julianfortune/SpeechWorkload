@@ -410,6 +410,66 @@ def compareAlgorithmToParticipants():
     print("    Total     | Filled pauses:", totalNumberOfFilledPauses)
     print("     New      | Correct filled pauses:", totalNumberOfCorrectlyDetectedPauses, "False alarms:", totalNumberOfFalseAlarms, "Precision:", precision, "Recall:", recall, "F1", f1)
 
+def graphCCHPParticipants():
+    audioDirectory = "../media/cchp_english/*/*.wav"
+    speechAnalyzer = speechAnalysis.SpeechAnalyzer()
+
+    for filePath in sorted(glob.iglob(audioDirectory)):
+        fileName = os.path.basename(filePath)[:-4]
+
+        print(fileName)
+
+        audio = audioModule.Audio(filePath=filePath)
+        if audio.numberOfChannels != 1:
+            audio.makeMono()
+
+        intensity = speechAnalyzer.getEnergyFromAudio(audio)
+
+        filledPauses, timeStamps = speechAnalyzer.getFilledPausesFromAudio(audio)
+
+        filledPausesMarkers = np.full(len(timeStamps), 0)
+        energyTimes = np.array(range(0, len(intensity))) / (1000/speechAnalyzer.featureStepSize)
+
+        plt.plot(timeStamps, filledPausesMarkers, '^')
+        plt.plot(energyTimes, intensity)
+        plt.show()
+
+def graphSantaBarbara():
+    audioDirectory = "../media/SBCSAE/audio/*.wav"
+    speechAnalyzer = speechAnalysis.SpeechAnalyzer()
+
+    for filePath in sorted(glob.iglob(audioDirectory)):
+        fileName = os.path.basename(filePath)[:-4]
+
+        print(fileName)
+
+        audio = audioModule.Audio(filePath=filePath)
+        if audio.numberOfChannels != 1:
+            audio.makeMono()
+
+        intensity = speechAnalyzer.getEnergyFromAudio(audio)
+
+        filledPauses, timeStamps = speechAnalyzer.getFilledPausesFromAudio(audio)
+
+        print(convertArrayToTimeStamps(timeStamps))
+
+        filledPausesMarkers = np.full(len(timeStamps), 0)
+        energyTimes = np.array(range(0, len(intensity))) / (1000/speechAnalyzer.featureStepSize)
+
+        plt.figure(figsize= (20, 10))
+        plt.plot(timeStamps, filledPausesMarkers, '^')
+        plt.plot(energyTimes, intensity)
+        plt.savefig("../media/SBCSAE/graphs/" + fileName + ".png")
+        plt.close()
+
+def convertArrayToTimeStamps(numericalArray):
+    timeStampStringArray = []
+
+    for numericTime in numericalArray:
+        timeStampStringArray.append(str(int(numericTime/60)) + ":" + str(round(numericTime - (int(numericTime/60) * 60), 2)))
+
+    return timeStampStringArray
+
 def printCCHPFilledPauseTypes():
     corpusTopLevelPath = "../media/cchp_english/"
     speechAnalyzer = speechAnalysis.SpeechAnalyzer()
@@ -437,6 +497,6 @@ def printCCHPFilledPauseTypes():
         print(filledPause, allFilledPauses.count(filledPause))
 
 def main():
-    printCCHPFilledPauseTypes()
+    graphSantaBarbara()
 
 main()
