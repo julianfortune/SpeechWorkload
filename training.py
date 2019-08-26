@@ -227,7 +227,7 @@ def supervisoryLeaveOneOutCrossValidation(epochs, leaveOut= [], trainModelsAndSa
         results.loc[len(results)] = [participantNumber, True] + assessModelAccuracy(model, test, shouldFilterOutMismatch= True)
 
     print(results)
-    results.to_csv("./analyses/supervisoryResults-LeaveOut" + str(leaveOut) + "-" + str(epochs) + "epochs.csv")
+    results.to_csv("./analyses/supervisoryCrossValidationResults-LeaveOut" + str(leaveOut) + "-" + str(epochs) + "epochs.csv")
 
 # Human-Robot Teaming Generalizability - Train on Supervisory, test on Peer-Based
 def supervisoryHumanRobot(epochs, leaveOut= [], trainModelsAndSave= True, respirationRate= True):
@@ -338,10 +338,10 @@ def main():
     # supervisoryLeaveOneOutCrossValidation(50, trainModelsAndSave= True, leaveOut= ["filledPauses"])
     # supervisoryLeaveOneOutCrossValidation(50, trainModelsAndSave= True, leaveOut= ["respirationRate"])
 
-    supervisoryHumanRobot(100, trainModelsAndSave= True, leaveOut= ["respirationRate"])
+    # supervisoryHumanRobot(100, trainModelsAndSave= True, leaveOut= ["respirationRate"])
     # supervisoryHumanRobot(100, trainModelsAndSave= True, leaveOut= ["respirationRate", "filledPauses"])
 
-    peerHumanRobot(100, trainModelsAndSave= True, leaveOut= ["respirationRate"])
+    # peerHumanRobot(100, trainModelsAndSave= True, leaveOut= ["respirationRate"])
     # peerHumanRobot(100, trainModelsAndSave= True, leaveOut= ["respirationRate", "filledPauses"])
 
 

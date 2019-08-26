@@ -8,6 +8,7 @@
 import sys, time, glob, os
 import numpy as np
 import matplotlib.pyplot as plt
+import matplotlib.patches as mpatches
 
 import librosa
 import parselmouth
@@ -361,8 +362,8 @@ def tunePRAATScript():
 
     print(results)
 
-def runPRAATScript(directory, threshold=-25, intensityDip=2, captureOutput=True):
-    _, result = parselmouth.praat.run_file("../speechRateValidation/praat/Praat Script Syllable Nuclei v2", threshold, intensityDip, 0.3, False, directory, capture_output= captureOutput)
+def runPRAATScript(directory, threshold=-35, intensityDip=8, captureOutput=True):
+    _, result = parselmouth.praat.run_file("../validation/PRAAT/Praat Script Syllable Nuclei v2", threshold, intensityDip, 0.3, False, directory, capture_output= captureOutput)
 
     result = result.strip().split('\n')
     for i in range(0, len(result)):
@@ -370,7 +371,135 @@ def runPRAATScript(directory, threshold=-25, intensityDip=2, captureOutput=True)
 
     return result
 
+def compareAlgorithmToPraatScriptOnRandomDataSet():
+
+    # Graph parameters
+    validationColor = "mediumaquamarine"
+    ourColor = "mediumpurple"
+    plt.rc('font',**{'family':'serif','serif':['Palatino']})
+
+    validationTopLevelPath = "../media/validation/"
+
+    speechAnalyzer = speechAnalysis.SpeechAnalyzer()
+
+    # Iterate through sub directories
+    for validationSetPath in ["../media/validation/2/"]: #sorted(glob.iglob(validationTopLevelPath + '*/')):
+        validationSet = validationSetPath.split('/')[-2]
+
+        print()
+        print(validationSetPath)
+        print()
+
+        praatOutput = runPRAATScript(validationSetPath,
+                                     threshold=-35,
+                                     intensityDip=8)
+
+        # Remove the header row
+        praatOutput.pop(0)
+
+        # Make new container for PRAAT syllable data
+        praatData = []
+
+        # Clean up the data a bit
+        for index in range(0, len(praatOutput)):
+            oringinalFileName = '_'.join(praatOutput[index][0].split('_')[:3]) + '.' + '.'.join(praatOutput[index][0].split('_')[3:])
+
+            praatOutput[index][0] = oringinalFileName
+            praatOutput[index][1] = int(praatOutput[index][1].replace(",", ""))
+
+            praatOutput[index] = praatOutput[index][:2 + praatOutput[index][1]]
+
+            syllables = []
+            for subIndex in range(0, praatOutput[index][1]):
+                syllables.append(float(praatOutput[index][2 + subIndex].replace(",", "")))
+
+            praatData.append([oringinalFileName, syllables])
+
+        for filePath in sorted(glob.iglob(validationSetPath + "*.wav")):
+            fileName = os.path.basename(filePath)[:-4]
+
+            participant = fileName.split('_')[0][1:]
+            condition = fileName.split('_')[1]
+            times = fileName.split('_')[2]
+
+            print(participant, condition, times)
+
+            existsInPraat = False
+
+            for sample in praatData:
+                name = sample[0]
+
+                if name == fileName:
+                    existsInPraat = True
+
+                    praatTimeStamps = sample[1]
+
+                    audio = audioModule.Audio(filePath=filePath)
+                    audio.makeMono()
+
+                    pitches = speechAnalyzer.getPitchFromAudio(audio)
+                    syllables, _ = speechAnalyzer.getSyllablesFromAudio(audio, pitches= pitches)
+
+                    praatSyllables = np.full(len(syllables), 0)
+
+                    for time in praatTimeStamps:
+                        praatSyllables[int(time / (speechAnalyzer.featureStepSize / 1000))] = 1
+
+                    if True:
+                        voiceActivity = speechAnalyzer.getVoiceActivityFromAudio(audio, pitches= pitches)
+
+                        bufferFrames = int(speechAnalyzer.voiceActivityMaskBufferSize / speechAnalyzer.featureStepSize)
+                        mask = np.invert(featureModule.createBufferedBinaryArrayFromArray(voiceActivity.astype(bool), bufferFrames))
+                        syllables[mask] = 0
+                        praatSyllables[mask] = 0
+
+                    timeStamps = []
+                    praatVoiceActivityTimeStamps = []
+
+                    for syllableInstanceIndex in range(0, len(syllables)):
+                        if syllables[syllableInstanceIndex] == 1:
+                            timeStamps.append(syllableInstanceIndex * speechAnalyzer.featureStepSize / 1000)
+                        if praatSyllables[syllableInstanceIndex] == 1:
+                            praatVoiceActivityTimeStamps.append(syllableInstanceIndex * speechAnalyzer.featureStepSize / 1000)
+
+                    if True:
+                        praatTimeStamps = praatVoiceActivityTimeStamps
+
+                    praatValues = praatTimeStamps
+                    ourAlgorithmValues = timeStamps
+
+                    plt.figure(figsize=(11,3))
+                    plt.plot(list(range(0, 30 + 1)), [0] * (30 + 1), drawstyle="steps", color="black")
+
+                    for x_pos in praatValues:
+                        plt.vlines(x_pos, ymin=0, ymax=1, color=validationColor)
+
+                    for x_pos in ourAlgorithmValues:
+                        plt.vlines(x_pos, ymin=-1, ymax=0, color=ourColor)
+
+                    plt.title(fileName)
+                    plt.ylim((-1.5, 1.5))
+                    plt.xlim((0,30))
+                    plt.box(on=None)
+                    plt.subplots_adjust(top= 0.85, bottom= 0.25)
+                    plt.yticks([])
+
+                    patch1 = mpatches.Patch(color=validationColor)
+                    patch2 = mpatches.Patch(color=ourColor)
+
+                    patches = (patch1, patch2)
+
+                    plt.legend(patches, ["Praat", "Ours"], loc='lower center', bbox_to_anchor=(0.5, -0.35), ncol=2, )
+
+                    outputPath = "../validation/comparison/syllables/" + validationSet + "/" + fileName + ".png"
+
+                    # plt.show()
+                    plt.savefig(outputPath)
+                    plt.close()
+
+
+
 def main():
-    syllablesUsingPRAATScript()
+    compareAlgorithmToPraatScriptOnRandomDataSet()
 
 main()

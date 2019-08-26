@@ -106,6 +106,57 @@ def graphFilledPausesResults():
                            tickLabels=["102", "103", "104", "106", "107", "108", "109", "110", "111", "113", "114"],
                            correctDetectionShift=2)
 
+def graphVADtuningComparisons():
+    validationAlgorithmValuesTuned = [654, 588, 609, 585, 601, 611, 605, 603, 602, 629]
+    validationAlgorithmValuesMiddleValue = [875, 809, 736, 779, 818, 814, 793, 807, 804, 777]
+    validationAlgorithmValuesDefault = [959, 871, 838, 825, 895, 895, 898, 859, 898, 860]
+    ourAlgorithmValues = [348, 315, 318, 303, 286, 341, 303, 311, 313, 297]
+
+    yLabel = "Number of seconds with voice activity"
+    title = "Voice Activity Comparison of Different Parameters"
+
+    index = np.linspace(0, len(validationAlgorithmValuesTuned) - 1, len(validationAlgorithmValuesTuned))
+
+    dataFrame = pd.DataFrame({"rVAD Default" : validationAlgorithmValuesDefault,
+                              "rVAD Middle Value" : validationAlgorithmValuesMiddleValue,
+                              "rVAD Tuned" : validationAlgorithmValuesTuned,
+                              "Our Algorithm" : ourAlgorithmValues}, index = index)
+    dataFrame.index.name = "Validation Set"
+
+    plt.rc('font',**{'family':'serif','serif':['Palatino']})
+    colors = ['grey', 'lightgrey', 'white', 'white']
+
+    # figure = plt.figure(figsize=(14,5))
+
+    ax = dataFrame.plot.bar(color = colors, rot = 0, edgecolor = 'black')
+
+    for container, hatch in zip(ax.containers, ("", "", "", "///")):
+        for patch in container.patches:
+            patch.set_hatch(hatch)
+
+    #
+    # plt.bar(x, validationAlgorithmValuesTuned, width, label="Tuned rVAD", color="white", edgecolor="black")
+    # plt.bar(x + 2 * (width + spacing), ourAlgorithmValues, width, label="Our Algorithm", color="lightgrey", edgecolor="black")
+    #
+    #
+    # plt.xticks(x + (width + spacing) / 2, x.astype(int) + 1)
+
+    # for xValue, yValue in enumerate(validationAlgorithmValuesTuned):
+    #     plt.text(xValue + hShift, yValue, " " + str(yValue),
+    #              color= "black", va= "bottom", ha= "center")
+    #
+    # for xValue, yValue in enumerate(ourAlgorithmValues):
+    #     plt.text(xValue + hShift + spacing + width, yValue, " " + str(yValue),
+    #              color='black', va='bottom', ha='center')
+
+    plt.ylabel(yLabel)
+    plt.legend(loc='lower center', bbox_to_anchor=(0.5, -0.25), ncol=5)
+    plt.margins(0.05, 0.1)
+    plt.subplots_adjust(bottom=0.2)
+    plt.title(title)
+
+    plt.show()
+
 def graphVoiceActivityComparison():
     filePath = "../validation/results/voiceActivity.csv"
     outputDirectoryPath = "../validation/results/voiceActivity/"
@@ -209,9 +260,11 @@ def graphSyllablesComparison():
 
 
 def main():
-    graphVoiceActivityComparison()
-    print("Done w voice activity")
-    graphSyllablesComparison()
-    print("Done w syllables")
+    # graphVoiceActivityComparison()
+    # print("Done w voice activity")
+    # graphSyllablesComparison()
+    # print("Done w syllables")
+
+    graphVADtuningComparisons()
 
 main()

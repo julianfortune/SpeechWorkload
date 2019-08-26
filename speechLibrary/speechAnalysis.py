@@ -68,7 +68,8 @@ class SpeechAnalyzer:
         # Syllable detection parameters
         self.syllableWindowSize = 50 # In milliseconds
         self.syllablePeakMinimumDistance = 4
-        self.syllablePeakMinimumWidth = 2
+        self.syllablePeakMinimumWidth = 2 # Maybe 4 ?
+        self.syllablePeakMinimumProminence = None # Maybe 75 ?
         self.syllablePitchDistanceTolerance = 4
         self.syllableZcrThreshold = 0.06
 
@@ -137,6 +138,7 @@ class SpeechAnalyzer:
                                                stepSize= self.featureStepSize,
                                                energyPeakMinimumDistance= self.syllablePeakMinimumDistance,
                                                energyPeakMinimumWidth= self.syllablePeakMinimumWidth,
+                                               energyPeakMinimumProminence = self.syllablePeakMinimumProminence,
                                                pitchDistanceTolerance= self.syllablePitchDistanceTolerance,
                                                zcrThreshold= self.syllableZcrThreshold,
                                                energyThresholdRatio= self.energyThresholdRatio)

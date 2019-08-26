@@ -185,7 +185,7 @@ def getFormants(data, sampleRate, windowSize, stepSize):
     return np.array(firstFormant), np.array(secondFormant)
 
 # | Returns the indices of syllables in audio data.
-def getSyllables(data, sampleRate, pitchValues, windowSize, stepSize, energyPeakMinimumDistance, energyPeakMinimumWidth, pitchDistanceTolerance, zcrThreshold, energyThresholdRatio):
+def getSyllables(data, sampleRate, pitchValues, windowSize, stepSize, energyPeakMinimumDistance, energyPeakMinimumWidth, energyPeakMinimumProminence, pitchDistanceTolerance, zcrThreshold, energyThresholdRatio):
     # Convert window and step sizes to samples for Librosa.
     windowSizeInSamples = int(sampleRate / 1000 * windowSize)
     stepSizeInSamples = int(sampleRate / 1000 * stepSize)
@@ -207,7 +207,8 @@ def getSyllables(data, sampleRate, pitchValues, windowSize, stepSize, energyPeak
     peaks, _ = scipy.signal.find_peaks(energy,
                                        height=energyMinThreshold,
                                        distance=energyPeakMinimumDistance,
-                                       width=energyPeakMinimumWidth)
+                                       width=energyPeakMinimumWidth,
+                                       prominence= energyPeakMinimumProminence)
 
     validPeaks = []
 

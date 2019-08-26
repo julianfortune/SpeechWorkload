@@ -427,12 +427,16 @@ def graphCCHPParticipants():
 
         filledPauses, timeStamps = speechAnalyzer.getFilledPausesFromAudio(audio)
 
+        print(convertArrayToTimeStamps(timeStamps))
+
         filledPausesMarkers = np.full(len(timeStamps), 0)
         energyTimes = np.array(range(0, len(intensity))) / (1000/speechAnalyzer.featureStepSize)
 
+        plt.figure(figsize= (20, 10))
         plt.plot(timeStamps, filledPausesMarkers, '^')
         plt.plot(energyTimes, intensity)
-        plt.show()
+        plt.savefig("../media/cchp_english/graphs/" + fileName + ".png")
+        plt.close()
 
 def graphSantaBarbara():
     audioDirectory = "../media/SBCSAE/audio/*.wav"
@@ -497,6 +501,6 @@ def printCCHPFilledPauseTypes():
         print(filledPause, allFilledPauses.count(filledPause))
 
 def main():
-    graphSantaBarbara()
+    graphCCHPParticipants()
 
 main()
