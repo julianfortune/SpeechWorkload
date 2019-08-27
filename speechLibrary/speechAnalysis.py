@@ -294,6 +294,9 @@ class SpeechAnalyzer:
         if audio.numberOfChannels > 1:
             audio.makeMono()
 
+        # Remove any DC bias
+        audio.unBias()
+
         startTime = time.time()
 
         # Set up time tracker

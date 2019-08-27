@@ -57,7 +57,16 @@ class Audio:
         else:
             print("Error: Sound Already Mono")
 
-    def description(self):
+    def unBias(self):
+        if self.numberOfChannels == 2:
+            self.data[:, 0] = np.subtract(self.data[:, 0], np.mean(self.data[:, 0], axis= 0))
+            self.data[:, 1] = np.subtract(self.data[:, 1], np.mean(self.data[:, 1], axis= 0))
+        elif self.numberOfChannels == 1:
+            self.data = np.subtract(self.data, np.mean(self.data, axis=0))
+        else:
+            print("Error: Unable to unbias. Cannot parse number of channels")
+
+    def describe(self):
         print("Audio data -", self.sampleRate, "samples/second,", self.numberOfChannels, "channels,", self.length / self.sampleRate, "seconds.")
 
 # Uses the pyaudio library to get the user's choice of input device
