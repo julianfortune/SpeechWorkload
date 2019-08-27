@@ -2,6 +2,7 @@
 # Created on Nov 12, 2018
 #
 # @author: Julian Fortune
+# @Description: Functions for training and assessing the neural network.
 #
 
 import glob, sys, csv, os
@@ -47,6 +48,7 @@ def loadData(directory= None, trainingFiles= None, filter= True, threshold= 0.1,
                 currentData = currentData.iloc[0:len(respirationRateData.index), :]
 
             # currentData.plot()
+            # plt.title(name)
             # plt.show()
 
             data = data.append(currentData[data.columns], ignore_index= True)
@@ -329,10 +331,58 @@ def peerHumanRobot(epochs, leaveOut= [], trainModelsAndSave= True, respirationRa
     print(results)
     results.to_csv("./analyses/peerHumanRobot-LeaveOut" + str(leaveOut) + "-" + str(epochs) + "epochs.csv")
 
+# Real-time evaluaiton sanity check - Train on Supervisory, test on Real-Time
+def realTimeSanityCheck(epochs, leaveOut= [], trainModelsAndSave= True, respirationRate= True):
+    features= ["meanIntensity", "stDevIntensity", "meanPitch", "stDevPitch", "stDevVoiceActivity", "meanVoiceActivity", "syllablesPerSecond", "filledPauses", "respirationRate"]
+
+    for featureToLeaveOut in leaveOut:
+        features.remove(featureToLeaveOut)
+
+    includeRespirationRate = "respirationRate" in features
+
+    audioFeatures = features
+    if includeRespirationRate:
+        audioFeatures.remove("respirationRate")
+
+    modelDirectory = "./models/Real_Time_Sanity/"
+
+    # Training
+    day1Directory = "./training/Supervisory_Evaluation_Day_1/"
+    day2Directory = "./training/Supervisory_Evaluation_Day_2/"
+
+    # Testing
+    realTimeDirectory = "./training/Real_Time/"
+
+    if len(leaveOut) > 0:
+        modelDirectory = "./models/Real_Time_Sanity-LeaveOut" + str(leaveOut) + "/"
+
+    test = loadData(directory= realTimeDirectory, audioFeatures= audioFeatures, trimToRespirationLength= False, respirationRate= includeRespirationRate, filter=False)
+
+    trainDay1 = loadData(directory= day1Directory, audioFeatures= audioFeatures, respirationRate= includeRespirationRate, trimToRespirationLength= False)
+    trainDay2 = loadData(directory= day2Directory, audioFeatures= audioFeatures, respirationRate= includeRespirationRate, trimToRespirationLength= False)
+    train = pd.concat([trainDay1, trainDay2])
+
+    print(test)
+
+    if trainModelsAndSave:
+        model = neuralNetwork(train, epochs= epochs)
+        model.save(modelDirectory + "realTimeSanityCheck" + str(epochs) + "epochs.tflearn")
+    else:
+        model = neuralNetwork(train, train= False)
+        model.load(modelDirectory + "realTimeSanityCheck" + str(epochs) + "epochs.tflearn")
+
+    metrics = [[False] + assessModelAccuracy(model, test), [True] + assessModelAccuracy(model, test, shouldFilterOutMismatch= True)]
+
+    # Append results to the end of the data frame
+    results = pd.DataFrame(metrics, columns=["filtered", "samples", "coefficient", "RMSE", "actualMean", "actualStDev", "predMean", "predStDev"])
+
+    print(results)
+    results.to_csv("./analyses/realTimeSanityCheck-LeaveOut" + str(leaveOut) + "-" + str(epochs) + "epochs.csv")
+
 def main():
-    # supervisoryRealWorld(10, trainModelsAndSave= False)
-    # supervisoryRealWorld(100, trainModelsAndSave= False, leaveOut= ["filledPauses"])
-    # supervisoryRealWorld(100, trainModelsAndSave= True, leaveOut= ["respirationRate"])
+    # supervisoryRealWorld(50, trainModelsAndSave= False)
+    # supervisoryRealWorld(50, trainModelsAndSave= False, leaveOut= ["filledPauses"])
+    # supervisoryRealWorld(50, trainModelsAndSave= True, leaveOut= ["respirationRate"])
 
     # supervisoryLeaveOneOutCrossValidation(50, trainModelsAndSave= True)
     # supervisoryLeaveOneOutCrossValidation(50, trainModelsAndSave= True, leaveOut= ["filledPauses"])
@@ -344,6 +394,9 @@ def main():
     # peerHumanRobot(100, trainModelsAndSave= True, leaveOut= ["respirationRate"])
     # peerHumanRobot(100, trainModelsAndSave= True, leaveOut= ["respirationRate", "filledPauses"])
 
+    realTimeSanityCheck(50, trainModelsAndSave= True)
+    # realTimeSanityCheck(50, trainModelsAndSave= True, leaveOut= ["filledPauses"])
+    # realTimeSanityCheck(50, trainModelsAndSave= True, leaveOut= ["respirationRate"])
 
 
 if __name__ == "__main__":

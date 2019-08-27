@@ -4,6 +4,7 @@ import numpy
 
 def createFeatures(audioDirectory, outputDirectory):
     analyzer = speechAnalysis.SpeechAnalyzer()
+
     analyzer.printStatus = True
     analyzer.lookBackSize = 5
 
@@ -12,6 +13,10 @@ def createFeatures(audioDirectory, outputDirectory):
 def day1():
     createFeatures(audioDirectory= "../media/Jamison_Evaluations/Supervisory/Day1/",
                    outputDirectory= "./training/Supervisory_Evaluation_Day_1/features/")
+
+def day2():
+    createFeatures(audioDirectory= "../media/Jamison_Evaluations/Supervisory/Day2/",
+                   outputDirectory= "./training/Supervisory_Evaluation_Day_2/features/")
 
 def peerBased():
     createFeatures(audioDirectory= "../media/Jamison_Evaluations/Peer_Based/Processed_Audio/",

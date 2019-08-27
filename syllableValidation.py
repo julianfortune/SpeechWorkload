@@ -195,7 +195,7 @@ def validateOnRandomValidationSetsWithPRAATScript():
         ourCorrectDetections = 0
         ourFalseAlarms = 0
 
-        print("Threshold: -35, intensityDip: 8")
+        print("Threshold: -35, intensityDip: 8, Mask with voice activity: True")
         # print("Threshold: -30, intensityDip: 4")
         # print("Threshold: -25, intensityDip: 2")
 
@@ -269,7 +269,7 @@ def validateOnRandomValidationSetsWithPRAATScript():
                         if praatSyllables[syllableInstanceIndex] == 1:
                             praatVoiceActivityTimeStamps.append(syllableInstanceIndex * speechAnalyzer.featureStepSize / 1000)
 
-                    if False: # Mask praat with our voice activity
+                    if True: # Mask praat with our voice activity
                         praatTimeStamps = praatVoiceActivityTimeStamps
 
                     praatSyllableCount = len(praatTimeStamps)

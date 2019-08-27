@@ -236,12 +236,14 @@ def createPeerBasedLabelFiles():
 
 def createRealTimeLabelFiles():
     modelsPath = "../media/Jamison_Evaluations/Real_Time_Evaluation/"
-    feauresPath = "./training/Real_Time/"
+    feauresPath = "./training/Real_Time/features/"
 
     timeStep = 1
 
-    for filePath in sorted(glob.iglob(feauresPath + "*/*.csv")):
+    for filePath in sorted(glob.iglob(feauresPath + "*.csv")):
         fileName = os.path.basename(filePath)[:-4]
+
+        print(fileName)
 
         participantNumber = os.path.basename(filePath)[:-4].split("_")[0][1:]
 
@@ -288,7 +290,9 @@ def createRealTimeLabelFiles():
         workloadData = np.swapaxes(np.array([times, workload]), 0, 1)
         workloadFrame = pd.DataFrame(workloadData, columns= ['time', 'speechWorkload'])
 
-        # workloadFrame.to_csv("./training/Real_Time/labels/" + fileName + ".csv", index= False)
+        print(workloadFrame)
+
+        workloadFrame.to_csv("./training/Real_Time/labels/" + fileName + ".csv", index= False)
 
 def makeSupervisoryPhysioDataTrainingFiles():
     physio = pd.read_csv("../media/Jamison_Evaluations/Supervisory/physiological.csv")[[ "Participant", "Condition", "Seconds", "Breathing Data"]]
@@ -337,6 +341,6 @@ def makeRealTimePhysioDataTrainingFiles():
 
 
 def main():
-    makeRealTimePhysioDataTrainingFiles()
+    createRealTimeLabelFiles()
 
 main()
