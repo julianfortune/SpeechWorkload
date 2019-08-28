@@ -34,6 +34,9 @@ class SpeechAnalyzer:
     def __init__(self):
         self.printStatus = True
 
+        # Audio processing parameters
+        self.removeDCOffsetFromAudio = True
+
         # Windowing parameters
         self.stepSize = 1 # Time interval between extracting features, in seconds.
         self.lookBackSize = 30 # Time interval to examine looking backward for features, in seconds.
@@ -294,8 +297,8 @@ class SpeechAnalyzer:
         if audio.numberOfChannels > 1:
             audio.makeMono()
 
-        # Remove any DC bias
-        audio.unBias()
+        if self.removeDCOffsetFromAudio:
+            audio.unBias() # Move the center of the audio to 0
 
         startTime = time.time()
 
@@ -373,6 +376,10 @@ class SpeechAnalyzer:
             aboutFile.write("Description --------------------------------------------------" + "\n")
             aboutFile.write("" + "\n")
             aboutFile.write("Parameters ---------------------------------------------------" + "\n")
+            aboutFile.write("" + "\n")
+
+            # Audio processing parameters
+            aboutFile.write("removeDCOffsetFromAudio (bool) = " + str(self.removeDCOffsetFromAudio) + "\n")
             aboutFile.write("" + "\n")
 
             # Windowing parameters
