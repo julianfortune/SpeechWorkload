@@ -1,8 +1,10 @@
-Started 2019-08-12
+Started 2019-08-28
 
 Description --------------------------------------------------
 
 Parameters ---------------------------------------------------
+
+removeDCOffsetFromAudio (bool) = True
 
 stepSize (seconds) = 1
 lookBackSize (seconds) = 5

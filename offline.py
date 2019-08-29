@@ -27,6 +27,6 @@ def realTime():
                    outputDirectory= "./training/Real_Time/features/")
 
 def main():
-    realTime()
+    day2()
 
 main()
