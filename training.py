@@ -16,7 +16,7 @@ from scipy import stats
 
 
 
-def loadData(directory= None, trainingFiles= None, filter= True, threshold= 0.1, audioFeatures= ["meanIntensity", "stDevIntensity", "meanPitch", "stDevPitch", "stDevVoiceActivity", "meanVoiceActivity", "syllablesPerSecond", "filledPauses"], respirationRate= True, trimToRespirationLength= True):
+def loadData(directory= None, trainingFiles= None, filter= True, threshold= 0.1, audioFeatures= ["meanIntensity", "stDevIntensity", "meanPitch", "stDevPitch", "stDevVoiceActivity", "meanVoiceActivity", "syllablesPerSecond", "filledPauses"], respirationRate= True, trimToRespirationLength= True, shouldGraph= False):
     data = pd.DataFrame(columns= audioFeatures + (["respirationRate"] if respirationRate else list()) + ["speechWorkload"])
 
     files = []
@@ -47,9 +47,10 @@ def loadData(directory= None, trainingFiles= None, filter= True, threshold= 0.1,
                 respirationRateData = pd.read_csv(path.replace("features", "physiological"), index_col= 0)
                 currentData = currentData.iloc[0:len(respirationRateData.index), :]
 
-            # currentData.plot()
-            # plt.title(name)
-            # plt.show()
+            if shouldGraph:
+                currentData.plot()
+                plt.title(name)
+                plt.show()
 
             data = data.append(currentData[data.columns], ignore_index= True)
         else:

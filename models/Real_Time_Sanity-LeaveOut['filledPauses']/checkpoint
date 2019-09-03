@@ -1,0 +1,2 @@
+model_checkpoint_path: "/Users/julianfortune/Desktop/speech workload project/speechWorkload/models/Real_Time_Sanity-LeaveOut[\'filledPauses\']/realTimeSanityCheck500epochs.tflearn"
+all_model_checkpoint_paths: "/Users/julianfortune/Desktop/speech workload project/speechWorkload/models/Real_Time_Sanity-LeaveOut[\'filledPauses\']/realTimeSanityCheck500epochs.tflearn"
