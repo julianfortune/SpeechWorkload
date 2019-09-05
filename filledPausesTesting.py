@@ -17,10 +17,9 @@ from speechLibrary import featureModule, speechAnalysis, audioModule
 
 np.set_printoptions(threshold=sys.maxsize)
 
-audioDirectory = "../media/Participant_Audio_First_five/*.wav"
-outputDir = "./filledPauses/"
-
-def createSlicesFromPauses():
+def createSlicesFromPausesWithParticipants():
+    audioDirectory = "../media/Participant_Audio_First_five/*.wav"
+    outputDir = "./filledPauses/"
 
     for filePath in sorted(glob.iglob(audioDirectory)):
 
@@ -500,7 +499,112 @@ def printCCHPFilledPauseTypes():
     for filledPause in filledPausesTypes:
         print(filledPause, allFilledPauses.count(filledPause))
 
+
+def createSlicesFromPausesOnCCHP():
+    audioDirectory = "../media/cchp_english/*/*.wav"
+    outputDir = "../validation/results/filledPausesSlices/"
+
+    speechAnalyzer = speechAnalysis.SpeechAnalyzer()
+
+    # # Make fresh directories
+    # for filePath in sorted(glob.iglob("../media/cchp_english/*/")):
+    #     participantDir = filePath.split("/")[-2]
+    #     # os.mkdir(outputDir + participantDir + "/")
+    #     for condition in ["pd", "ra", "tn"]:
+    #         # os.mkdir(outputDir + participantDir + "/" + condition + "/")
+
+    for filePath in sorted(glob.iglob(audioDirectory)):
+        participantDir = filePath.split("/")[-2]
+
+        # Audio file i/o
+        name = os.path.basename(filePath)[:-4]
+        condition = name.split("_")[2]
+
+        audio = audioModule.Audio(filePath=filePath)
+        if audio.numberOfChannels != 1:
+            audio.makeMono()
+
+        filledPauses, timeStamps = speechAnalyzer.getFilledPausesFromAudio(audio)
+
+        print(name)
+
+        audioSegment = AudioSegment.from_wav(filePath)
+
+        for time in timeStamps:
+            ### Output files - pydub is in ms
+            outputPath = outputDir + participantDir + "/" + condition + "/" + name + "-" + str(round(time, 2))
+
+            print(outputPath)
+
+            # move back 100 ms
+            start = (time - 0.1) * 1000
+            # grab a second
+            end = (time + 1) * 1000
+            segment = audioSegment[start:end]
+
+            # write to disk
+            segment.export(outputPath + ".wav", format="wav")
+
+        # --
+
+        print("Done with ", name)
+    # --
+
+# --
+
+
+def parameterSweepP103CCHP():
+    audioDirectory = "../media/cchp_english/p103/*.wav"
+    outputDir = "../validation/results/p103sweep/"
+
+    speechAnalyzer = speechAnalysis.SpeechAnalyzer()
+
+    for minimumLength in list(range(50, 260, 10)):
+        print("threshold:", minimumLength)
+
+        speechAnalyzer.filledPauseMinimumLength = minimumLength
+
+        # # Make fresh directories
+        # os.mkdir(outputDir + str(minimumLength) + "/")
+        # for condition in ["pd", "ra", "tn"]:
+        #     os.mkdir(outputDir + str(minimumLength) + "/" + condition + "/")
+
+        for filePath in sorted(glob.iglob(audioDirectory)):
+            participantDir = filePath.split("/")[-2]
+
+            # Audio file i/o
+            name = os.path.basename(filePath)[:-4]
+            condition = name.split("_")[2]
+
+            audio = audioModule.Audio(filePath=filePath)
+            if audio.numberOfChannels != 1:
+                audio.makeMono()
+
+            filledPauses, timeStamps = speechAnalyzer.getFilledPausesFromAudio(audio)
+
+            print(name, len(timeStamps))
+
+            audioSegment = AudioSegment.from_wav(filePath)
+
+            for time in timeStamps:
+                ### Output files - pydub is in ms
+                outputPath = outputDir + str(minimumLength) + "/" + condition + "/" + name + "-" + str(round(time, 2))
+
+                # move back 100 ms
+                start = (time - 0.1) * 1000
+                # grab a second
+                end = (time + 1) * 1000
+                segment = audioSegment[start:end]
+
+                # write to disk
+                segment.export(outputPath + ".wav", format="wav")
+            # --
+        # --
+
+# --
+
+
 def main():
-    graphCCHPParticipants()
+    parameterSweepP103CCHP()
 
 main()
