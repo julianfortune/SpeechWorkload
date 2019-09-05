@@ -10,6 +10,21 @@ def createFeatures(audioDirectory, outputDirectory):
 
     analyzer.createFeatureFilesFromDirectory(audioDirectory, outputDirectory)
 
+def createRealTimeFeaturesWithVaryingWindowSize():
+    audioDirectory= "../media/Jamison_Evaluations/Real_Time_Evaluation/Audio/"
+    outputDirectory= "./training/Real_Time"
+
+    windowSizes = [1, 5, 10, 15, 30, 60]
+
+    analyzer = speechAnalysis.SpeechAnalyzer()
+    analyzer.printStatus = True
+
+    for windowSize in windowSizes:
+        analyzer.lookBackSize = windowSize
+        print(outputDirectory + "-" + str(windowSize) + "_second_window/features/", analyzer.lookBackSize)
+
+        analyzer.createFeatureFilesFromDirectory(audioDirectory, outputDirectory + "-" + str(windowSize) + "_second_window/features/", saveRunTimes= True)
+
 def day1():
     createFeatures(audioDirectory= "../media/Jamison_Evaluations/Supervisory/Day1/",
                    outputDirectory= "./training/Supervisory_Evaluation_Day_1/features/")
@@ -27,6 +42,6 @@ def realTime():
                    outputDirectory= "./training/Real_Time/features/")
 
 def main():
-    day2()
+    createRealTimeFeaturesWithVaryingWindowSize()
 
 main()

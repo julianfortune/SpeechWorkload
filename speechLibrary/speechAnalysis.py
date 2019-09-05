@@ -167,34 +167,37 @@ class SpeechAnalyzer:
     # |   - audio: audio data to process
     # | Returns:
     # |   - Feature set
-    def getFeaturesFromAudio(self, audio):
+    def getFeaturesFromAudio(self, audio, shouldTime= False):
         features = featureModule.FeatureSet()
 
-        totalStartTime = time.time()
-        startTime = time.time()
+        times = {}
+
+        if shouldTime:
+            totalStartTime = time.time()
+            startTime = time.time()
 
         # Get amplitude envelope feature.
         energy = self.getEnergyFromAudio(audio)
 
         if __debug__:
-            if DEBUG:
-                print("Time to get amplitude:", time.time() - startTime)
+            if shouldTime:
+                times["intensity"] = time.time() - startTime
                 startTime = time.time()
 
         # Get pitch feature.
         pitches = self.getPitchFromAudio(audio, energy)
 
         if __debug__:
-            if DEBUG:
-                print("Time to get pitch:", time.time() - startTime)
+            if shouldTime:
+                times["pitch"] = time.time() - startTime
                 startTime = time.time()
 
         # Get voice activity feature.
         voiceActivity = self.getVoiceActivityFromAudio(audio, pitches)
 
         if __debug__:
-            if DEBUG:
-                print("Time to get voice activity:", time.time() - startTime)
+            if shouldTime:
+                times["voiceActivity"] = time.time() - startTime
                 startTime = time.time()
 
         # Get syllables feature if needed as binary array for easy masking.
@@ -202,8 +205,8 @@ class SpeechAnalyzer:
             syllables, _ = self.getSyllablesFromAudio(audio, pitches)
 
             if __debug__:
-                if DEBUG:
-                    print("Time to get syllables:", time.time() - startTime)
+                if shouldTime:
+                    times["syllables"] = time.time() - startTime
                     startTime = time.time()
 
         # Get filled pauses feature if needed as binary array for easy masking.
@@ -211,9 +214,9 @@ class SpeechAnalyzer:
             filledPauses, _ = self.getFilledPausesFromAudio(audio)
 
             if __debug__:
-                if DEBUG:
-                    print("Time to get filled pauses:", time.time() - startTime)
-                    print("Time to get features:", time.time() - totalStartTime)
+                if shouldTime:
+                    times["filledPauses"] = time.time() - startTime
+                    startTime = time.time()
 
 
 
@@ -282,15 +285,24 @@ class SpeechAnalyzer:
         if "filledPauses" in self.features:
             features.filledPauses = np.append(features.filledPauses, int(sum(filledPauses)))
 
-        return features
+        if __debug__:
+            if shouldTime:
+                times["processingFeatures"] = time.time() - startTime
+
+        if shouldTime:
+            return features, times
+        else:
+            return features
 
     # | Extracts features and returns array in accordance with Jamison's drawing
     # | Parameters:
     # |   - filePath: path to file to process
     # | Returns:
     # |   - Numpy array with features
-    def getFeaturesFromFileUsingWindowing(self, filePath):
+    def getFeaturesFromFileUsingWindowing(self, filePath, shouldTime=True):
         name = os.path.basename(filePath)
+        timingData = pd.DataFrame([], columns=['intensity', 'pitch', 'voiceActivity', 'syllables', 'filledPauses', 'processingFeatures'])
+        timingData.index.name = 'time'
 
         # Read in the file
         audio = audioModule.Audio(filePath)
@@ -332,9 +344,15 @@ class SpeechAnalyzer:
                 currentWindow = audioModule.Audio(data=audio.data[step + sampleStepSize - sampleLookBackSize:step + sampleStepSize])
                 currentWindow.sampleRate = audio.sampleRate
 
-                currentFeatures = self.getFeaturesFromAudio(currentWindow)
+                if shouldTime:
+                    currentFeatures, timesDictionary = self.getFeaturesFromAudio(currentWindow, shouldTime= True)
+                else:
+                    currentFeatures = self.getFeaturesFromAudio(currentWindow)
 
                 features.append(currentFeatures)
+
+                #Handle timing
+                timingData = timingData.append(pd.DataFrame(timesDictionary, index=[int(step/audio.sampleRate)]))
 
             # Fills arrays with zeros until step is larger than lookBackSize
             else:
@@ -366,7 +384,10 @@ class SpeechAnalyzer:
         if self.printStatus :
             print("[ DONE ] Finished processing", filePath, "!")
 
-        return featureArray
+        if shouldTime:
+            return featureArray, timingData
+        else:
+            return featureArray
 
     # | Write parameters used to generate the features.
     def saveInfoToFile(self, directory):
@@ -449,7 +470,7 @@ class SpeechAnalyzer:
     # | Parameters:
     # |   - inDirectory: directory for audio files
     # |   - outDirectory: directory for saving numpy files
-    def createFeatureFilesFromDirectory(self, inDirectory, outDirectory):
+    def createFeatureFilesFromDirectory(self, inDirectory, outDirectory, saveRunTimes=False):
         for featureName in self.features:
             assert featureName in FEATURE_NAMES, 'Invalid feature name in list.'
 
@@ -465,7 +486,12 @@ class SpeechAnalyzer:
             # Communicate progress
             print("[ " + str(count) + "/" + str(len(sorted(glob.iglob(audioFiles)))) + " ] \tStarting:",path)
 
-            featureArray = self.getFeaturesFromFileUsingWindowing(path)
+            if saveRunTimes:
+                featureArray, runTimeData = self.getFeaturesFromFileUsingWindowing(path, shouldTime= saveRunTimes)
+                print(saveRunTimes)
+                runTimeData.to_csv(outDirectory + os.path.basename(path)[:-4] + "-run_time.csv")
+            else:
+                featureArray = self.getFeaturesFromFileUsingWindowing(path)
 
             # Save the numpy array by swapping into row major and saving as a
             # pandas-ready csv.
