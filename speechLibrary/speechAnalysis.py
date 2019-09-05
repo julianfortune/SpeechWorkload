@@ -479,32 +479,44 @@ class SpeechAnalyzer:
         # Keep track of running stats
         startTime = time.time()
         count = 1
+        processedCount = 1
 
         audioFiles = inDirectory + "*.wav"
+        featuresFiles = list(glob.iglob(outDirectory + "*.csv"))
 
         for path in sorted(glob.iglob(audioFiles),reverse=False):
-            # Communicate progress
-            print("[ " + str(count) + "/" + str(len(sorted(glob.iglob(audioFiles)))) + " ] \tStarting:",path)
+            name = os.path.basename(path)[:-4]
 
-            if saveRunTimes:
-                featureArray, runTimeData = self.getFeaturesFromFileUsingWindowing(path, shouldTime= saveRunTimes)
-                print(saveRunTimes)
-                runTimeData.to_csv(outDirectory + os.path.basename(path)[:-4] + "-run_time.csv")
+            # Check if features already made
+            if not (outDirectory + name + ".csv") in featuresFiles:
+                # Communicate progress
+                print("[ " + str(count) + "/" + str(len(sorted(glob.iglob(audioFiles)))) + " ] \tStarting:",path)
+
+                if saveRunTimes:
+                    featureArray, runTimeData = self.getFeaturesFromFileUsingWindowing(path, shouldTime= saveRunTimes)
+                    print(saveRunTimes)
+                    runTimeData.to_csv(outDirectory + os.path.basename(path)[:-4] + "-run_time.csv")
+                else:
+                    featureArray = self.getFeaturesFromFileUsingWindowing(path)
+
+                # Save the numpy array by swapping into row major and saving as a
+                # pandas-ready csv.
+                featureArray = np.swapaxes(featureArray, 0, 1)
+                frame = pd.DataFrame(featureArray, columns= ["time"] + self.features)
+                frame.to_csv(outDirectory + os.path.basename(path)[:-4] + ".csv", index= False)
+
+                # Crunch some numbers and communicate to the user
+                timeElapsed = time.time() - startTime
+                estimatedTimeRemaining = timeElapsed/processedCount * (len(sorted(glob.iglob(audioFiles))) - processedCount)
+                print("\t\t" + str(timeElapsed/60) + " minutes elapsed. Estimated time remaining: " + str(estimatedTimeRemaining/60))
+
+                processedCount += 1
             else:
-                featureArray = self.getFeaturesFromFileUsingWindowing(path)
-
-            # Save the numpy array by swapping into row major and saving as a
-            # pandas-ready csv.
-            featureArray = np.swapaxes(featureArray, 0, 1)
-            frame = pd.DataFrame(featureArray, columns= ["time"] + self.features)
-            frame.to_csv(outDirectory + os.path.basename(path)[:-4] + ".csv", index= False)
-
-            # Crunch some numbers and communicate to the user
-            timeElapsed = time.time() - startTime
-            estimatedTimeRemaining = timeElapsed/count * (len(sorted(glob.iglob(audioFiles))) - count)
-            print("\t\t" + str(timeElapsed/60) + " minutes elapsed. Estimated time remaining: " + str(estimatedTimeRemaining/60))
+                # Communicate skipping
+                print("[ " + str(count) + "/" + str(len(sorted(glob.iglob(audioFiles)))) + " ] \tSkipping:",path)
 
             count += 1
+
 
 
     def getFeaturesInBackground(self, segment, sampleRate, startTime, featureExtractionStartTime, printLock):
