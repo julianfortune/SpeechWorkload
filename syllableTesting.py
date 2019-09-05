@@ -9,6 +9,7 @@ import sys, time, glob, os
 import numpy as np
 import matplotlib.pyplot as plt
 import matplotlib.patches as mpatches
+import pandas as pd
 
 import librosa
 import parselmouth
@@ -383,7 +384,7 @@ def compareAlgorithmToPraatScriptOnRandomDataSet():
     speechAnalyzer = speechAnalysis.SpeechAnalyzer()
 
     # Iterate through sub directories
-    for validationSetPath in ["../media/validation/2/"]: #sorted(glob.iglob(validationTopLevelPath + '*/')):
+    for validationSetPath in sorted(glob.iglob(validationTopLevelPath + '*/')):
         validationSet = validationSetPath.split('/')[-2]
 
         print()
@@ -497,9 +498,116 @@ def compareAlgorithmToPraatScriptOnRandomDataSet():
                     plt.savefig(outputPath)
                     plt.close()
 
+def testOnPNNCWithPRAATScript():
+    # dataFrame = pd.read_csv("../media/pnnc-v1/PNNC-transcripts.txt", sep='\t')
+    # print(dataFrame)
+    #
+    # for index, row in dataFrame.iterrows():
+    #     print(row["Sentence"])
+    #     dataFrame["Syllables"][index] = row["Sentence"].count(' ') + 2
+    #
+    # dataFrame.to_csv("../media/pnnc-v1/PNNC_auto_transcripts.csv", index=False)
 
+    labels = pd.read_csv("../media/pnnc-v1/PNNC_auto_transcripts.csv", index_col=0)
+
+    # pnncPath = "../media/pnnc-v1/audio/"
+    #
+    # syllableData = pd.DataFrame([], columns=["PRAAT", "PRAAT voiceActivity", "ours"])
+    # syllableData.index.name = "FileName"
+    #
+    # speechAnalyzer = speechAnalysis.SpeechAnalyzer()
+    #
+    # praatOutput = runPRAATScript(pnncPath,
+    #                              threshold=-35,
+    #                              intensityDip=8)
+    #
+    # # Remove the header row
+    # praatOutput.pop(0)
+    #
+    # # Make new container for PRAAT syllable data
+    # praatData = []
+    #
+    # # Clean up the data a bit
+    # for index in range(0, len(praatOutput)):
+    #     oringinalFileName = '_'.join(praatOutput[index][0].split('_')[:3]) + '.' + '.'.join(praatOutput[index][0].split('_')[3:])
+    #
+    #     praatOutput[index][0] = oringinalFileName
+    #     praatOutput[index][1] = int(praatOutput[index][1].replace(",", ""))
+    #
+    #     praatOutput[index] = praatOutput[index][:2 + praatOutput[index][1]]
+    #
+    #     syllables = []
+    #     for subIndex in range(0, praatOutput[index][1]):
+    #         syllables.append(float(praatOutput[index][2 + subIndex].replace(",", "")))
+    #
+    #     praatData.append([oringinalFileName.strip('.'), syllables])
+    # praatData = np.array(praatData)
+    #
+    # praatDataFrame = pd.DataFrame(praatData[:,1], index=praatData[:,0], columns=["PRAAT Syllables"])
+    #
+    # for filePath in sorted(glob.iglob(pnncPath + "*.wav")):
+    #     fileName = os.path.basename(filePath)[:-4]
+    #
+    #     praatTimeStamps = praatDataFrame["PRAAT Syllables"][fileName]
+    #     praatSyllableCount = len(praatTimeStamps)
+    #
+    #
+    #     audio = audioModule.Audio(filePath=filePath)
+    #
+    #     pitches = speechAnalyzer.getPitchFromAudio(audio)
+    #     syllables, _ = speechAnalyzer.getSyllablesFromAudio(audio, pitches= pitches)
+    #
+    #     praatSyllables = np.full(len(syllables), 0)
+    #
+    #     for time in praatTimeStamps:
+    #         praatSyllables[int(time / (speechAnalyzer.featureStepSize / 1000))] = 1
+    #
+    #     if True:
+    #         voiceActivity = speechAnalyzer.getVoiceActivityFromAudio(audio, pitches= pitches)
+    #
+    #         bufferFrames = int(speechAnalyzer.voiceActivityMaskBufferSize / speechAnalyzer.featureStepSize)
+    #         mask = np.invert(featureModule.createBufferedBinaryArrayFromArray(voiceActivity.astype(bool), bufferFrames))
+    #         syllables[mask] = 0
+    #         praatSyllables[mask] = 0
+    #
+    #     timeStamps = []
+    #     praatVoiceActivityTimeStamps = []
+    #
+    #     for syllableInstanceIndex in range(0, len(syllables)):
+    #         if syllables[syllableInstanceIndex] == 1:
+    #             timeStamps.append(syllableInstanceIndex * speechAnalyzer.featureStepSize / 1000)
+    #         if praatSyllables[syllableInstanceIndex] == 1:
+    #             praatVoiceActivityTimeStamps.append(syllableInstanceIndex * speechAnalyzer.featureStepSize / 1000)
+    #
+    #     praatVoiceActivitySyllableCount = len(praatVoiceActivityTimeStamps)
+    #     ourSyllableCount = len(timeStamps)
+    #
+    #     syllableData = syllableData.append(pd.DataFrame([[praatSyllableCount, praatVoiceActivitySyllableCount, ourSyllableCount]], index=[fileName], columns=["PRAAT", "PRAAT voiceActivity", "ours"]))
+    #
+
+    syllableData = pd.read_csv("../media/pnnc-v1/syllableData.csv", index_col=0)
+
+    for index, row in syllableData.iterrows():
+        syllableData.loc[index, "Actual"] = int(labels['Syllables'][index.split('_')[1]])
+
+    syllableData.Actual = syllableData.Actual.astype(int)
+    # print(syllableData)
+
+    syllableData.PRAAT = syllableData.PRAAT.subtract(syllableData.Actual)
+    syllableData.PRAATVoiceActivity = syllableData.PRAATVoiceActivity.subtract(syllableData.Actual)
+    syllableData.Ours = syllableData.Ours.subtract(syllableData.Actual)
+    # print(syllableData)
+
+    results = pd.DataFrame({"Error":[np.mean(syllableData.PRAAT), np.mean(syllableData.PRAATVoiceActivity), np.mean(syllableData.Ours)]},
+                           index= ["PRAAT", "PRAATVoiceActivity", "Ours"])
+    # print(resu lts)
+
+    results.plot(kind='bar', yerr=[[np.std(syllableData.PRAAT), np.std(syllableData.PRAATVoiceActivity), np.std(syllableData.Ours)],
+                                  [np.std(syllableData.Ours), np.std(syllableData.PRAATVoiceActivity), np.std(syllableData.PRAAT)]],
+                 rot=0)
+    plt.show()
 
 def main():
-    compareAlgorithmToPraatScriptOnRandomDataSet()
+    testOnPNNCWithPRAATScript()
 
 main()
