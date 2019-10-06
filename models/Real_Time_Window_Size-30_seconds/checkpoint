@@ -1,0 +1,2 @@
+model_checkpoint_path: "/Users/julianfortune/Desktop/speech workload project/speechWorkload/models/Real_Time_Window_Size-30_seconds/leaveOut-30-50epochs.tflearn"
+all_model_checkpoint_paths: "/Users/julianfortune/Desktop/speech workload project/speechWorkload/models/Real_Time_Window_Size-30_seconds/leaveOut-30-50epochs.tflearn"

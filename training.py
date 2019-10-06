@@ -30,33 +30,37 @@ def loadData(directory= None, trainingFiles= None, filter= True, threshold= 0.1,
 
     for path in files:
         name = os.path.basename(path)[:-4]
-        currentData = pd.read_csv(path, index_col= 0)
-        currentLabels = pd.read_csv(path.replace("features", "labels"), index_col= 0)
 
-        if len(currentLabels) == len(currentData.index):
-            # Add the speech workload values
-            currentData['speechWorkload'] = currentLabels
+        if name[0] == 'p' and name[1:].isdigit():
+            currentData = pd.read_csv(path, index_col= 0)
+            currentLabels = pd.read_csv(path.replace("features", "labels"), index_col= 0)
 
-            # Adjust the data to include respiration rate or be the length of the
-            if respirationRate:
-                respirationRateData = pd.read_csv(path.replace("features", "physiological"), index_col= 0)
-                currentData["respirationRate"] = respirationRateData
-                currentData = currentData.dropna()
-            elif trimToRespirationLength:
-                # If doing a comparison without respirationRate make sure the samples are the same
-                respirationRateData = pd.read_csv(path.replace("features", "physiological"), index_col= 0)
-                currentData = currentData.iloc[0:len(respirationRateData.index), :]
 
-            if shouldGraph:
-                currentData.plot()
-                plt.title(name)
-                plt.show()
+            if len(currentLabels) == len(currentData.index):
+                # Add the speech workload values
+                currentData['speechWorkload'] = currentLabels
 
-            data = data.append(currentData[data.columns], ignore_index= True)
-        else:
-            print("WARNING: Shapes of labels and inputs do not match.", currentLabels.shape, currentData.shape)
+                # Adjust the data to include respiration rate or be the length of the respiration rate data frame
+                if respirationRate:
+                    respirationRateData = pd.read_csv(path.replace("features", "physiological"), index_col= 0)
+                    print("rrdata", respirationRateData)
+                    currentData["respirationRate"] = respirationRateData
+                    currentData = currentData.dropna()
+                elif trimToRespirationLength:
+                    # If doing a comparison without respirationRate make sure the samples are the same
+                    respirationRateData = pd.read_csv(path.replace("features", "physiological"), index_col= 0)
+                    currentData = currentData.iloc[0:len(respirationRateData.index), :]
 
-    print("Using", list(data.columns))
+                if shouldGraph:
+                    currentData.plot()
+                    plt.title(name)
+                    plt.show()
+
+                data = data.append(currentData[data.columns], ignore_index= True)
+            else:
+                print("WARNING: Shapes of labels and inputs do not match.", currentLabels.shape, currentData.shape)
+
+    # print("Using", list(data.columns))
 
     if filter:
         data = data[(data['meanVoiceActivity'] > threshold) & (data['speechWorkload'] > 0)]
@@ -111,11 +115,23 @@ def assessModelAccuracy(model, data, shouldFilterOutMismatch= False, shouldGraph
         vocalData = vocalData.reset_index().drop(columns= ["index"])
 
         silentData = assessmentData[(assessmentData["speechWorkload"] == 0) & (assessmentData["meanVoiceActivity"] < 0.1)]
-        silentData = silentData.sample(n= len(vocalData.index), random_state= 930123201)
         silentData = silentData.reset_index().drop(columns= ["index"])
+
+        if len(silentData) > len(vocalData):
+            silentData = silentData.sample(n= len(vocalData.index), random_state= 930123201)
+            silentData = silentData.reset_index().drop(columns= ["index"])
+        else:
+            vocalData = vocalData.sample(n= len(silentData.index), random_state= 930123201)
+            vocalData = vocalData.reset_index().drop(columns= ["index"])
+
+        print(vocalData)
+        print(silentData)
 
         assessmentData = pd.concat([vocalData, silentData])
         assessmentData = assessmentData.reset_index().drop(columns= ["index"])
+
+    if not len(assessmentData) > 0:
+        return [len(assessmentData.index), None, None, None, None, None, None]
 
     predictions = model.predict(assessmentData.drop(columns=['speechWorkload']).to_numpy())[:,0]
     predictions[assessmentData.meanVoiceActivity < 0.1] = 0
@@ -380,6 +396,64 @@ def realTimeSanityCheck(epochs, leaveOut= [], trainModelsAndSave= True, respirat
     print(results)
     results.to_csv("./analyses/realTimeSanityCheck-LeaveOut" + str(leaveOut) + "-" + str(epochs) + "epochs.csv")
 
+
+# Real-time window size evaluation
+def realTimeWindowSizeEvaluation(epochs, trainModelsAndSave= True):
+    audioFeatures= ["meanIntensity", "stDevIntensity", "meanPitch", "stDevPitch", "stDevVoiceActivity", "meanVoiceActivity", "syllablesPerSecond", "filledPauses"]
+
+    directories = {
+                   1:"Real_Time-1_second_window",
+                   5:"Real_Time-5_second_window",
+                   10:"Real_Time-10_second_window",
+                   15:"Real_Time-15_second_window",
+                   30:"Real_Time-30_second_window",
+                   60:"Real_Time-60_second_window"}
+
+    results = pd.DataFrame(columns=["windowSize", "participant", "filtered", "samples", "coefficient", "RMSE", "actualMean", "actualStDev", "predMean", "predStDev"])
+
+    for windowSize, directory in directories.items():
+        modelDirectory = "./models/Real_Time_Window_Size-" + str(windowSize) + "_seconds/"
+        featureDirectory = "./training/" + directory + "/"
+
+        for participantNumber in range(1, 31):
+            print("Participant", participantNumber, "windowSize:", windowSize)
+
+            participantPath = ""
+
+            filePathsInDirectory = list(sorted(glob.iglob(featureDirectory + "features/*.csv")))
+
+            featurePaths = [path for path in filePathsInDirectory if (os.path.basename(path)[:-4][0] == 'p'
+                                                                      and os.path.basename(path)[:-4][1:].isdigit())]
+
+            for path in featurePaths:
+                if str(participantNumber) == os.path.basename(path).split('_')[0][1:][:-4]:
+                    participantPath = path
+
+            if participantPath != "": # some participants are missing from the dataset
+
+                featurePaths.remove(participantPath)
+
+                train = loadData(trainingFiles=featurePaths, audioFeatures= audioFeatures,
+                                 respirationRate= False, trimToRespirationLength= False)
+                test = loadData(trainingFiles=[participantPath], audioFeatures= audioFeatures,
+                                respirationRate= False, trimToRespirationLength= False, filter=False)
+
+            if trainModelsAndSave:
+                model = neuralNetwork(train, epochs= epochs)
+                model.save(modelDirectory + "leaveOut-" + str(participantNumber) + "-" + str(epochs) + "epochs.tflearn")
+            else:
+                model = neuralNetwork(train, train= False)
+                model.load(modelDirectory + "leaveOut-" + str(participantNumber) + "-" + str(epochs) + "epochs.tflearn")
+
+            # Append results to the end of the data frame
+            results.loc[len(results)] = [windowSize, participantNumber, False] + assessModelAccuracy(model, test)
+            results.loc[len(results)] = [windowSize, participantNumber, True] + assessModelAccuracy(model, test, shouldFilterOutMismatch= True)
+
+            print(results)
+
+    results.to_csv("./analyses/realTimeWindowSizeEvaluation-" + str(epochs) + "epochs.csv")
+
+
 def main():
     # supervisoryRealWorld(50, trainModelsAndSave= False)
     # supervisoryRealWorld(50, trainModelsAndSave= False, leaveOut= ["filledPauses"])
@@ -395,9 +469,11 @@ def main():
     # peerHumanRobot(100, trainModelsAndSave= True, leaveOut= ["respirationRate"])
     # peerHumanRobot(100, trainModelsAndSave= True, leaveOut= ["respirationRate", "filledPauses"])
 
-    realTimeSanityCheck(50, trainModelsAndSave= True)
+    # realTimeSanityCheck(50, trainModelsAndSave= True)
     # realTimeSanityCheck(50, trainModelsAndSave= True, leaveOut= ["filledPauses"])
     # realTimeSanityCheck(50, trainModelsAndSave= True, leaveOut= ["respirationRate"])
+
+    realTimeWindowSizeEvaluation(50)
 
 
 if __name__ == "__main__":
