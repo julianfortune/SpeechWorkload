@@ -43,7 +43,7 @@ def loadData(directory= None, trainingFiles= None, filter= True, threshold= 0.1,
                 # Adjust the data to include respiration rate or be the length of the respiration rate data frame
                 if respirationRate:
                     respirationRateData = pd.read_csv(path.replace("features", "physiological"), index_col= 0)
-                    print("rrdata", respirationRateData)
+                    # print("rrdata", respirationRateData)
                     currentData["respirationRate"] = respirationRateData
                     currentData = currentData.dropna()
                 elif trimToRespirationLength:
@@ -398,8 +398,17 @@ def realTimeSanityCheck(epochs, leaveOut= [], trainModelsAndSave= True, respirat
 
 
 # Real-time window size evaluation
-def realTimeWindowSizeEvaluation(epochs, trainModelsAndSave= True):
-    audioFeatures= ["meanIntensity", "stDevIntensity", "meanPitch", "stDevPitch", "stDevVoiceActivity", "meanVoiceActivity", "syllablesPerSecond", "filledPauses"]
+def realTimeWindowSizeEvaluation(epochs, leaveOut= [], trainModelsAndSave= True):
+    features= ["meanIntensity", "stDevIntensity", "meanPitch", "stDevPitch", "stDevVoiceActivity", "meanVoiceActivity", "syllablesPerSecond", "filledPauses", "respirationRate"]
+
+    for featureToLeaveOut in leaveOut:
+        features.remove(featureToLeaveOut)
+
+    includeRespirationRate = "respirationRate" in features
+
+    audioFeatures = features
+    if includeRespirationRate:
+        audioFeatures.remove("respirationRate")
 
     directories = {
                    1:"Real_Time-1_second_window",
@@ -434,9 +443,9 @@ def realTimeWindowSizeEvaluation(epochs, trainModelsAndSave= True):
                 featurePaths.remove(participantPath)
 
                 train = loadData(trainingFiles=featurePaths, audioFeatures= audioFeatures,
-                                 respirationRate= False, trimToRespirationLength= False)
+                                 respirationRate= includeRespirationRate, trimToRespirationLength= False)
                 test = loadData(trainingFiles=[participantPath], audioFeatures= audioFeatures,
-                                respirationRate= False, trimToRespirationLength= False, filter=False)
+                                respirationRate= includeRespirationRate, trimToRespirationLength= False, filter=False)
 
             if trainModelsAndSave:
                 model = neuralNetwork(train, epochs= epochs)
@@ -451,7 +460,7 @@ def realTimeWindowSizeEvaluation(epochs, trainModelsAndSave= True):
 
             print(results)
 
-    results.to_csv("./analyses/realTimeWindowSizeEvaluation-" + str(epochs) + "epochs.csv")
+    results.to_csv("./analyses/realTimeWindowSizeEvaluation-LeaveOut" + str(leaveOut) + "-" + str(epochs) + "epochs.csv")
 
 
 def main():
@@ -474,6 +483,8 @@ def main():
     # realTimeSanityCheck(50, trainModelsAndSave= True, leaveOut= ["respirationRate"])
 
     realTimeWindowSizeEvaluation(50)
+    realTimeWindowSizeEvaluation(50, leaveOut= ["filledPauses"])
+    realTimeWindowSizeEvaluation(50, leaveOut= ["respirationRate"])
 
 
 if __name__ == "__main__":
