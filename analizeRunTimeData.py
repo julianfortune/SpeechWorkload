@@ -35,9 +35,16 @@ def analizeRunTimeData():
             participantRunTimes = pd.DataFrame([runTimes], columns=runTimeColumns, index=[participant])
             runTimeFrame = runTimeFrame.append(participantRunTimes)
 
-        runTimeFrame = runTimeFrame.append(pd.DataFrame([list(runTimeFrame.mean(axis = 0))], columns=runTimeColumns, index=["average"]))
-        runTimeFrame = runTimeFrame.append(pd.DataFrame([list(runTimeFrame.std(axis = 0))], columns=runTimeColumns, index=["stdev"]))
-        print(runTimeFrame)
+        runTimeFrame = runTimeFrame.drop(["filledPauses", "processingFeatures", "total"], axis = 1)
+        runTimeFrame['total'] = runTimeFrame.sum(axis=1)
+
+        analysisColumns = ["intensity", "pitch", "voiceActivity", "syllables", "total"]
+
+        # print(runTimeFrame)
+
+        runTimeFrame = runTimeFrame.append(pd.DataFrame([list(runTimeFrame.mean(axis = 0))], columns=analysisColumns, index=["average"]))
+        runTimeFrame = runTimeFrame.append(pd.DataFrame([list(runTimeFrame.std(axis = 0))], columns=analysisColumns, index=["stdev"]))
+        print(runTimeFrame.loc[['average', 'stdev']])
 
 
 def main():

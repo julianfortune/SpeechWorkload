@@ -1,2 +1,2 @@
-model_checkpoint_path: "/Users/julianfortune/Desktop/speech workload project/speechWorkload/models/Supervisory_Real_World-LeaveOut[\'filledPauses\']/realWorld-100epochs.tflearn"
-all_model_checkpoint_paths: "/Users/julianfortune/Desktop/speech workload project/speechWorkload/models/Supervisory_Real_World-LeaveOut[\'filledPauses\']/realWorld-100epochs.tflearn"
+model_checkpoint_path: "/Users/julianfortune/Files/speech workload project/speechWorkload/models/Supervisory_Real_World-LeaveOut-filledPauses/realWorld-100epochs.tflearn"
+all_model_checkpoint_paths: "/Users/julianfortune/Files/speech workload project/speechWorkload/models/Supervisory_Real_World-LeaveOut-filledPauses/realWorld-100epochs.tflearn"

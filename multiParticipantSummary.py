@@ -64,6 +64,7 @@ def main():
     createSummary("./analyses/realTimeWindowSizeEvaluation-LeaveOut['filledPauses']-50epochs.csv")
     createSummary("./analyses/realTimeWindowSizeEvaluation-LeaveOut['respirationRate']-50epochs.csv")
     createSummary("./analyses/realTimeWindowSizeEvaluation-LeaveOut[]-50epochs.csv")
+    createSummary("./analyses/realTimeWindowSizeEvaluation-LeaveOut['filledPauses', 'respirationRate']-50epochs.csv")
 
 if __name__ == "__main__":
     main()

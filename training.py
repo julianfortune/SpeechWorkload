@@ -136,7 +136,7 @@ def assessModelAccuracy(model, data, shouldFilterOutMismatch= False, shouldGraph
         return [len(assessmentData.index), None, None, None, None, None, None, None]
 
     predictions = model.predict(assessmentData.drop(columns=['speechWorkload']).to_numpy())[:,0]
-    predictions[assessmentData.meanVoiceActivity < 0.1] = 0
+    predictions[assessmentData.meanVoiceActivity < 0.1] = 0\
 
     actual = assessmentData.speechWorkload.to_numpy()
 
@@ -461,6 +461,7 @@ def realTimeWindowSizeEvaluation(epochs, leaveOut= [], trainModelsAndSave= True)
                 model = neuralNetwork(train, train= False)
                 model.load(modelDirectory + "leaveOut-" + str(participantNumber) + "-" + str(epochs) + "epochs.tflearn")
 
+            print(">>> about to append ")
             # Append results to the end of the data frame
             print(results)
             results.loc[len(results)] = [windowSize, participantNumber, False] + assessModelAccuracy(model, test)
@@ -514,27 +515,27 @@ def createSummary(dataFrame):
 
 def main():
 
-    supervisoryRealWorld(100, trainModelsAndSave= False)
-    supervisoryRealWorld(100, trainModelsAndSave= False, leaveOut= ["filledPauses"])
-    supervisoryRealWorld(100, trainModelsAndSave= False, leaveOut= ["respirationRate"])
+    supervisoryRealWorld(100, trainModelsAndSave= True)
+    supervisoryRealWorld(100, trainModelsAndSave= True, leaveOut= ["filledPauses"])
+    supervisoryRealWorld(100, trainModelsAndSave= True, leaveOut= ["respirationRate"])
 
-    supervisoryLeaveOneOutCrossValidation(50, trainModelsAndSave= False)
-    supervisoryLeaveOneOutCrossValidation(50, trainModelsAndSave= False, leaveOut= ["filledPauses"])
-    supervisoryLeaveOneOutCrossValidation(50, trainModelsAndSave= False, leaveOut= ["respirationRate"])
+    supervisoryLeaveOneOutCrossValidation(50, trainModelsAndSave= True)
+    supervisoryLeaveOneOutCrossValidation(50, trainModelsAndSave= True, leaveOut= ["filledPauses"])
+    supervisoryLeaveOneOutCrossValidation(50, trainModelsAndSave= True, leaveOut= ["respirationRate"])
 
-    supervisoryHumanRobot(100, trainModelsAndSave= False, leaveOut= ["respirationRate"])
-    supervisoryHumanRobot(100, trainModelsAndSave= False, leaveOut= ["respirationRate", "filledPauses"])
+    supervisoryHumanRobot(100, trainModelsAndSave= True, leaveOut= ["respirationRate"])
+    supervisoryHumanRobot(100, trainModelsAndSave= True, leaveOut= ["respirationRate", "filledPauses"])
 
-    peerHumanRobot(100, trainModelsAndSave= False, leaveOut= ["respirationRate"])
-    peerHumanRobot(100, trainModelsAndSave= False, leaveOut= ["respirationRate", "filledPauses"])
+    peerHumanRobot(100, trainModelsAndSave= True, leaveOut= ["respirationRate"])
+    peerHumanRobot(100, trainModelsAndSave= True, leaveOut= ["respirationRate", "filledPauses"])
 
-    realTimeSanityCheck(100, trainModelsAndSave= False)
-    realTimeSanityCheck(100, trainModelsAndSave= False, leaveOut= ["filledPauses"])
-    realTimeSanityCheck(100, trainModelsAndSave= False, leaveOut= ["respirationRate"])
+    realTimeSanityCheck(100, trainModelsAndSave= True)
+    realTimeSanityCheck(100, trainModelsAndSave= True, leaveOut= ["filledPauses"])
+    realTimeSanityCheck(100, trainModelsAndSave= True, leaveOut= ["respirationRate"])
 
-    realTimeWindowSizeEvaluation(50, trainModelsAndSave= True)
-    realTimeWindowSizeEvaluation(50, trainModelsAndSave= True, leaveOut= ["filledPauses"])
-    realTimeWindowSizeEvaluation(50, trainModelsAndSave= True, leaveOut= ["respirationRate"])
+    # realTimeWindowSizeEvaluation(50, trainModelsAndSave= True)
+    # realTimeWindowSizeEvaluation(50, trainModelsAndSave= True, leaveOut= ["filledPauses"])
+    # realTimeWindowSizeEvaluation(50, trainModelsAndSave= True, leaveOut= ["filledPauses", "respirationRate"])
 
 
 if __name__ == "__main__":

@@ -39,9 +39,9 @@ def createDay1LabelFiles():
     lengthOfEvaluationInSeconds = 900
     timeStep = 1
 
-    feauresPath = "./training/Supervisory_Evaluation_Day_1/features/"
+    featuresPath = "./training/Supervisory_Evaluation_Day_1/features/"
 
-    for filePath in sorted(glob.iglob(feauresPath + "*.csv")):
+    for filePath in sorted(glob.iglob(featuresPath + "*.csv")):
         fileName = os.path.basename(filePath)[:-4]
         print(fileName)
 
@@ -86,9 +86,9 @@ def createDay2LabelFiles():
     modelsPath = "../media/Jamison_Evaluations/Supervisory/Day2/Models/"
     timeStep = 1
 
-    feauresPath = "./training/Supervisory_Evaluation_Day_2/features/"
+    featuresPath = "./training/Supervisory_Evaluation_Day_2/features/"
 
-    for filePath in sorted(glob.iglob(feauresPath + "*.csv")):
+    for filePath in sorted(glob.iglob(featuresPath + "*.csv")):
         fileName = os.path.basename(filePath)[:-4]
         participantNumber = int(os.path.basename(filePath)[:-4].split("_")[0][1:])
 
@@ -138,7 +138,7 @@ def createDay2LabelFiles():
 
 def createPeerBasedLabelFiles():
     modelsPath = "../media/Jamison_Evaluations/Models/"
-    feauresPath = "./training/Peer_Based/features/"
+    featuresPath = "./training/Peer_Based/features/"
 
     timeStep = 1
 
@@ -168,7 +168,7 @@ def createPeerBasedLabelFiles():
     T4HighParticipants = ['P2', 'P4',  'P8', 'P9', 'P12', 'P15', 'P16', 'P7']
     T4LowParticipants = ['P3', 'P5', 'P6', 'P13', 'P14', 'P17', 'P18', 'P10']
 
-    for filePath in sorted(glob.iglob(feauresPath + "*.csv")):
+    for filePath in sorted(glob.iglob(featuresPath + "*.csv")):
         fileName = os.path.basename(filePath)[:-4]
         participantName = os.path.basename(filePath)[:-4].split("_")[0]
         task = os.path.basename(filePath)[:-4].split("_")[1]
@@ -236,11 +236,11 @@ def createPeerBasedLabelFiles():
 
 def createRealTimeLabelFiles():
     modelsPath = "../media/Jamison_Evaluations/Real_Time_Evaluation/"
-    feauresPath = "./training/Real_Time/features/"
+    featuresPath = "./training/Real_Time/features/"
 
     timeStep = 1
 
-    for filePath in sorted(glob.iglob(feauresPath + "*.csv")):
+    for filePath in sorted(glob.iglob(featuresPath + "*.csv")):
         fileName = os.path.basename(filePath)[:-4]
 
         print(fileName)
@@ -295,13 +295,13 @@ def createRealTimeLabelFiles():
         workloadFrame.to_csv("./training/Real_Time/labels/" + fileName + ".csv", index= False)
 
 def makeSupervisoryPhysioDataTrainingFiles():
-    physio = pd.read_csv("../media/Jamison_Evaluations/Supervisory/physiological.csv")[[ "Participant", "Condition", "Seconds", "Breathing Data"]]
+    physio = pd.read_csv("../media/Jamison_Evaluations/Supervisory/physiological.csv")[[ "Participant", "Condition", "Seconds", "Respiration Rate"]]
     print(physio)
 
-    day1feauresPath = "./training/Supervisory_Evaluation_Day_1/features/"
-    day2feauresPath = "./training/Supervisory_Evaluation_Day_2/features/"
+    day1featuresPath = "./training/Supervisory_Evaluation_Day_1/features/"
+    day2featuresPath = "./training/Supervisory_Evaluation_Day_2/features/"
 
-    features = list(sorted(glob.iglob(day2feauresPath + "*.csv"))) + list(sorted(glob.iglob(day1feauresPath + "*.csv")))
+    features = list(sorted(glob.iglob(day2featuresPath + "*.csv"))) + list(sorted(glob.iglob(day1featuresPath + "*.csv")))
 
     for filePath in features:
         fileName = os.path.basename(filePath)[:-4]
@@ -309,10 +309,10 @@ def makeSupervisoryPhysioDataTrainingFiles():
         condition = os.path.basename(filePath)[:-4].split("_")[1]
         print(participant, condition)
 
-        data = physio[(physio["Participant"] == participant) & (physio["Condition"] == condition)][["Seconds", "Breathing Data"]]
+        data = physio[(physio["Participant"] == participant) & (physio["Condition"] == condition)][["Seconds", "Respiration Rate"]]
         data = data.reset_index().drop(columns= ["index"]).set_index("Seconds")
         data.index.name = "time"
-        data = data.rename(columns={"Breathing Data": "respirationRate"})
+        data = data.rename(columns={"Respiration Rate": "respirationRate"})
 
         if condition == "day2":
             data.to_csv("./training/Supervisory_Evaluation_Day_2/physiological/" + fileName + ".csv")
@@ -338,9 +338,41 @@ def makeRealTimePhysioDataTrainingFiles():
 
             data.to_csv("./training/Real_Time/physiological/" + "p" + str(participantNumber) + ".csv")
 
+def makePeerBasedPhysioDataTrainingFiles():
+    # directory = "../media/Jamison_Evaluations/Peer_Based/"
+    physio = pd.read_csv("../media/Jamison_Evaluations/Peer_Based/peer_physio.csv")[[ "Participant", "Seconds", "Condition", "Respiration Rate"]]
+    print(physio)
 
+
+    for participantNumber in range(1, 32):
+        # if participantNumber not in [16, 19]:
+        for conditionNumber in [1,2,3,4]:
+            name = 'P' + str(participantNumber)
+            condition = 'T' + str(conditionNumber)
+            # print(name)
+
+            data = physio[(physio["Participant"] == name) & (physio["Condition"] == condition)][["Seconds", "Respiration Rate"]]
+            #
+
+            if not data.empty:
+                print(name, '_', condition)
+
+                data = data.reset_index().drop(columns= ["index"]).set_index("Seconds")
+                data.index.name = "time"
+                data = data.rename(columns={"Breathing Data": "respirationRate"})
+
+                print(data)
+
+                fileName = str(name) + '_' + str(condition)
+
+                data.to_csv("./training/Peer_Based/physiological/" + fileName + ".csv")
+
+    #     if condition == "day2":
+    #
+    #     else:
+    #         data.to_csv("./training/Supervisory_Evaluation_Day_1/physiological/" + fileName + ".csv")
 
 def main():
-    createRealTimeLabelFiles()
+    makeSupervisoryPhysioDataTrainingFiles()
 
 main()
