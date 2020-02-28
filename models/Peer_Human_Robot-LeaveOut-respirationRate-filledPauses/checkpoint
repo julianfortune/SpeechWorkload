@@ -1,2 +1,2 @@
-model_checkpoint_path: "/Users/julianfortune/Desktop/speech workload project/speechWorkload/models/Peer_Human_Robot-LeaveOut[\'respirationRate\', \'filledPauses\']/peerHumanRobot100epochs.tflearn"
-all_model_checkpoint_paths: "/Users/julianfortune/Desktop/speech workload project/speechWorkload/models/Peer_Human_Robot-LeaveOut[\'respirationRate\', \'filledPauses\']/peerHumanRobot100epochs.tflearn"
+model_checkpoint_path: "/home/julian/Desktop/speechWorkload/speechWorkload/models/Peer_Human_Robot-LeaveOut-respirationRate-filledPauses/peerHumanRobot100epochs.tflearn"
+all_model_checkpoint_paths: "/home/julian/Desktop/speechWorkload/speechWorkload/models/Peer_Human_Robot-LeaveOut-respirationRate-filledPauses/peerHumanRobot100epochs.tflearn"
