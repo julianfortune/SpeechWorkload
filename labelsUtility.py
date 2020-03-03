@@ -5,12 +5,16 @@
 # @Description: File for creating Pandas .csv files from workload and phsysio data.
 #
 
-import glob, sys, csv, os
+import glob
+import sys
+import csv
+import os
 
 import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
 import math
+
 
 def openNumpyFile():
     path = "./training/Supervisory_Evaluation_Day_2/features/current5seconds/"
@@ -28,11 +32,13 @@ def openNumpyFile():
         array = np.load(filePath)
 
         array = np.swapaxes(array, 0, 1)
-        frame = pd.DataFrame(array, columns= labels)
-        frame.to_csv(outPath + fileName + ".csv", index= False)
+        frame = pd.DataFrame(array, columns=labels)
+        frame.to_csv(outPath + fileName + ".csv", index=False)
+
 
 def convertTimeToSeconds(timeString):
-        return float(timeString.split(":")[-2]) * 60 + float(timeString.split(":")[-1])
+    return float(timeString.split(":")[-2]) * 60 + float(timeString.split(":")[-1])
+
 
 def createDay1LabelFiles():
     modelsPath = "../media/Jamison_Evaluations/Supervisory/Day1/Models/"
@@ -66,7 +72,7 @@ def createDay1LabelFiles():
                 fileIndex += 1
             workload.append(fileFrame.loc[fileIndex]['Speech'])
 
-        currentData = pd.read_csv(filePath, index_col= 0)
+        currentData = pd.read_csv(filePath, index_col=0)
 
         # Add extra zeros to the labels if inputs run over the length
         if len(currentData.index) > len(workload):
@@ -77,10 +83,13 @@ def createDay1LabelFiles():
         times = np.arange(0, len(workload), timeStep)
 
         workloadData = np.swapaxes(np.array([times, workload]), 0, 1)
-        workloadFrame = pd.DataFrame(workloadData, columns= ['time', 'speechWorkload'])
+        workloadFrame = pd.DataFrame(workloadData, columns=[
+                                     'time', 'speechWorkload'])
         print(workloadFrame)
 
-        workloadFrame.to_csv("./training/Supervisory_Evaluation_Day_1/labels/" + fileName + ".csv", index= False)
+        workloadFrame.to_csv(
+            "./training/Supervisory_Evaluation_Day_1/labels/" + fileName + ".csv", index=False)
+
 
 def createDay2LabelFiles():
     modelsPath = "../media/Jamison_Evaluations/Supervisory/Day2/Models/"
@@ -90,7 +99,8 @@ def createDay2LabelFiles():
 
     for filePath in sorted(glob.iglob(featuresPath + "*.csv")):
         fileName = os.path.basename(filePath)[:-4]
-        participantNumber = int(os.path.basename(filePath)[:-4].split("_")[0][1:])
+        participantNumber = int(os.path.basename(
+            filePath)[:-4].split("_")[0][1:])
 
         modelName = ""
 
@@ -108,7 +118,8 @@ def createDay2LabelFiles():
 
         workload = []
 
-        lengthOfEvaluationInSeconds = int(convertTimeToSeconds(list(fileFrame["Clock"])[len(fileFrame.index) - 1][3:]))
+        lengthOfEvaluationInSeconds = int(convertTimeToSeconds(
+            list(fileFrame["Clock"])[len(fileFrame.index) - 1][3:]))
 
         times = np.arange(0, lengthOfEvaluationInSeconds, timeStep)
 
@@ -118,7 +129,7 @@ def createDay2LabelFiles():
             workload.append(fileFrame.loc[fileIndex]['Speech'])
             # print(timeValue, fileIndex, fileFrame.loc[fileIndex]['Speech'])
 
-        currentData = pd.read_csv(filePath, index_col= 0)
+        currentData = pd.read_csv(filePath, index_col=0)
 
         # Add extra zeros to the labels if inputs run over the length
         if len(currentData.index) > len(workload):
@@ -131,10 +142,13 @@ def createDay2LabelFiles():
         times = np.arange(0, len(workload), timeStep)
 
         workloadData = np.swapaxes(np.array([times, workload]), 0, 1)
-        workloadFrame = pd.DataFrame(workloadData, columns= ['time', 'speechWorkload'])
+        workloadFrame = pd.DataFrame(workloadData, columns=[
+                                     'time', 'speechWorkload'])
         print(workloadFrame)
 
-        workloadFrame.to_csv("./training/Supervisory_Evaluation_Day_2/labels/" + fileName + ".csv", index= False)
+        workloadFrame.to_csv(
+            "./training/Supervisory_Evaluation_Day_2/labels/" + fileName + ".csv", index=False)
+
 
 def createPeerBasedLabelFiles():
     modelsPath = "../media/Jamison_Evaluations/Models/"
@@ -144,16 +158,16 @@ def createPeerBasedLabelFiles():
 
     # Model dataframes
     T1HighData = pd.read_csv(modelsPath + "t1_high.csv")
-    T1LowData =  pd.read_csv(modelsPath + "t1_low.csv")
+    T1LowData = pd.read_csv(modelsPath + "t1_low.csv")
 
     T2HighData = pd.read_csv(modelsPath + "t2_high.csv")
-    T2LowData =  pd.read_csv(modelsPath + "t2_low.csv")
+    T2LowData = pd.read_csv(modelsPath + "t2_low.csv")
 
     T3HighData = pd.read_csv(modelsPath + "t3_high.csv")
-    T3LowData =  pd.read_csv(modelsPath + "t3_low.csv")
+    T3LowData = pd.read_csv(modelsPath + "t3_low.csv")
 
     T4HighData = pd.read_csv(modelsPath + "t4_high.csv")
-    T4LowData =  pd.read_csv(modelsPath + "t4_low.csv")
+    T4LowData = pd.read_csv(modelsPath + "t4_low.csv")
 
     # Data on which participant gets which model file
     T1HighParticipants = ['P3', 'P4', 'P5', 'P8', 'P12', 'P14', 'P16', 'P18']
@@ -207,7 +221,8 @@ def createPeerBasedLabelFiles():
         fileIndex = 0
         workload = []
 
-        lengthOfEvaluationInSeconds = int(convertTimeToSeconds(list(modelData["Clock"])[len(modelData.index) - 1][3:]))
+        lengthOfEvaluationInSeconds = int(convertTimeToSeconds(
+            list(modelData["Clock"])[len(modelData.index) - 1][3:]))
 
         times = np.arange(0, lengthOfEvaluationInSeconds, timeStep)
 
@@ -217,7 +232,7 @@ def createPeerBasedLabelFiles():
             workload.append(modelData.loc[fileIndex]['Speech'])
             # print(timeValue, fileIndex, modelData.loc[fileIndex]['Speech'])
 
-        currentData = pd.read_csv(filePath, index_col= 0)
+        currentData = pd.read_csv(filePath, index_col=0)
 
         # Add extra zeros to the labels if inputs run over the length
         if len(currentData.index) > len(workload):
@@ -230,9 +245,12 @@ def createPeerBasedLabelFiles():
         times = np.arange(0, len(workload), timeStep)
 
         workloadData = np.swapaxes(np.array([times, workload]), 0, 1)
-        workloadFrame = pd.DataFrame(workloadData, columns= ['time', 'speechWorkload'])
+        workloadFrame = pd.DataFrame(workloadData, columns=[
+                                     'time', 'speechWorkload'])
 
-        workloadFrame.to_csv("./training/Peer_Based/labels/" + fileName + ".csv", index= False)
+        workloadFrame.to_csv(
+            "./training/Peer_Based/labels/" + fileName + ".csv", index=False)
+
 
 def createRealTimeLabelFiles():
     modelsPath = "../media/Jamison_Evaluations/Real_Time_Evaluation/"
@@ -248,24 +266,28 @@ def createRealTimeLabelFiles():
         participantNumber = os.path.basename(filePath)[:-4].split("_")[0][1:]
 
         if participantNumber == "19":
-            modelPath = modelsPath + "Participant_" + participantNumber + "/p" + participantNumber + "_baseline_wl.csv"
+            modelPath = modelsPath + "Participant_" + participantNumber + \
+                "/p" + participantNumber + "_baseline_wl.csv"
         else:
-            modelPath = modelsPath + "Participant_" + participantNumber + "/p" + participantNumber + "_wl.csv"
+            modelPath = modelsPath + "Participant_" + \
+                participantNumber + "/p" + participantNumber + "_wl.csv"
 
         print(modelPath)
 
         modelData = pd.read_csv(modelPath)
-        modelData.rename(columns={"Unnamed: 0": "Clock"}, inplace=True )
+        modelData.rename(columns={"Unnamed: 0": "Clock"}, inplace=True)
 
         fileIndex = 0
         workload = []
 
-        clock = pd.to_datetime(modelData["Clock"]).astype(np.int64).to_numpy() / 1000000000
+        clock = pd.to_datetime(modelData["Clock"]).astype(
+            np.int64).to_numpy() / 1000000000
         clock = [element - clock[0] for element in clock]
 
         modelData["Clock"] = clock
 
-        lengthOfEvaluationInSeconds = math.ceil(list(modelData["Clock"])[len(modelData.index) - 1])
+        lengthOfEvaluationInSeconds = math.ceil(
+            list(modelData["Clock"])[len(modelData.index) - 1])
 
         times = np.arange(0, lengthOfEvaluationInSeconds, timeStep)
 
@@ -275,7 +297,7 @@ def createRealTimeLabelFiles():
             workload.append(modelData.loc[fileIndex]['Speech'])
             # print(timeValue, fileIndex, modelData.loc[fileIndex]['Speech'])
 
-        currentData = pd.read_csv(filePath, index_col= 0)
+        currentData = pd.read_csv(filePath, index_col=0)
 
         # Add extra zeros to the labels if inputs run over the length
         if len(currentData.index) > len(workload):
@@ -288,20 +310,25 @@ def createRealTimeLabelFiles():
         times = np.arange(0, len(workload), timeStep)
 
         workloadData = np.swapaxes(np.array([times, workload]), 0, 1)
-        workloadFrame = pd.DataFrame(workloadData, columns= ['time', 'speechWorkload'])
+        workloadFrame = pd.DataFrame(workloadData, columns=[
+                                     'time', 'speechWorkload'])
 
         print(workloadFrame)
 
-        workloadFrame.to_csv("./training/Real_Time/labels/" + fileName + ".csv", index= False)
+        workloadFrame.to_csv("./training/Real_Time/labels/" +
+                             fileName + ".csv", index=False)
+
 
 def makeSupervisoryPhysioDataTrainingFiles():
-    physio = pd.read_csv("../media/Jamison_Evaluations/Supervisory/physiological.csv")[[ "Participant", "Condition", "Seconds", "Respiration Rate"]]
+    physio = pd.read_csv("../media/Jamison_Evaluations/Supervisory/physiological.csv")[
+        ["Participant", "Condition", "Seconds", "Respiration Rate"]]
     print(physio)
 
     day1featuresPath = "./training/Supervisory_Evaluation_Day_1/features/"
     day2featuresPath = "./training/Supervisory_Evaluation_Day_2/features/"
 
-    features = list(sorted(glob.iglob(day2featuresPath + "*.csv"))) + list(sorted(glob.iglob(day1featuresPath + "*.csv")))
+    features = list(sorted(glob.iglob(day2featuresPath + "*.csv"))) + \
+        list(sorted(glob.iglob(day1featuresPath + "*.csv")))
 
     for filePath in features:
         fileName = os.path.basename(filePath)[:-4]
@@ -309,15 +336,19 @@ def makeSupervisoryPhysioDataTrainingFiles():
         condition = os.path.basename(filePath)[:-4].split("_")[1]
         print(participant, condition)
 
-        data = physio[(physio["Participant"] == participant) & (physio["Condition"] == condition)][["Seconds", "Respiration Rate"]]
-        data = data.reset_index().drop(columns= ["index"]).set_index("Seconds")
+        data = physio[(physio["Participant"] == participant) & (
+            physio["Condition"] == condition)][["Seconds", "Respiration Rate"]]
+        data = data.reset_index().drop(columns=["index"]).set_index("Seconds")
         data.index.name = "time"
         data = data.rename(columns={"Respiration Rate": "respirationRate"})
 
         if condition == "day2":
-            data.to_csv("./training/Supervisory_Evaluation_Day_2/physiological/" + fileName + ".csv")
+            data.to_csv(
+                "./training/Supervisory_Evaluation_Day_2/physiological/" + fileName + ".csv")
         else:
-            data.to_csv("./training/Supervisory_Evaluation_Day_1/physiological/" + fileName + ".csv")
+            data.to_csv(
+                "./training/Supervisory_Evaluation_Day_1/physiological/" + fileName + ".csv")
+
 
 def makeRealTimePhysioDataTrainingFiles():
     directory = "../media/Jamison_Evaluations/Real_Time_Evaluation/"
@@ -325,10 +356,12 @@ def makeRealTimePhysioDataTrainingFiles():
 
     for participantNumber in range(1, 32):
         if participantNumber not in [16, 19]:
-            physioPath = directory + "Participant_" + str(participantNumber) + "/p" + str(participantNumber) + "_physio.csv"
+            physioPath = directory + "Participant_" + \
+                str(participantNumber) + "/p" + \
+                str(participantNumber) + "_physio.csv"
             data = pd.read_csv(physioPath)
 
-            data = data.reset_index().drop(columns= ["index"])
+            data = data.reset_index().drop(columns=["index"])
             data.index.name = "time"
             data = data.rename(columns={"Respiration_Rate": "respirationRate"})
             data = data[["respirationRate"]]
@@ -336,43 +369,46 @@ def makeRealTimePhysioDataTrainingFiles():
             # Fill in missing NaN values with linear interpolation
             data = data.interpolate(limit_direction='both')
 
-            data.to_csv("./training/Real_Time/physiological/" + "p" + str(participantNumber) + ".csv")
+            data.to_csv("./training/Real_Time/physiological/" +
+                        "p" + str(participantNumber) + ".csv")
+
 
 def makePeerBasedPhysioDataTrainingFiles():
     # directory = "../media/Jamison_Evaluations/Peer_Based/"
-    physio = pd.read_csv("../media/Jamison_Evaluations/Peer_Based/peer_physio.csv")[[ "Participant", "Seconds", "Condition", "Respiration Rate"]]
+    physio = pd.read_csv("../media/Jamison_Evaluations/Peer_Based/peer_physio.csv")[
+        ["Participant", "Seconds", "Condition", "Respiration Rate"]]
     print(physio)
-
 
     for participantNumber in range(1, 32):
         # if participantNumber not in [16, 19]:
-        for conditionNumber in [1,2,3,4]:
+        for conditionNumber in [1, 2, 3, 4]:
             name = 'P' + str(participantNumber)
             condition = 'T' + str(conditionNumber)
             # print(name)
 
-            data = physio[(physio["Participant"] == name) & (physio["Condition"] == condition)][["Seconds", "Respiration Rate"]]
+            data = physio[(physio["Participant"] == name) & (
+                physio["Condition"] == condition)][["Seconds", "Respiration Rate"]]
             #
 
             if not data.empty:
                 print(name, '_', condition)
 
-                data = data.reset_index().drop(columns= ["index"]).set_index("Seconds")
+                data = data.reset_index().drop(
+                    columns=["index"]).set_index("Seconds")
                 data.index.name = "time"
-                data = data.rename(columns={"Breathing Data": "respirationRate"})
+                data = data.rename(
+                    columns={"Breathing Data": "respirationRate"})
 
                 print(data)
 
                 fileName = str(name) + '_' + str(condition)
 
-                data.to_csv("./training/Peer_Based/physiological/" + fileName + ".csv")
+                data.to_csv(
+                    "./training/Peer_Based/physiological/" + fileName + ".csv")
 
-    #     if condition == "day2":
-    #
-    #     else:
-    #         data.to_csv("./training/Supervisory_Evaluation_Day_1/physiological/" + fileName + ".csv")
 
 def main():
-    makeSupervisoryPhysioDataTrainingFiles()
+    makePeerBasedPhysioDataTrainingFiles()
+
 
 main()
