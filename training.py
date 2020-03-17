@@ -48,7 +48,8 @@ def loadData(directory=None, trainingFiles=None, filter=True, threshold=0.1, aud
                     physioPath = path.replace("features", "physiological")
                     # Physiological data missing
                     if not os.path.isfile(physioPath):
-                        print("Missing physio data for:", name, physioPath)
+                        # print("Missing physio data for:", name, physioPath)
+                        print(name)
                         continue
 
                     respirationRateData = pd.read_csv(path.replace(
@@ -619,35 +620,41 @@ def createSummary(dataFrame):
 
 def main():
 
-    # supervisoryRealWorld(100, trainModelsAndSave=True)
-    # supervisoryRealWorld(100, trainModelsAndSave=True,
-    #                      leaveOut=["filledPauses"])
-    # supervisoryRealWorld(100, trainModelsAndSave=True,
-    #                      leaveOut=["respirationRate"])
+    supervisoryRealWorld(100, trainModelsAndSave=True)
+    supervisoryRealWorld(100, trainModelsAndSave=True,
+                         leaveOut=["filledPauses"])
+    supervisoryRealWorld(100, trainModelsAndSave=True,
+                         leaveOut=["respirationRate"])
+    supervisoryRealWorld(100, trainModelsAndSave=True,
+                         leaveOut=["respirationRate", "filledPauses"])
 
-    # supervisoryLeaveOneOutCrossValidation(50, trainModelsAndSave=True)
-    # supervisoryLeaveOneOutCrossValidation(
-    #     50, trainModelsAndSave=True, leaveOut=["filledPauses"])
-    # supervisoryLeaveOneOutCrossValidation(
-    #     50, trainModelsAndSave=True, leaveOut=["respirationRate"])
+    supervisoryLeaveOneOutCrossValidation(50, trainModelsAndSave=True)
+    supervisoryLeaveOneOutCrossValidation(50, trainModelsAndSave=True, leaveOut=["filledPauses"])
+    supervisoryLeaveOneOutCrossValidation(50, trainModelsAndSave=True, leaveOut=["respirationRate"])
+    supervisoryRealWorld(50, trainModelsAndSave=True, leaveOut=["respirationRate", "filledPauses"])
 
     supervisoryHumanRobot(100, trainModelsAndSave=True)
-    # supervisoryHumanRobot(100, trainModelsAndSave=True, leaveOut=[
-    #                       "respirationRate", "filledPauses"])
+    supervisoryHumanRobot(100, trainModelsAndSave=True, leaveOut=["filledPauses"])
+    supervisoryHumanRobot(100, trainModelsAndSave=True, leaveOut=["respirationRate"])
+    supervisoryRealWorld(100, trainModelsAndSave=True, leaveOut=["respirationRate", "filledPauses"])
 
-    # peerHumanRobot(100, trainModelsAndSave=True, leaveOut=["respirationRate"])
-    # peerHumanRobot(100, trainModelsAndSave=True, leaveOut=[
-    #                "respirationRate", "filledPauses"])
+    peerHumanRobot(100, trainModelsAndSave=True)
+    peerHumanRobot(100, trainModelsAndSave=True, leaveOut=["filledPauses"])
+    peerHumanRobot(100, trainModelsAndSave=True, leaveOut=["respirationRate"])
+    peerHumanRobot(100, trainModelsAndSave=True, leaveOut=["respirationRate", "filledPauses"])
 
-    # realTimeSanityCheck(100, trainModelsAndSave=True)
-    # realTimeSanityCheck(100, trainModelsAndSave=True,
-    #                     leaveOut=["filledPauses"])
-    # realTimeSanityCheck(100, trainModelsAndSave=True,
-    #                     leaveOut=["respirationRate"])
+    realTimeSanityCheck(100, trainModelsAndSave=True)
+    realTimeSanityCheck(100, trainModelsAndSave=True,
+                        leaveOut=["filledPauses"])
+    realTimeSanityCheck(100, trainModelsAndSave=True,
+                        leaveOut=["respirationRate"])
+    realTimeSanityCheck(100, trainModelsAndSave=True,
+                        leaveOut=["respirationRate", "filledPauses"])
 
-    # realTimeWindowSizeEvaluation(50, trainModelsAndSave= True)
-    # realTimeWindowSizeEvaluation(50, trainModelsAndSave= True, leaveOut= ["filledPauses"])
-    # realTimeWindowSizeEvaluation(50, trainModelsAndSave= True, leaveOut= ["filledPauses", "respirationRate"])
+    realTimeWindowSizeEvaluation(50, trainModelsAndSave= True)
+    realTimeWindowSizeEvaluation(50, trainModelsAndSave= True, leaveOut= ["respirationRate"])
+    realTimeWindowSizeEvaluation(50, trainModelsAndSave= True, leaveOut= ["filledPauses"])
+    realTimeWindowSizeEvaluation(50, trainModelsAndSave= True, leaveOut= ["filledPauses", "respirationRate"])
 
 
 if __name__ == "__main__":

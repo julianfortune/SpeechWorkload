@@ -1,27 +1,27 @@
 # Utilities
-pip3 install numpy
-pip3 install matplotlib
-pip3 install six
+python3 -m pip install numpy==1.16.3
+python3 -m pip install matplotlib
+python3 -m pip install six
 
 # Features
-pip3 install scipy
-pip3 install librosa
-pip3 install praat-parselmouth # PRAAT wrapper
+python3 -m pip install scipy
+python3 -m pip install librosa
+python3 -m pip install praat-parselmouth # PRAAT wrapper
 
 # Audio manipulation
-pip3 install wave
-pip3 install wavio
-pip3 install pydub
+python3 -m pip install wave
+python3 -m pip install wavio
+python3 -m pip install pydub
 
 # Microphone recording
-pip3 install pyaudio
+python3 -m pip install pyaudio
 
 # Learning
-pip3 install pandas
-pip3 install tensorflow
-pip3 install tflearn
+python3 -m pip install pandas==0.25.1
+python3 -m pip install tensorflow==1.13.1
+python3 -m pip install tflearn==0.3.2
 
 # Issues
 # If you see `ImportError: cannot import name 'quote'` make sure `parselmouth`
-# is not installed using `pip3 uninstall parselmouth`.
+# is not installed using `python3 -m pip uninstall parselmouth`.
 # https://github.com/YannickJadoul/Parselmouth/issues/10
