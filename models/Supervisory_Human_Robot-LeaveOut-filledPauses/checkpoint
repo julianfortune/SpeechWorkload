@@ -1,0 +1,2 @@
+model_checkpoint_path: "/home/julian/Desktop/speechWorkload/speechWorkload/models/Supervisory_Human_Robot-LeaveOut-filledPauses/supervisoryHumanRobot100epochs.tflearn"
+all_model_checkpoint_paths: "/home/julian/Desktop/speechWorkload/speechWorkload/models/Supervisory_Human_Robot-LeaveOut-filledPauses/supervisoryHumanRobot100epochs.tflearn"

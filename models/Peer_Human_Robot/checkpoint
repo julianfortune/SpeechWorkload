@@ -1,0 +1,2 @@
+model_checkpoint_path: "/home/julian/Desktop/speechWorkload/speechWorkload/models/Peer_Human_Robot/peerHumanRobot100epochs.tflearn"
+all_model_checkpoint_paths: "/home/julian/Desktop/speechWorkload/speechWorkload/models/Peer_Human_Robot/peerHumanRobot100epochs.tflearn"

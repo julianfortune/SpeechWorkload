@@ -1,0 +1,2 @@
+model_checkpoint_path: "/home/julian/Desktop/speechWorkload/speechWorkload/models/Supervisory_Real_World-LeaveOut-respirationRate-filledPauses/realWorld-100epochs.tflearn"
+all_model_checkpoint_paths: "/home/julian/Desktop/speechWorkload/speechWorkload/models/Supervisory_Real_World-LeaveOut-respirationRate-filledPauses/realWorld-100epochs.tflearn"
