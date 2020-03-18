@@ -131,8 +131,27 @@ def neuralNetwork(data, train=True, epochs=50):
 
         return model
 
+def accuracyMetrics(model, data):
+    predictions = model.predict(data.drop(columns=['speechWorkload']).to_numpy())[:, 0]
+    predictions[data.meanVoiceActivity < 0.1] = 0
 
-def assessModelAccuracy(model, data, shouldFilterOutMismatch=False, shouldGraph=False):
+    actual = data.speechWorkload.to_numpy()
+
+    correlationCoefficient, significance = stats.pearsonr(actual, predictions)
+    rmse = np.sqrt(np.mean((predictions - actual)
+                           ** 2, axis=0, keepdims=True))[0]
+    actualMean = np.mean(actual)
+    actualStandardDeviation = np.std(actual)
+    predictionsMean = np.mean(predictions)
+    predictionsStandardDeviation = np.std(predictions)
+
+    print([len(data.index), correlationCoefficient, significance, rmse,
+           actualMean, actualStandardDeviation, predictionsMean, predictionsStandardDeviation])
+
+    return [len(data.index), correlationCoefficient, significance, rmse, actualMean, actualStandardDeviation, predictionsMean, predictionsStandardDeviation]
+
+
+def assessModelAccuracy(model, data, shouldFilterOutMismatch=False, shouldGraph=False, shouldSplitByCondition=False):
     assessmentData = data
 
     if shouldFilterOutMismatch:
@@ -162,37 +181,28 @@ def assessModelAccuracy(model, data, shouldFilterOutMismatch=False, shouldGraph=
     if not len(assessmentData) > 0:
         return [len(assessmentData.index), None, None, None, None, None, None, None]
 
-    predictions = model.predict(assessmentData.drop(
-        columns=['speechWorkload']).to_numpy())[:, 0]
-    predictions[assessmentData.meanVoiceActivity < 0.1] = 0\
+    print(assessmentData)
 
-    actual = assessmentData.speechWorkload.to_numpy()
+    if shouldSplitByCondition:
+        highWorkload = assessmentData[(assessmentData["speechWorkload"] >= 4)]
+        normalWorkload = assessmentData[(assessmentData["speechWorkload"] < 4) & (assessmentData["speechWorkload"] >= 2)]
+        lowWorkload = assessmentData[(assessmentData["speechWorkload"] < 2)]
 
-    if shouldGraph:
-        results = pd.DataFrame()
-        results['predictions'] = predictions
-        results['actual'] = assessmentData.speechWorkload
+        print("\n High:\n")
+        print(highWorkload)
+        print("\n Normal:\n")
+        print(normalWorkload)
+        print("\n Low:\n")
+        print(lowWorkload)
 
-        pd.concat([results, assessmentData.meanIntensity,
-                   assessmentData.meanVoiceActivity], axis=1).plot()
-        plt.show()
+        return accuracyMetrics(model, highWorkload), accuracyMetrics(model, normalWorkload), accuracyMetrics(model, lowWorkload)
 
-    correlationCoefficient, significance = stats.pearsonr(actual, predictions)
-    rmse = np.sqrt(np.mean((predictions - actual)
-                           ** 2, axis=0, keepdims=True))[0]
-    actualMean = np.mean(actual)
-    actualStandardDeviation = np.std(actual)
-    predictionsMean = np.mean(predictions)
-    predictionsStandardDeviation = np.std(predictions)
+    else:
+        return accuracyMetrics(model, assessmentData)
 
-    print([len(assessmentData.index), correlationCoefficient, significance, rmse,
-           actualMean, actualStandardDeviation, predictionsMean, predictionsStandardDeviation])
 
-    return [len(assessmentData.index), correlationCoefficient, significance, rmse, actualMean, actualStandardDeviation, predictionsMean, predictionsStandardDeviation]
 
 # Emulated Real-World Conditions - Train Day1, test Day2
-
-
 def supervisoryRealWorld(epochs, leaveOut=[], trainModelsAndSave=True, respirationRate=True):
     features = ["meanIntensity", "stDevIntensity", "meanPitch", "stDevPitch", "stDevVoiceActivity",
                 "meanVoiceActivity", "syllablesPerSecond", "filledPauses", "respirationRate"]
@@ -240,6 +250,23 @@ def supervisoryRealWorld(epochs, leaveOut=[], trainModelsAndSave=True, respirati
     print(results)
     results.to_csv("./analyses/realWorldResults-LeaveOut" +
                    str(leaveOut) + "-" + str(epochs) + "epochs.csv")
+
+    # Asses by each condition (ol/nl/ul)
+    ol, nl, ul = assessModelAccuracy(model, test, shouldSplitByCondition=True)
+    unfiltered = [[False, "ol"] + ol, [False, "nl"] + nl, [False, "ul"] + ul]
+
+    olFilter, nlFilter, ulFilter = assessModelAccuracy(model, test, shouldFilterOutMismatch=True, shouldSplitByCondition=True)
+    filtered = [[True, "ol"] + olFilter, [True, "nl"] + nlFilter, [True, "ul"] + ulFilter]
+
+    metrics = unfiltered + filtered
+
+    # Append results to the end of the data frame
+    results = pd.DataFrame(metrics, columns=["filtered", "condition", "samples", "coefficient",
+                                             "significance", "RMSE", "actualMean", "actualStDev", "predMean", "predStDev"])
+
+    print(results)
+    results.to_csv("./analyses/realWorldResults-LeaveOut" +
+                   str(leaveOut) + "-" + str(epochs) + "epochs-byCondition.csv")
 
 # Population Generalizability
 
@@ -372,6 +399,23 @@ def supervisoryHumanRobot(epochs, leaveOut=[], trainModelsAndSave=True, respirat
     results.to_csv("./analyses/supervisoryHumanRobot-LeaveOut" +
                    str(leaveOut) + "-" + str(epochs) + "epochs.csv")
 
+    # Asses by each condition (ol/nl/ul)
+    ol, nl, ul = assessModelAccuracy(model, test, shouldSplitByCondition=True)
+    unfiltered = [[False, "ol"] + ol, [False, "nl"] + nl, [False, "ul"] + ul]
+
+    olFilter, nlFilter, ulFilter = assessModelAccuracy(model, test, shouldFilterOutMismatch=True, shouldSplitByCondition=True)
+    filtered = [[True, "ol"] + olFilter, [True, "nl"] + nlFilter, [True, "ul"] + ulFilter]
+
+    metrics = unfiltered + filtered
+
+    # Append results to the end of the data frame
+    results = pd.DataFrame(metrics, columns=["filtered", "condition", "samples", "coefficient",
+                                             "significance", "RMSE", "actualMean", "actualStDev", "predMean", "predStDev"])
+
+    print(results)
+    results.to_csv("./analyses/supervisoryHumanRobot-LeaveOut" +
+                   str(leaveOut) + "-" + str(epochs) + "epochs-byCondition.csv")
+
 # Human-Robot Teaming Generalizability - Train on Peer-Based, test on Supervisory
 
 
@@ -434,9 +478,27 @@ def peerHumanRobot(epochs, leaveOut=[], trainModelsAndSave=True, respirationRate
     results.to_csv("./analyses/peerHumanRobot-LeaveOut" +
                    str(leaveOut) + "-" + str(epochs) + "epochs.csv")
 
+
+    # Asses by each condition (ol/nl/ul)
+    ol, nl, ul = assessModelAccuracy(model, test, shouldSplitByCondition=True)
+    unfiltered = [[False, "ol"] + ol, [False, "nl"] + nl, [False, "ul"] + ul]
+
+    olFilter, nlFilter, ulFilter = assessModelAccuracy(model, test, shouldFilterOutMismatch=True, shouldSplitByCondition=True)
+    filtered = [[True, "ol"] + olFilter, [True, "nl"] + nlFilter, [True, "ul"] + ulFilter]
+
+    metrics = unfiltered + filtered
+
+    # Append results to the end of the data frame
+    results = pd.DataFrame(metrics, columns=["filtered", "condition", "samples", "coefficient",
+                                             "significance", "RMSE", "actualMean", "actualStDev", "predMean", "predStDev"])
+
+    print(results)
+    results.to_csv("./analyses/peerHumanRobot-LeaveOut" +
+                   str(leaveOut) + "-" + str(epochs) + "epochs-byCondition.csv")
+
+
+
 # Real-time evaluation sanity check - Train on Supervisory, test on Real-Time
-
-
 def realTimeSanityCheck(epochs, leaveOut=[], trainModelsAndSave=True, respirationRate=True):
     features = ["meanIntensity", "stDevIntensity", "meanPitch", "stDevPitch", "stDevVoiceActivity",
                 "meanVoiceActivity", "syllablesPerSecond", "filledPauses", "respirationRate"]
@@ -493,9 +555,26 @@ def realTimeSanityCheck(epochs, leaveOut=[], trainModelsAndSave=True, respiratio
     results.to_csv("./analyses/realTimeSanityCheck-LeaveOut" +
                    str(leaveOut) + "-" + str(epochs) + "epochs.csv")
 
+    # Asses by each condition (ol/nl/ul)
+    ol, nl, ul = assessModelAccuracy(model, test, shouldSplitByCondition=True)
+    unfiltered = [[False, "ol"] + ol, [False, "nl"] + nl, [False, "ul"] + ul]
+
+    olFilter, nlFilter, ulFilter = assessModelAccuracy(model, test, shouldFilterOutMismatch=True, shouldSplitByCondition=True)
+    filtered = [[True, "ol"] + olFilter, [True, "nl"] + nlFilter, [True, "ul"] + ulFilter]
+
+    metrics = unfiltered + filtered
+
+    # Append results to the end of the data frame
+    results = pd.DataFrame(metrics, columns=["filtered", "condition", "samples", "coefficient",
+                                             "significance", "RMSE", "actualMean", "actualStDev", "predMean", "predStDev"])
+
+    print(results)
+    results.to_csv("./analyses/realTimeSanityCheck-LeaveOut" +
+                   str(leaveOut) + "-" + str(epochs) + "epochs-byCondition.csv")
+
+
+
 # Real-time window size evaluation
-
-
 def realTimeWindowSizeEvaluation(epochs, leaveOut=[], trainModelsAndSave=True):
     features = ["meanIntensity", "stDevIntensity", "meanPitch", "stDevPitch", "stDevVoiceActivity",
                 "meanVoiceActivity", "syllablesPerSecond", "filledPauses", "respirationRate"]
@@ -619,42 +698,42 @@ def createSummary(dataFrame):
 
 
 def main():
+    print(); print(); print();
+    # supervisoryRealWorld(100, trainModelsAndSave=False)
+    # supervisoryRealWorld(100, trainModelsAndSave=False,
+    #                      leaveOut=["filledPauses"])
+    # supervisoryRealWorld(100, trainModelsAndSave=False,
+    #                      leaveOut=["respirationRate"])
+    # supervisoryRealWorld(100, trainModelsAndSave=False,
+    #                      leaveOut=["respirationRate", "filledPauses"])
 
-    supervisoryRealWorld(100, trainModelsAndSave=True)
-    supervisoryRealWorld(100, trainModelsAndSave=True,
-                         leaveOut=["filledPauses"])
-    supervisoryRealWorld(100, trainModelsAndSave=True,
-                         leaveOut=["respirationRate"])
-    supervisoryRealWorld(100, trainModelsAndSave=True,
-                         leaveOut=["respirationRate", "filledPauses"])
+    # supervisoryLeaveOneOutCrossValidation(50, trainModelsAndSave=True)
+    # supervisoryLeaveOneOutCrossValidation(50, trainModelsAndSave=True, leaveOut=["filledPauses"])
+    # supervisoryLeaveOneOutCrossValidation(50, trainModelsAndSave=True, leaveOut=["respirationRate"])
+    # supervisoryRealWorld(50, trainModelsAndSave=True, leaveOut=["respirationRate", "filledPauses"])
 
-    supervisoryLeaveOneOutCrossValidation(50, trainModelsAndSave=True)
-    supervisoryLeaveOneOutCrossValidation(50, trainModelsAndSave=True, leaveOut=["filledPauses"])
-    supervisoryLeaveOneOutCrossValidation(50, trainModelsAndSave=True, leaveOut=["respirationRate"])
-    supervisoryRealWorld(50, trainModelsAndSave=True, leaveOut=["respirationRate", "filledPauses"])
+    # supervisoryHumanRobot(100, trainModelsAndSave=False)
+    # supervisoryHumanRobot(100, trainModelsAndSave=False, leaveOut=["filledPauses"])
+    # supervisoryHumanRobot(100, trainModelsAndSave=False, leaveOut=["respirationRate"])
+    # supervisoryHumanRobot(100, trainModelsAndSave=False, leaveOut=["respirationRate", "filledPauses"])
 
-    supervisoryHumanRobot(100, trainModelsAndSave=True)
-    supervisoryHumanRobot(100, trainModelsAndSave=True, leaveOut=["filledPauses"])
-    supervisoryHumanRobot(100, trainModelsAndSave=True, leaveOut=["respirationRate"])
-    supervisoryRealWorld(100, trainModelsAndSave=True, leaveOut=["respirationRate", "filledPauses"])
+    # peerHumanRobot(100, trainModelsAndSave=False)
+    # peerHumanRobot(100, trainModelsAndSave=False, leaveOut=["filledPauses"])
+    # peerHumanRobot(100, trainModelsAndSave=False, leaveOut=["respirationRate"])
+    # peerHumanRobot(100, trainModelsAndSave=False, leaveOut=["respirationRate", "filledPauses"])
 
-    peerHumanRobot(100, trainModelsAndSave=True)
-    peerHumanRobot(100, trainModelsAndSave=True, leaveOut=["filledPauses"])
-    peerHumanRobot(100, trainModelsAndSave=True, leaveOut=["respirationRate"])
-    peerHumanRobot(100, trainModelsAndSave=True, leaveOut=["respirationRate", "filledPauses"])
-
-    realTimeSanityCheck(100, trainModelsAndSave=True)
-    realTimeSanityCheck(100, trainModelsAndSave=True,
+    realTimeSanityCheck(100, trainModelsAndSave=False)
+    realTimeSanityCheck(100, trainModelsAndSave=False,
                         leaveOut=["filledPauses"])
-    realTimeSanityCheck(100, trainModelsAndSave=True,
+    realTimeSanityCheck(100, trainModelsAndSave=False,
                         leaveOut=["respirationRate"])
-    realTimeSanityCheck(100, trainModelsAndSave=True,
+    realTimeSanityCheck(100, trainModelsAndSave=False,
                         leaveOut=["respirationRate", "filledPauses"])
 
-    realTimeWindowSizeEvaluation(50, trainModelsAndSave= True)
-    realTimeWindowSizeEvaluation(50, trainModelsAndSave= True, leaveOut= ["respirationRate"])
-    realTimeWindowSizeEvaluation(50, trainModelsAndSave= True, leaveOut= ["filledPauses"])
-    realTimeWindowSizeEvaluation(50, trainModelsAndSave= True, leaveOut= ["filledPauses", "respirationRate"])
+    # realTimeWindowSizeEvaluation(50, trainModelsAndSave= True)
+    # realTimeWindowSizeEvaluation(50, trainModelsAndSave= True, leaveOut= ["respirationRate"])
+    # realTimeWindowSizeEvaluation(50, trainModelsAndSave= True, leaveOut= ["filledPauses"])
+    # realTimeWindowSizeEvaluation(50, trainModelsAndSave= True, leaveOut= ["filledPauses", "respirationRate"])
 
 
 if __name__ == "__main__":
