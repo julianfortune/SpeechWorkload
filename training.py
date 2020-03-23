@@ -18,9 +18,12 @@ import pandas as pd
 from scipy import stats
 
 
-def loadData(directory=None, trainingFiles=None, filter=True, threshold=0.1, audioFeatures=["meanIntensity", "stDevIntensity", "meanPitch", "stDevPitch", "stDevVoiceActivity", "meanVoiceActivity", "syllablesPerSecond", "filledPauses"], respirationRate=True, trimToRespirationLength=True, shouldGraph=False):
+def loadData(directory=None, trainingFiles=None, filter=True, threshold=0.1, audioFeatures=["meanIntensity", "stDevIntensity", "meanPitch", "stDevPitch", "stDevVoiceActivity", "meanVoiceActivity", "syllablesPerSecond", "filledPauses"], respirationRate=True, trimToRespirationLength=True, shouldGraph=False, labelsHaveCondition=False, labelsHaveOverallState=False):
     data = pd.DataFrame(columns=audioFeatures +
-                        (["respirationRate"] if respirationRate else list()) + ["speechWorkload"])
+                                (["respirationRate"] if respirationRate else list()) +
+                                ["speechWorkload"] +
+                                (["condition"] if labelsHaveCondition else list()) +
+                                (["overallState"] if labelsHaveOverallState else list()))
 
     files = []
 
@@ -34,51 +37,75 @@ def loadData(directory=None, trainingFiles=None, filter=True, threshold=0.1, aud
     for path in files:
         name = os.path.basename(path)[:-4]
 
+        # print("Loading:", path)
+
         if name[0].lower() == 'p' and name[1:2].isdigit() and not("run_time" in name):
             currentData = pd.read_csv(path, index_col=0)
             currentLabels = pd.read_csv(path.replace(
                 "features", "labels"), index_col=0)
 
-            if len(currentLabels) == len(currentData.index):
-                # Add the speech workload values
-                currentData['speechWorkload'] = currentLabels
+            if len(currentLabels) != len(currentData.index):
+                # print("WARNING: Shapes of labels and inputs do not match:",
+                #       currentLabels.shape, currentData.shape, end=" ")
 
-                # Adjust the data to include respiration rate or be the length of the respiration rate data frame
-                if respirationRate:
-                    physioPath = path.replace("features", "physiological")
-                    # Physiological data missing
-                    if not os.path.isfile(physioPath):
-                        # print("Missing physio data for:", name, physioPath)
-                        print(name)
-                        continue
+                # TODO: Keep or delete?
+                # Trim data to be the length of the labels
+                currentData = currentData.iloc[0:len(currentLabels.index), :]
 
-                    respirationRateData = pd.read_csv(path.replace(
-                        "features", "physiological"), index_col=0)
-                    # print("rrdata", respirationRateData)
-                    currentData["respirationRate"] = respirationRateData
-                    currentData = currentData.dropna()
-                elif trimToRespirationLength:
-                    # If doing a comparison without respirationRate make sure the samples are the same
-                    respirationRateData = pd.read_csv(path.replace(
-                        "features", "physiological"), index_col=0)
-                    currentData = currentData.iloc[0:len(
-                        respirationRateData.index), :]
+                currentLabels = currentLabels.iloc[0:len(currentData.index), :]
 
-                if shouldGraph:
-                    currentData.plot()
-                    plt.title(name)
-                    plt.show()
+                # print("New shapes: ",
+                #       currentLabels.shape, currentData.shape)
 
-                data = data.append(
-                    currentData[data.columns], ignore_index=True)
-            else:
-                print("WARNING: Shapes of labels and inputs do not match.",
-                      currentLabels.shape, currentData.shape)
+            # Add the speech workload values
+
+            # TODO: Add condition/workloadState to labels
+            currentData['speechWorkload'] = currentLabels['speechWorkload']
+
+            if labelsHaveCondition:
+                assert 'condition' in currentLabels.columns, (name + "missing condition!")
+                currentData['condition'] = currentLabels['condition']
+            if labelsHaveOverallState:
+                assert 'overall' in currentLabels.columns, (name + "missing overall workload state!")
+                currentData['overallState'] = currentLabels['overall']
+
+            # print(currentData)
+
+            # Adjust the data to include respiration rate or be the length of the respiration rate data frame
+            if respirationRate:
+                physioPath = path.replace("features", "physiological")
+                # Physiological data missing
+                if not os.path.isfile(physioPath):
+                    # print("Missing physio data for:", name, physioPath)
+                    print(name)
+                    continue
+
+                respirationRateData = pd.read_csv(path.replace(
+                    "features", "physiological"), index_col=0)
+                # print("rrdata", respirationRateData)
+                currentData["respirationRate"] = respirationRateData
+                currentData = currentData.dropna()
+            elif trimToRespirationLength:
+                # If doing a comparison without respirationRate make sure the samples are the same
+                respirationRateData = pd.read_csv(path.replace(
+                    "features", "physiological"), index_col=0)
+                currentData = currentData.iloc[0:len(
+                    respirationRateData.index), :]
+
+            if shouldGraph:
+                currentData.plot()
+                plt.title(name)
+                plt.show()
+
+            data = data.append(
+                currentData[data.columns], ignore_index=True)
+
         else:
             print("Ignoring:", name)
 
-    # print("Using", list(data.columns))
+    print("Using", list(data.columns))
 
+    # The training data always needs this filtering
     if filter:
         data = data[(data['meanVoiceActivity'] > threshold)
                     & (data['speechWorkload'] > 0)]
@@ -132,12 +159,22 @@ def neuralNetwork(data, train=True, epochs=50):
         return model
 
 def accuracyMetrics(model, data):
+    # Remove any extra information about overall condition/workload state to
+    # not mess up this function
+    if "condition" in data.columns:
+        data = data.drop(columns=['condition'])
+    if "overallState" in data.columns:
+        data = data.drop(columns=['overallState'])
+
     predictions = model.predict(data.drop(columns=['speechWorkload']).to_numpy())[:, 0]
     predictions[data.meanVoiceActivity < 0.1] = 0
 
     actual = data.speechWorkload.to_numpy()
 
-    correlationCoefficient, significance = stats.pearsonr(actual, predictions)
+    if len(actual) >= 2:
+        correlationCoefficient, significance = stats.pearsonr(actual, predictions)
+    else:
+        correlationCoefficient, significance = (None, None)
     rmse = np.sqrt(np.mean((predictions - actual)
                            ** 2, axis=0, keepdims=True))[0]
     actualMean = np.mean(actual)
@@ -145,13 +182,13 @@ def accuracyMetrics(model, data):
     predictionsMean = np.mean(predictions)
     predictionsStandardDeviation = np.std(predictions)
 
-    print([len(data.index), correlationCoefficient, significance, rmse,
-           actualMean, actualStandardDeviation, predictionsMean, predictionsStandardDeviation])
+    # print([len(data.index), correlationCoefficient, significance, rmse,
+    #        actualMean, actualStandardDeviation, predictionsMean, predictionsStandardDeviation])
 
     return [len(data.index), correlationCoefficient, significance, rmse, actualMean, actualStandardDeviation, predictionsMean, predictionsStandardDeviation]
 
 
-def assessModelAccuracy(model, data, shouldFilterOutMismatch=False, shouldGraph=False, shouldSplitByCondition=False):
+def assessModelAccuracy(model, data, shouldFilterOutMismatch=False, shouldGraph=False, shouldSplitByWorkloadState=False, shouldSplitByCondition=False):
     assessmentData = data
 
     if shouldFilterOutMismatch:
@@ -172,30 +209,25 @@ def assessModelAccuracy(model, data, shouldFilterOutMismatch=False, shouldGraph=
                 n=len(silentData.index), random_state=930123201)
             vocalData = vocalData.reset_index().drop(columns=["index"])
 
-        # print(vocalData)
-        # print(silentData)
-
         assessmentData = pd.concat([vocalData, silentData])
         assessmentData = assessmentData.reset_index().drop(columns=["index"])
 
     if not len(assessmentData) > 0:
         return [len(assessmentData.index), None, None, None, None, None, None, None]
 
-    print(assessmentData)
+    # print(assessmentData)
+    if shouldSplitByWorkloadState:
+        overload = assessmentData[(assessmentData["overallState"] == "ol")]
+        normalLoad = assessmentData[(assessmentData["overallState"] == "nl")]
+        underload = assessmentData[(assessmentData["overallState"] == "ul")]
+
+        return accuracyMetrics(model, overload), accuracyMetrics(model, normalLoad), accuracyMetrics(model, underload)
 
     if shouldSplitByCondition:
-        highWorkload = assessmentData[(assessmentData["speechWorkload"] >= 4)]
-        normalWorkload = assessmentData[(assessmentData["speechWorkload"] < 4) & (assessmentData["speechWorkload"] >= 2)]
-        lowWorkload = assessmentData[(assessmentData["speechWorkload"] < 2)]
+        high = assessmentData[(assessmentData["condition"] == "high")]
+        low = assessmentData[(assessmentData["condition"] == "low")]
 
-        print("\n High:\n")
-        print(highWorkload)
-        print("\n Normal:\n")
-        print(normalWorkload)
-        print("\n Low:\n")
-        print(lowWorkload)
-
-        return accuracyMetrics(model, highWorkload), accuracyMetrics(model, normalWorkload), accuracyMetrics(model, lowWorkload)
+        return accuracyMetrics(model, high), accuracyMetrics(model, low)
 
     else:
         return accuracyMetrics(model, assessmentData)
@@ -203,7 +235,7 @@ def assessModelAccuracy(model, data, shouldFilterOutMismatch=False, shouldGraph=
 
 
 # Emulated Real-World Conditions - Train Day1, test Day2
-def supervisoryRealWorld(epochs, leaveOut=[], trainModelsAndSave=True, respirationRate=True):
+def supervisoryRealWorld(epochs, leaveOut=[], trainModelsAndSave=True):
     features = ["meanIntensity", "stDevIntensity", "meanPitch", "stDevPitch", "stDevVoiceActivity",
                 "meanVoiceActivity", "syllablesPerSecond", "filledPauses", "respirationRate"]
 
@@ -228,7 +260,8 @@ def supervisoryRealWorld(epochs, leaveOut=[], trainModelsAndSave=True, respirati
     train = loadData(directory=day1Directory, audioFeatures=audioFeatures,
                      respirationRate=includeRespirationRate)
     test = loadData(directory=day2Directory, audioFeatures=audioFeatures,
-                    respirationRate=includeRespirationRate, filter=False)
+                    respirationRate=includeRespirationRate, filter=False,
+                    labelsHaveOverallState=True)
 
     if trainModelsAndSave:
         model = neuralNetwork(train, epochs=epochs)
@@ -239,39 +272,31 @@ def supervisoryRealWorld(epochs, leaveOut=[], trainModelsAndSave=True, respirati
         model.load(modelDirectory + "realWorld-" +
                    str(epochs) + "epochs.tflearn")
 
-    metrics = [[False] + assessModelAccuracy(model, test), [
-        True] + assessModelAccuracy(model, test, shouldFilterOutMismatch=True)]
 
-    print(metrics)
-    # Append results to the end of the data frame
-    results = pd.DataFrame(metrics, columns=["filtered", "samples", "coefficient",
+    # Assess the performance of the neural network
+    nonSplit = [[False, "all"] + assessModelAccuracy(model, test)]
+    nonSplitFiltered = [[True, "all"] + assessModelAccuracy(model, test, shouldFilterOutMismatch=True)]
+
+    # Asses by each condition (low/high)
+    ol, nl, ul = assessModelAccuracy(model, test, shouldSplitByWorkloadState=True)
+    unfilteredSplit = [[False, "ol"] + ol, [False, "nl"] + nl, [False, "ul"] + ul]
+
+    olFilter, nlFilter, ulFilter = assessModelAccuracy(model, test, shouldFilterOutMismatch=True, shouldSplitByWorkloadState=True)
+    filteredSplit = [[True, "ol"] + olFilter, [True, "nl"] + nlFilter, [True, "ul"] + ulFilter]
+
+    metrics = unfilteredSplit + nonSplit + filteredSplit + nonSplitFiltered
+
+    # Convert results to data frame
+    results = pd.DataFrame(metrics, columns=["filtered", "overallWorkloadState", "samples", "coefficient",
                                              "significance", "RMSE", "actualMean", "actualStDev", "predMean", "predStDev"])
 
     print(results)
     results.to_csv("./analyses/realWorldResults-LeaveOut" +
                    str(leaveOut) + "-" + str(epochs) + "epochs.csv")
 
-    # Asses by each condition (ol/nl/ul)
-    ol, nl, ul = assessModelAccuracy(model, test, shouldSplitByCondition=True)
-    unfiltered = [[False, "ol"] + ol, [False, "nl"] + nl, [False, "ul"] + ul]
-
-    olFilter, nlFilter, ulFilter = assessModelAccuracy(model, test, shouldFilterOutMismatch=True, shouldSplitByCondition=True)
-    filtered = [[True, "ol"] + olFilter, [True, "nl"] + nlFilter, [True, "ul"] + ulFilter]
-
-    metrics = unfiltered + filtered
-
-    # Append results to the end of the data frame
-    results = pd.DataFrame(metrics, columns=["filtered", "condition", "samples", "coefficient",
-                                             "significance", "RMSE", "actualMean", "actualStDev", "predMean", "predStDev"])
-
-    print(results)
-    results.to_csv("./analyses/realWorldResults-LeaveOut" +
-                   str(leaveOut) + "-" + str(epochs) + "epochs-byCondition.csv")
 
 # Population Generalizability
-
-
-def supervisoryLeaveOneOutCrossValidation(epochs, leaveOut=[], trainModelsAndSave=True, respirationRate=True):
+def supervisoryLeaveOneOutCrossValidation(epochs, leaveOut=[], trainModelsAndSave=True):
     features = ["meanIntensity", "stDevIntensity", "meanPitch", "stDevPitch", "stDevVoiceActivity",
                 "meanVoiceActivity", "syllablesPerSecond", "filledPauses", "respirationRate"]
 
@@ -293,30 +318,34 @@ def supervisoryLeaveOneOutCrossValidation(epochs, leaveOut=[], trainModelsAndSav
             "[", "").replace("]", "").replace("'", "").replace(", ", "-")
         modelDirectory = "./models/Supervisory_Leave_One_Out-LeaveOut-" + leaveOutString + "/"
 
-    results = pd.DataFrame(columns=["participant", "filtered", "samples", "coefficient",
+    results = pd.DataFrame(columns=["participant", "filtered", "overallWorkloadState", "samples", "coefficient",
                                     "significance", "RMSE", "actualMean", "actualStDev", "predMean", "predStDev"])
-
-    participants = []
 
     for participantNumber in range(1, 31):
         print("Participant", participantNumber)
 
+        # Files containing data from the current participant under investigation.
+        # To be used for testing (leave-one-out cross-val).
         participantPaths = []
 
+        # Grab all files from the evaluation.
         featurePaths = list(sorted(glob.iglob(day1Directory + "features/*.csv"))) + \
             list(sorted(glob.iglob(day2Directory + "features/*.csv")))
 
+        # Identify paths to files for the current participant under investigation.
         for path in featurePaths:
             if str(participantNumber) == os.path.basename(path).split('_')[0][1:]:
                 participantPaths.append(path)
 
+        # Remove the participant under investigation's files from the training set.
         for path in participantPaths:
             featurePaths.remove(path)
 
         train = loadData(trainingFiles=featurePaths, audioFeatures=audioFeatures,
                          respirationRate=includeRespirationRate)
         test = loadData(trainingFiles=participantPaths, audioFeatures=audioFeatures,
-                        respirationRate=includeRespirationRate, filter=False)
+                        respirationRate=includeRespirationRate, filter=False,
+                        labelsHaveOverallState=True)
 
         if trainModelsAndSave:
             model = neuralNetwork(train, epochs=epochs)
@@ -328,10 +357,35 @@ def supervisoryLeaveOneOutCrossValidation(epochs, leaveOut=[], trainModelsAndSav
                        str(participantNumber) + "-" + str(epochs) + "epochs.tflearn")
 
         # Append results to the end of the data frame
-        results.loc[len(results)] = [participantNumber, False] + \
-            assessModelAccuracy(model, test)
-        results.loc[len(results)] = [participantNumber, True] + \
-            assessModelAccuracy(model, test, shouldFilterOutMismatch=True)
+        # TODO: Make results from each into a pd frame and use concat(ignore_index=True) to append to overall `results`
+        # Assess the performance of the neural network
+        nonSplit         = [[participantNumber, False, "all"] + assessModelAccuracy(model, test)]
+        nonSplitFiltered = [[participantNumber, True, "all"] + assessModelAccuracy(model, test, shouldFilterOutMismatch=True)]
+
+        # Asses by each condition (low/high)
+        ol, nl, ul = assessModelAccuracy(model, test, shouldSplitByWorkloadState=True)
+        unfilteredSplit = [[participantNumber, False, "ol"] + ol,
+                        [participantNumber, False, "nl"] + nl,
+                        [participantNumber, False, "ul"] + ul]
+
+        olFilter, nlFilter, ulFilter = assessModelAccuracy(model, test, shouldFilterOutMismatch=True, shouldSplitByWorkloadState=True)
+        filteredSplit                = [[participantNumber, True, "ol"] + olFilter,
+                                        [participantNumber, True, "nl"] + nlFilter,
+                                        [participantNumber, True, "ul"] + ulFilter]
+
+        metrics = unfilteredSplit + nonSplit + filteredSplit + nonSplitFiltered
+
+        # Convert results to data frame
+        currentResults = pd.DataFrame(metrics, columns=results.columns)
+
+        # print("CURRENT RESULTS --- ")
+        print(currentResults)
+
+        results = pd.concat([results, currentResults], ignore_index=True)
+
+        # currentResults =
+        # results.loc[len(results)] = [participantNumber, False, "all"] + assessModelAccuracy(model, test)
+        # results.loc[len(results)] = [participantNumber, True, "all"] + assessModelAccuracy(model, test, shouldFilterOutMismatch=True)
 
     print(results)
     results.to_csv("./analyses/supervisoryCrossValidationResults-LeaveOut" +
@@ -340,10 +394,9 @@ def supervisoryLeaveOneOutCrossValidation(epochs, leaveOut=[], trainModelsAndSav
     summary.to_csv("./analyses/supervisoryCrossValidationResults-LeaveOut" +
                    str(leaveOut) + "-" + str(epochs) + "epochs-summary.csv")
 
-# Human-Robot Teaming Generalizability - Train on Supervisory, test on Peer-Based
 
-
-def supervisoryHumanRobot(epochs, leaveOut=[], trainModelsAndSave=True, respirationRate=True):
+# Human-Robot Teaming Generalizability - Train on Supervisory, test on Peer-Based (split by low/condition)
+def supervisoryHumanRobot(epochs, leaveOut=[], trainModelsAndSave=True):
     features = ["meanIntensity", "stDevIntensity", "meanPitch", "stDevPitch", "stDevVoiceActivity",
                 "meanVoiceActivity", "syllablesPerSecond", "filledPauses", "respirationRate"]
 
@@ -377,7 +430,10 @@ def supervisoryHumanRobot(epochs, leaveOut=[], trainModelsAndSave=True, respirat
     train = pd.concat([trainDay1, trainDay2])
 
     test = loadData(directory=peerDirectory, audioFeatures=audioFeatures,
-                    trimToRespirationLength=False, respirationRate=includeRespirationRate, filter=False)
+                    trimToRespirationLength=False, respirationRate=includeRespirationRate,
+                    filter=False, labelsHaveCondition=True)
+
+    # print(test)
 
     if trainModelsAndSave:
         model = neuralNetwork(train, epochs=epochs)
@@ -388,38 +444,30 @@ def supervisoryHumanRobot(epochs, leaveOut=[], trainModelsAndSave=True, respirat
         model.load(modelDirectory + "supervisoryHumanRobot" +
                    str(epochs) + "epochs.tflearn")
 
-    metrics = [[False] + assessModelAccuracy(model, test), [
-        True] + assessModelAccuracy(model, test, shouldFilterOutMismatch=True)]
+    # Assess the performance of the neural network
+    nonSplit = [[False, "both"] + assessModelAccuracy(model, test)]
+    nonSplitFiltered = [[True, "both"] + assessModelAccuracy(model, test, shouldFilterOutMismatch=True)]
 
-    # Append results to the end of the data frame
-    results = pd.DataFrame(metrics, columns=["filtered", "samples", "coefficient",
-                                             "significance", "RMSE", "actualMean", "actualStDev", "predMean", "predStDev"])
+    # Asses by each condition (low/high)
+    low, high = assessModelAccuracy(model, test, shouldSplitByCondition=True)
+    unfilteredSplit = [[False, "low"] + low, [False, "high"] + high]
 
-    print(results)
-    results.to_csv("./analyses/supervisoryHumanRobot-LeaveOut" +
-                   str(leaveOut) + "-" + str(epochs) + "epochs.csv")
+    lowFiltered, highFiltered = assessModelAccuracy(model, test, shouldFilterOutMismatch=True, shouldSplitByCondition=True)
+    filteredSplit = [[True, "low"] + lowFiltered, [True, "high"] + highFiltered]
 
-    # Asses by each condition (ol/nl/ul)
-    ol, nl, ul = assessModelAccuracy(model, test, shouldSplitByCondition=True)
-    unfiltered = [[False, "ol"] + ol, [False, "nl"] + nl, [False, "ul"] + ul]
+    metrics = unfilteredSplit + nonSplit + filteredSplit + nonSplitFiltered
 
-    olFilter, nlFilter, ulFilter = assessModelAccuracy(model, test, shouldFilterOutMismatch=True, shouldSplitByCondition=True)
-    filtered = [[True, "ol"] + olFilter, [True, "nl"] + nlFilter, [True, "ul"] + ulFilter]
-
-    metrics = unfiltered + filtered
-
-    # Append results to the end of the data frame
+    # Convert results to data frame
     results = pd.DataFrame(metrics, columns=["filtered", "condition", "samples", "coefficient",
                                              "significance", "RMSE", "actualMean", "actualStDev", "predMean", "predStDev"])
 
-    print(results)
+    # print(results)
     results.to_csv("./analyses/supervisoryHumanRobot-LeaveOut" +
-                   str(leaveOut) + "-" + str(epochs) + "epochs-byCondition.csv")
+                   str(leaveOut) + "-" + str(epochs) + "epochs.csv")
+
 
 # Human-Robot Teaming Generalizability - Train on Peer-Based, test on Supervisory
-
-
-def peerHumanRobot(epochs, leaveOut=[], trainModelsAndSave=True, respirationRate=True):
+def peerHumanRobot(epochs, leaveOut=[], trainModelsAndSave=True):
     features = ["meanIntensity", "stDevIntensity", "meanPitch", "stDevPitch", "stDevVoiceActivity",
                 "meanVoiceActivity", "syllablesPerSecond", "filledPauses", "respirationRate"]
 
@@ -453,9 +501,9 @@ def peerHumanRobot(epochs, leaveOut=[], trainModelsAndSave=True, respirationRate
                      respirationRate=includeRespirationRate)
 
     testDay1 = loadData(directory=day1Directory, audioFeatures=audioFeatures,
-                        respirationRate=includeRespirationRate, trimToRespirationLength=False, filter=False)
+                        respirationRate=includeRespirationRate, trimToRespirationLength=False, filter=False, labelsHaveOverallState=True)
     testDay2 = loadData(directory=day2Directory, audioFeatures=audioFeatures,
-                        respirationRate=includeRespirationRate, trimToRespirationLength=False, filter=False)
+                        respirationRate=includeRespirationRate, trimToRespirationLength=False, filter=False, labelsHaveOverallState=True)
     test = pd.concat([testDay1, testDay2],  ignore_index=True)
 
     if trainModelsAndSave:
@@ -467,39 +515,30 @@ def peerHumanRobot(epochs, leaveOut=[], trainModelsAndSave=True, respirationRate
         model.load(modelDirectory + "peerHumanRobot" +
                    str(epochs) + "epochs.tflearn")
 
-    metrics = [[False] + assessModelAccuracy(model, test), [
-        True] + assessModelAccuracy(model, test, shouldFilterOutMismatch=True)]
+    # Assess the performance of the neural network
+    nonSplit = [[False, "all"] + assessModelAccuracy(model, test)]
+    nonSplitFiltered = [[True, "all"] + assessModelAccuracy(model, test, shouldFilterOutMismatch=True)]
 
-    # Append results to the end of the data frame
-    results = pd.DataFrame(metrics, columns=["filtered", "samples", "coefficient",
+    # Asses by each condition (low/high)
+    ol, nl, ul = assessModelAccuracy(model, test, shouldSplitByWorkloadState=True)
+    unfilteredSplit = [[False, "ol"] + ol, [False, "nl"] + nl, [False, "ul"] + ul]
+
+    olFilter, nlFilter, ulFilter = assessModelAccuracy(model, test, shouldFilterOutMismatch=True, shouldSplitByWorkloadState=True)
+    filteredSplit = [[True, "ol"] + olFilter, [True, "nl"] + nlFilter, [True, "ul"] + ulFilter]
+
+    metrics = unfilteredSplit + nonSplit + filteredSplit + nonSplitFiltered
+
+    # Convert results to data frame
+    results = pd.DataFrame(metrics, columns=["filtered", "overallWorkloadState", "samples", "coefficient",
                                              "significance", "RMSE", "actualMean", "actualStDev", "predMean", "predStDev"])
 
-    print(results)
+    # print(results)
     results.to_csv("./analyses/peerHumanRobot-LeaveOut" +
                    str(leaveOut) + "-" + str(epochs) + "epochs.csv")
 
 
-    # Asses by each condition (ol/nl/ul)
-    ol, nl, ul = assessModelAccuracy(model, test, shouldSplitByCondition=True)
-    unfiltered = [[False, "ol"] + ol, [False, "nl"] + nl, [False, "ul"] + ul]
-
-    olFilter, nlFilter, ulFilter = assessModelAccuracy(model, test, shouldFilterOutMismatch=True, shouldSplitByCondition=True)
-    filtered = [[True, "ol"] + olFilter, [True, "nl"] + nlFilter, [True, "ul"] + ulFilter]
-
-    metrics = unfiltered + filtered
-
-    # Append results to the end of the data frame
-    results = pd.DataFrame(metrics, columns=["filtered", "condition", "samples", "coefficient",
-                                             "significance", "RMSE", "actualMean", "actualStDev", "predMean", "predStDev"])
-
-    print(results)
-    results.to_csv("./analyses/peerHumanRobot-LeaveOut" +
-                   str(leaveOut) + "-" + str(epochs) + "epochs-byCondition.csv")
-
-
-
 # Real-time evaluation sanity check - Train on Supervisory, test on Real-Time
-def realTimeSanityCheck(epochs, leaveOut=[], trainModelsAndSave=True, respirationRate=True):
+def realTimeSanityCheck(epochs, leaveOut=[], trainModelsAndSave=True):
     features = ["meanIntensity", "stDevIntensity", "meanPitch", "stDevPitch", "stDevVoiceActivity",
                 "meanVoiceActivity", "syllablesPerSecond", "filledPauses", "respirationRate"]
 
@@ -526,14 +565,15 @@ def realTimeSanityCheck(epochs, leaveOut=[], trainModelsAndSave=True, respiratio
             "[", "").replace("]", "").replace("'", "").replace(", ", "-")
         modelDirectory = "./models/Real_Time_Sanity-LeaveOut-" + leaveOutString + "/"
 
-    test = loadData(directory=realTimeDirectory, audioFeatures=audioFeatures,
-                    trimToRespirationLength=False, respirationRate=includeRespirationRate, filter=False)
-
     trainDay1 = loadData(directory=day1Directory, audioFeatures=audioFeatures,
                          respirationRate=includeRespirationRate, trimToRespirationLength=False)
     trainDay2 = loadData(directory=day2Directory, audioFeatures=audioFeatures,
                          respirationRate=includeRespirationRate, trimToRespirationLength=False)
     train = pd.concat([trainDay1, trainDay2])
+
+    test = loadData(directory=realTimeDirectory, audioFeatures=audioFeatures,
+                trimToRespirationLength=False, respirationRate=includeRespirationRate,
+                filter=False, labelsHaveOverallState=True)
 
     if trainModelsAndSave:
         model = neuralNetwork(train, epochs=epochs)
@@ -547,31 +587,26 @@ def realTimeSanityCheck(epochs, leaveOut=[], trainModelsAndSave=True, respiratio
     metrics = [[False] + assessModelAccuracy(model, test), [
         True] + assessModelAccuracy(model, test, shouldFilterOutMismatch=True)]
 
-    # Append results to the end of the data frame
-    results = pd.DataFrame(metrics, columns=["filtered", "samples", "coefficient",
+    # Assess the performance of the neural network
+    nonSplit = [[False, "all"] + assessModelAccuracy(model, test)]
+    nonSplitFiltered = [[True, "all"] + assessModelAccuracy(model, test, shouldFilterOutMismatch=True)]
+
+    # Asses by each condition (low/high)
+    ol, nl, ul = assessModelAccuracy(model, test, shouldSplitByWorkloadState=True)
+    unfilteredSplit = [[False, "ol"] + ol, [False, "nl"] + nl, [False, "ul"] + ul]
+
+    olFilter, nlFilter, ulFilter = assessModelAccuracy(model, test, shouldFilterOutMismatch=True, shouldSplitByWorkloadState=True)
+    filteredSplit = [[True, "ol"] + olFilter, [True, "nl"] + nlFilter, [True, "ul"] + ulFilter]
+
+    metrics = unfilteredSplit + nonSplit + filteredSplit + nonSplitFiltered
+
+    # Convert results to data frame
+    results = pd.DataFrame(metrics, columns=["filtered", "overallWorkloadState", "samples", "coefficient",
                                              "significance", "RMSE", "actualMean", "actualStDev", "predMean", "predStDev"])
 
-    print(results)
+    # print(results)
     results.to_csv("./analyses/realTimeSanityCheck-LeaveOut" +
                    str(leaveOut) + "-" + str(epochs) + "epochs.csv")
-
-    # Asses by each condition (ol/nl/ul)
-    ol, nl, ul = assessModelAccuracy(model, test, shouldSplitByCondition=True)
-    unfiltered = [[False, "ol"] + ol, [False, "nl"] + nl, [False, "ul"] + ul]
-
-    olFilter, nlFilter, ulFilter = assessModelAccuracy(model, test, shouldFilterOutMismatch=True, shouldSplitByCondition=True)
-    filtered = [[True, "ol"] + olFilter, [True, "nl"] + nlFilter, [True, "ul"] + ulFilter]
-
-    metrics = unfiltered + filtered
-
-    # Append results to the end of the data frame
-    results = pd.DataFrame(metrics, columns=["filtered", "condition", "samples", "coefficient",
-                                             "significance", "RMSE", "actualMean", "actualStDev", "predMean", "predStDev"])
-
-    print(results)
-    results.to_csv("./analyses/realTimeSanityCheck-LeaveOut" +
-                   str(leaveOut) + "-" + str(epochs) + "epochs-byCondition.csv")
-
 
 
 # Real-time window size evaluation
@@ -596,13 +631,22 @@ def realTimeWindowSizeEvaluation(epochs, leaveOut=[], trainModelsAndSave=True):
         30: "Real_Time-30_second_window",
         60: "Real_Time-60_second_window"}
 
-    results = pd.DataFrame(columns=["windowSize", "participant", "filtered", "samples", "coefficient",
+    results = pd.DataFrame(columns=["windowSize", "participant", "filtered", "condition", "samples", "coefficient",
                                     "significance", "RMSE", "actualMean", "actualStDev", "predMean", "predStDev"])
 
     for windowSize, directory in directories.items():
+        featureDirectory = "./training/" + directory + "/"
+
         modelDirectory = "./models/Real_Time_Window_Size-" + \
             str(windowSize) + "_seconds/"
-        featureDirectory = "./training/" + directory + "/"
+
+        if len(leaveOut) > 0:
+            leaveOutString = str(leaveOut).replace(
+                "[", "").replace("]", "").replace("'", "").replace(", ", "-")
+            modelDirectory = "./models/Real_Time_Window_Size-" + \
+            str(windowSize) + "_seconds-LeaveOut-" + leaveOutString + "/"
+
+        print(modelDirectory)
 
         for participantNumber in range(1, 31):
             print("Participant", participantNumber, "windowSize:", windowSize)
@@ -620,13 +664,13 @@ def realTimeWindowSizeEvaluation(epochs, leaveOut=[], trainModelsAndSave=True):
                     participantPath = path
 
             if participantPath != "":  # some participants are missing from the dataset
-
                 featurePaths.remove(participantPath)
 
                 train = loadData(trainingFiles=featurePaths, audioFeatures=audioFeatures,
                                  respirationRate=includeRespirationRate, trimToRespirationLength=False)
                 test = loadData(trainingFiles=[participantPath], audioFeatures=audioFeatures,
-                                respirationRate=includeRespirationRate, trimToRespirationLength=False, filter=False)
+                                respirationRate=includeRespirationRate, trimToRespirationLength=False, filter=False,
+                                labelsHaveOverallState=True)
 
             if trainModelsAndSave:
                 model = neuralNetwork(train, epochs=epochs)
@@ -637,15 +681,41 @@ def realTimeWindowSizeEvaluation(epochs, leaveOut=[], trainModelsAndSave=True):
                 model.load(modelDirectory + "leaveOut-" +
                            str(participantNumber) + "-" + str(epochs) + "epochs.tflearn")
 
-            print(">>> about to append ")
-            # Append results to the end of the data frame
-            print(results)
-            results.loc[len(results)] = [windowSize, participantNumber,
-                                         False] + assessModelAccuracy(model, test)
-            results.loc[len(results)] = [windowSize, participantNumber, True] + \
-                assessModelAccuracy(model, test, shouldFilterOutMismatch=True)
 
-            print(results)
+            # Assess the performance of the neural network
+            nonSplit         = [[windowSize, participantNumber, False, "all"] + assessModelAccuracy(model, test)]
+            nonSplitFiltered = [[windowSize, participantNumber, True, "all"] + assessModelAccuracy(model, test, shouldFilterOutMismatch=True)]
+
+            # Asses by each condition (low/high)
+            ol, nl, ul      = assessModelAccuracy(model, test, shouldSplitByWorkloadState=True)
+            unfilteredSplit = [[windowSize, participantNumber, False, "ol"] + ol,
+                               [windowSize, participantNumber, False, "nl"] + nl,
+                               [windowSize, participantNumber, False, "ul"] + ul]
+
+            olFilter, nlFilter, ulFilter = assessModelAccuracy(model, test, shouldFilterOutMismatch=True, shouldSplitByWorkloadState=True)
+            filteredSplit                = [[windowSize, participantNumber, True, "ol"] + olFilter,
+                                            [windowSize, participantNumber, True, "nl"] + nlFilter,
+                                            [windowSize, participantNumber, True, "ul"] + ulFilter]
+
+            metrics = unfilteredSplit + nonSplit + filteredSplit + nonSplitFiltered
+
+            # Convert results to data frame
+            currentResults = pd.DataFrame(metrics, columns=results.columns)
+
+            print(currentResults)
+
+            results = pd.concat([results, currentResults], ignore_index=True)
+
+            # print(">>> about to append ")
+            # # Append results to the end of the data frame
+            # print(results)
+            # # TODO: Make results from each into a pd frame and use concat(ignore_index=True) to append to overall `results`
+            # results.loc[len(results)] = [windowSize, participantNumber,
+            #                              False] + assessModelAccuracy(model, test)
+            # results.loc[len(results)] = [windowSize, participantNumber, True] + \
+            #     assessModelAccuracy(model, test, shouldFilterOutMismatch=True)
+
+        print(results)
 
     results.to_csv("./analyses/realTimeWindowSizeEvaluation-LeaveOut" +
                    str(leaveOut) + "-" + str(epochs) + "epochs.csv")
@@ -655,8 +725,22 @@ def realTimeWindowSizeEvaluation(epochs, leaveOut=[], trainModelsAndSave=True):
                    str(leaveOut) + "-" + str(epochs) + "epochs-summary.csv")
 
 
+#                          pd.DataFrame   Bool  String
+def summarizeWorkloadState(dataFrame, filtered, state):
+    workloadStateData = dataFrame.loc[(dataFrame["filtered"] == filtered) & (dataFrame["overallWorkloadState"] == state)]
+
+    meanDataFrame = workloadStateData.mean()
+    # Use total number of samples instead of mean
+    meanDataFrame["samples"] = workloadStateData.sum()["samples"]
+    # Set values not defined for mean()
+    meanDataFrame["participant"] = "all"
+    meanDataFrame["overallWorkloadState"] = state
+    meanDataFrame["filtered"] = filtered
+
+    return meanDataFrame
+
 def createSummary(dataFrame):
-    resultFrame = None
+    dataFrame = dataFrame.dropna()
 
     if "windowSize" in dataFrame.columns:
         resultFrame = pd.DataFrame([], columns=dataFrame.columns)
@@ -665,40 +749,57 @@ def createSummary(dataFrame):
             windowSizeData = dataFrame.loc[dataFrame["windowSize"]
                                            == windowSize]
 
-            filtered = windowSizeData.loc[windowSizeData["filtered"] == True]
-            unFiltered = windowSizeData.loc[windowSizeData["filtered"] == False]
+            filteredOverload = summarizeWorkloadState(windowSizeData, True, "ol")
+            filteredNormalLoad = summarizeWorkloadState(windowSizeData, True, "nl")
+            filteredUnderload = summarizeWorkloadState(windowSizeData, True, "ul")
+            filtered = summarizeWorkloadState(windowSizeData, True, "all")
 
-            filteredMean = filtered.mean()
-            filteredMean["participant"] = "all"
-            filteredMean["filtered"] = True
-
-            unFilteredMean = unFiltered.mean()
-            unFilteredMean["participant"] = "all"
-            unFilteredMean["filtered"] = False
+            unfilteredOverload = summarizeWorkloadState(windowSizeData, False, "ol")
+            unfilteredNormalLoad = summarizeWorkloadState(windowSizeData, False, "nl")
+            unfilteredUnderload = summarizeWorkloadState(windowSizeData, False, "ul")
+            unfiltered = summarizeWorkloadState(windowSizeData, False, "all")
 
             resultFrame = pd.concat([resultFrame,
-                                     pd.DataFrame([filteredMean, unFilteredMean],
+                                     pd.DataFrame([filteredOverload,
+                                                   filteredNormalLoad,
+                                                   filteredUnderload,
+                                                   filtered,
+                                                   unfilteredOverload,
+                                                   unfilteredNormalLoad,
+                                                   unfilteredUnderload,
+                                                   unfiltered],
                                                   columns=dataFrame.columns)])
 
+        return resultFrame
+
     else:
-        filtered = dataFrame.loc[dataFrame["filtered"] == True]
-        unFiltered = dataFrame.loc[dataFrame["filtered"] == False]
+        filteredOverload = summarizeWorkloadState(dataFrame, True, "ol")
+        filteredNormalLoad = summarizeWorkloadState(dataFrame, True, "nl")
+        filteredUnderload = summarizeWorkloadState(dataFrame, True, "ul")
+        filtered = summarizeWorkloadState(dataFrame, True, "all")
 
-        filteredMean = filtered.mean()
-        filteredMean["participant"] = "all"
-        filteredMean["filtered"] = True
+        unfilteredOverload = summarizeWorkloadState(dataFrame, False, "ol")
+        unfilteredNormalLoad = summarizeWorkloadState(dataFrame, False, "nl")
+        unfilteredUnderload = summarizeWorkloadState(dataFrame, False, "ul")
+        unfiltered = summarizeWorkloadState(dataFrame, False, "all")
 
-        unFilteredMean = unFiltered.mean()
-        unFilteredMean["participant"] = "all"
-        unFilteredMean["filtered"] = False
+        resultFrame = pd.DataFrame([filteredOverload,
+                                    filteredNormalLoad,
+                                    filteredUnderload,
+                                    filtered,
+                                    unfilteredOverload,
+                                    unfilteredNormalLoad,
+                                    unfilteredUnderload,
+                                    unfiltered],
+                                    columns=dataFrame.columns)
 
-    resultFrame = pd.DataFrame(
-        [filteredMean, unFilteredMean], columns=dataFrame.columns)
-    return resultFrame
+        return resultFrame
 
 
 def main():
-    print(); print(); print();
+    print(); print(); print()
+
+    # Fixed and run
     # supervisoryRealWorld(100, trainModelsAndSave=False)
     # supervisoryRealWorld(100, trainModelsAndSave=False,
     #                      leaveOut=["filledPauses"])
@@ -707,33 +808,41 @@ def main():
     # supervisoryRealWorld(100, trainModelsAndSave=False,
     #                      leaveOut=["respirationRate", "filledPauses"])
 
-    # supervisoryLeaveOneOutCrossValidation(50, trainModelsAndSave=True)
+    # TODO
+    # data = pd.read_csv("./analyses/supervisoryCrossValidationResults-LeaveOut[]-50epochs.csv", index_col=0)
+
+    # print(createSummary(data))
+    # supervisoryLeaveOneOutCrossValidation(50, trainModelsAndSave=False)
     # supervisoryLeaveOneOutCrossValidation(50, trainModelsAndSave=True, leaveOut=["filledPauses"])
     # supervisoryLeaveOneOutCrossValidation(50, trainModelsAndSave=True, leaveOut=["respirationRate"])
     # supervisoryRealWorld(50, trainModelsAndSave=True, leaveOut=["respirationRate", "filledPauses"])
 
+    # Fixed and run
     # supervisoryHumanRobot(100, trainModelsAndSave=False)
     # supervisoryHumanRobot(100, trainModelsAndSave=False, leaveOut=["filledPauses"])
     # supervisoryHumanRobot(100, trainModelsAndSave=False, leaveOut=["respirationRate"])
     # supervisoryHumanRobot(100, trainModelsAndSave=False, leaveOut=["respirationRate", "filledPauses"])
 
+    # Fixed and run
     # peerHumanRobot(100, trainModelsAndSave=False)
     # peerHumanRobot(100, trainModelsAndSave=False, leaveOut=["filledPauses"])
     # peerHumanRobot(100, trainModelsAndSave=False, leaveOut=["respirationRate"])
     # peerHumanRobot(100, trainModelsAndSave=False, leaveOut=["respirationRate", "filledPauses"])
 
-    realTimeSanityCheck(100, trainModelsAndSave=False)
-    realTimeSanityCheck(100, trainModelsAndSave=False,
-                        leaveOut=["filledPauses"])
-    realTimeSanityCheck(100, trainModelsAndSave=False,
-                        leaveOut=["respirationRate"])
-    realTimeSanityCheck(100, trainModelsAndSave=False,
-                        leaveOut=["respirationRate", "filledPauses"])
+    # Fixed and run
+    # realTimeSanityCheck(100, trainModelsAndSave=False)
+    # realTimeSanityCheck(100, trainModelsAndSave=False,
+    #                     leaveOut=["filledPauses"])
+    # realTimeSanityCheck(100, trainModelsAndSave=False,
+    #                     leaveOut=["respirationRate"])
+    # realTimeSanityCheck(100, trainModelsAndSave=False,
+    #                     leaveOut=["respirationRate", "filledPauses"])
 
-    # realTimeWindowSizeEvaluation(50, trainModelsAndSave= True)
-    # realTimeWindowSizeEvaluation(50, trainModelsAndSave= True, leaveOut= ["respirationRate"])
-    # realTimeWindowSizeEvaluation(50, trainModelsAndSave= True, leaveOut= ["filledPauses"])
-    # realTimeWindowSizeEvaluation(50, trainModelsAndSave= True, leaveOut= ["filledPauses", "respirationRate"])
+    # TODO
+    realTimeWindowSizeEvaluation(50, trainModelsAndSave= True)
+    realTimeWindowSizeEvaluation(50, trainModelsAndSave= True, leaveOut= ["respirationRate"])
+    realTimeWindowSizeEvaluation(50, trainModelsAndSave= True, leaveOut= ["filledPauses"])
+    realTimeWindowSizeEvaluation(50, trainModelsAndSave= True, leaveOut= ["filledPauses", "respirationRate"])
 
 
 if __name__ == "__main__":

@@ -16,6 +16,17 @@ import pandas as pd
 import math
 
 
+# TODO : Include workload condition (high/low) or state (ul/nl/ol) in the labels files.
+# TODO : (Maybe ?) Include "Overall Workload" value in the labels files.
+
+def convertSupervisoryOverallValueToState(value):
+    if value < 11.53:
+        return "ul"
+    elif value < 49.20:
+        return "nl"
+    else:
+        return "ol"
+
 def openNumpyFile():
     path = "./training/Supervisory_Evaluation_Day_2/features/current5seconds/"
     outPath = "./pandas/day2/"
@@ -40,6 +51,7 @@ def convertTimeToSeconds(timeString):
     return float(timeString.split(":")[-2]) * 60 + float(timeString.split(":")[-1])
 
 
+# TODO : Include "Overall Workload" in the labels files.
 def createDay1LabelFiles():
     modelsPath = "../media/Jamison_Evaluations/Supervisory/Day1/Models/"
     lengthOfEvaluationInSeconds = 900
@@ -64,33 +76,42 @@ def createDay1LabelFiles():
 
         fileIndex = 0
 
-        workload = []
+        speechWorkload = []
+        overallWorkload = []
+
         times = np.arange(0, lengthOfEvaluationInSeconds, timeStep)
 
         for timeValue in times:
             while fileIndex + 1 < len(fileFrame) and round(convertTimeToSeconds(fileFrame.loc[fileIndex + 1]['Clock'])) <= timeValue:
                 fileIndex += 1
-            workload.append(fileFrame.loc[fileIndex]['Speech'])
+            speechWorkload.append(float(fileFrame.loc[fileIndex]['Speech'])) # Force into float
 
-        currentData = pd.read_csv(filePath, index_col=0)
+            overallWorkloadValue = fileFrame.loc[fileIndex]['Overall Workload']
+            overallWorkload.append(convertSupervisoryOverallValueToState(overallWorkloadValue))
 
-        # Add extra zeros to the labels if inputs run over the length
-        if len(currentData.index) > len(workload):
-            offsetSize = len(currentData.index) - len(workload)
-            fill = np.zeros(offsetSize)
-            workload = np.append(workload, fill)
+        # currentData = pd.read_csv(filePath, index_col=0)
 
-        times = np.arange(0, len(workload), timeStep)
+        # TODO: Ask Jamison: Truncate or pad??
+        # Add extra zeros and overall states to the labels if inputs run over the length
+        # if len(currentData.index) > len(speechWorkload):
+        #     offsetSize = len(currentData.index) - len(speechWorkload)
+        #     fill = np.zeros(offsetSize)
+        #     speechWorkload = np.append(speechWorkload, fill)
 
-        workloadData = np.swapaxes(np.array([times, workload]), 0, 1)
-        workloadFrame = pd.DataFrame(workloadData, columns=[
-                                     'time', 'speechWorkload'])
+        # currentData.truncate(after= (len(speechWorkload) - 1))
+
+        times = np.arange(0, len(speechWorkload), timeStep)
+
+        workloadFrame = pd.DataFrame([times, speechWorkload, overallWorkload]).T
+        workloadFrame.columns = ['time', 'speechWorkload', 'overall']
+
         print(workloadFrame)
 
         workloadFrame.to_csv(
             "./training/Supervisory_Evaluation_Day_1/labels/" + fileName + ".csv", index=False)
 
 
+# TODO : Include "Overall Workload" in the labels files.
 def createDay2LabelFiles():
     modelsPath = "../media/Jamison_Evaluations/Supervisory/Day2/Models/"
     timeStep = 1
@@ -116,7 +137,8 @@ def createDay2LabelFiles():
         fileFrame = pd.read_csv(modelsPath + modelName)
         fileIndex = 0
 
-        workload = []
+        speechWorkload = []
+        overallWorkload = []
 
         lengthOfEvaluationInSeconds = int(convertTimeToSeconds(
             list(fileFrame["Clock"])[len(fileFrame.index) - 1][3:]))
@@ -126,30 +148,34 @@ def createDay2LabelFiles():
         for timeValue in times:
             while fileIndex + 1 < len(fileFrame) and round(convertTimeToSeconds(fileFrame.loc[fileIndex + 1]['Clock'])) <= timeValue:
                 fileIndex += 1
-            workload.append(fileFrame.loc[fileIndex]['Speech'])
-            # print(timeValue, fileIndex, fileFrame.loc[fileIndex]['Speech'])
+            speechWorkload.append(fileFrame.loc[fileIndex]['Speech'])
+
+            overallWorkloadValue = fileFrame.loc[fileIndex]['Overall Workload']
+            overallWorkload.append(convertSupervisoryOverallValueToState(overallWorkloadValue))
 
         currentData = pd.read_csv(filePath, index_col=0)
 
-        # Add extra zeros to the labels if inputs run over the length
-        if len(currentData.index) > len(workload):
-            offsetSize = len(currentData.index) - len(workload)
-            fill = np.zeros(offsetSize)
-            workload = np.append(workload, fill)
+        # TODO: Ask Jamison: Truncate or pad??
+        # Add extra zeros and overall states to the labels if inputs run over the length
+        # if len(currentData.index) > len(speechWorkload):
+        #     offsetSize = len(currentData.index) - len(speechWorkload)
+        #     fill = np.zeros(offsetSize)
+        #     speechWorkload = np.append(speechWorkload, fill)
 
-        workload = workload[:len(currentData.index)]
+        # currentData.truncate(after= (len(speechWorkload) - 1))
 
-        times = np.arange(0, len(workload), timeStep)
+        times = np.arange(0, len(speechWorkload), timeStep)
 
-        workloadData = np.swapaxes(np.array([times, workload]), 0, 1)
-        workloadFrame = pd.DataFrame(workloadData, columns=[
-                                     'time', 'speechWorkload'])
+        workloadFrame = pd.DataFrame([times, speechWorkload, overallWorkload]).T
+        workloadFrame.columns = ['time', 'speechWorkload', 'overall']
+
         print(workloadFrame)
 
         workloadFrame.to_csv(
             "./training/Supervisory_Evaluation_Day_2/labels/" + fileName + ".csv", index=False)
 
 
+# TODO : Include workload state (high or low) based on participant-task configuration
 def createPeerBasedLabelFiles():
     modelsPath = "../media/Jamison_Evaluations/Models/"
     featuresPath = "./training/Peer_Based/features/"
@@ -182,44 +208,57 @@ def createPeerBasedLabelFiles():
     T4HighParticipants = ['P2', 'P4',  'P8', 'P9', 'P12', 'P15', 'P16', 'P7']
     T4LowParticipants = ['P3', 'P5', 'P6', 'P13', 'P14', 'P17', 'P18', 'P10']
 
+    workloadConditionValue = ""
+
     for filePath in sorted(glob.iglob(featuresPath + "*.csv")):
         fileName = os.path.basename(filePath)[:-4]
         participantName = os.path.basename(filePath)[:-4].split("_")[0]
         task = os.path.basename(filePath)[:-4].split("_")[1]
+
+        print(fileName)
 
         modelData = None
 
         if task == "T1":
             if participantName in T1HighParticipants:
                 modelData = T1HighData
+                workloadConditionValue = "high"
             elif participantName in T1LowParticipants:
                 modelData = T1LowData
+                workloadConditionValue = "low"
             else:
                 print("ERROR: Unaccounted for participant", participantName)
         if task == "T2":
             if participantName in T2HighParticipants:
                 modelData = T2HighData
+                workloadConditionValue = "high"
             elif participantName in T2LowParticipants:
                 modelData = T2LowData
+                workloadConditionValue = "low"
             else:
                 print("ERROR: Unaccounted for participant", participantName)
         if task == "T3":
             if participantName in T3HighParticipants:
                 modelData = T3HighData
+                workloadConditionValue = "high"
             elif participantName in T3LowParticipants:
                 modelData = T3LowData
+                workloadConditionValue = "low"
             else:
                 print("ERROR: Unaccounted for participant", participantName)
         if task == "T4":
             if participantName in T4HighParticipants:
                 modelData = T4HighData
+                workloadConditionValue = "high"
             elif participantName in T4LowParticipants:
                 modelData = T4LowData
+                workloadConditionValue = "low"
             else:
                 print("ERROR: Unaccounted for participant", participantName)
 
         fileIndex = 0
-        workload = []
+        speechWorkload = []
+        workloadCondition = []
 
         lengthOfEvaluationInSeconds = int(convertTimeToSeconds(
             list(modelData["Clock"])[len(modelData.index) - 1][3:]))
@@ -229,24 +268,25 @@ def createPeerBasedLabelFiles():
         for timeValue in times:
             while fileIndex + 1 < len(modelData) and round(convertTimeToSeconds(modelData.loc[fileIndex + 1]['Clock'])) <= timeValue:
                 fileIndex += 1
-            workload.append(modelData.loc[fileIndex]['Speech'])
+            speechWorkload.append(modelData.loc[fileIndex]['Speech'])
+            workloadCondition.append(workloadConditionValue)
             # print(timeValue, fileIndex, modelData.loc[fileIndex]['Speech'])
 
-        currentData = pd.read_csv(filePath, index_col=0)
+        # currentData = pd.read_csv(filePath, index_col=0)
 
-        # Add extra zeros to the labels if inputs run over the length
-        if len(currentData.index) > len(workload):
-            offsetSize = len(currentData.index) - len(workload)
-            fill = np.zeros(offsetSize)
-            workload = np.append(workload, fill)
+        # # Add extra zeros to the labels if inputs run over the length
+        # if len(currentData.index) > len(workload):
+        #     offsetSize = len(currentData.index) - len(workload)
+        #     fill = np.zeros(offsetSize)
+        #     workload = np.append(workload, fill)
 
-        workload = workload[:len(currentData.index)]
+        # workload = workload[:len(currentData.index)]
 
-        times = np.arange(0, len(workload), timeStep)
+        workloadFrame = pd.DataFrame([times, speechWorkload, workloadCondition]).T
+        workloadFrame.columns = ['time', 'speechWorkload', 'condition']
 
-        workloadData = np.swapaxes(np.array([times, workload]), 0, 1)
-        workloadFrame = pd.DataFrame(workloadData, columns=[
-                                     'time', 'speechWorkload'])
+        # print(len(workloadFrame))
+        print(workloadFrame)
 
         workloadFrame.to_csv(
             "./training/Peer_Based/labels/" + fileName + ".csv", index=False)
@@ -265,12 +305,8 @@ def createRealTimeLabelFiles():
 
         participantNumber = os.path.basename(filePath)[:-4].split("_")[0][1:]
 
-        if participantNumber == "19":
-            modelPath = modelsPath + "Participant_" + participantNumber + \
-                "/p" + participantNumber + "_baseline_wl.csv"
-        else:
-            modelPath = modelsPath + "Participant_" + \
-                participantNumber + "/p" + participantNumber + "_wl.csv"
+        modelPath = modelsPath + "Participant_" + \
+            participantNumber + "/p" + participantNumber + "_wl.csv"
 
         print(modelPath)
 
@@ -279,6 +315,7 @@ def createRealTimeLabelFiles():
 
         fileIndex = 0
         workload = []
+        workloadCondition = []
 
         clock = pd.to_datetime(modelData["Clock"]).astype(
             np.int64).to_numpy() / 1000000000
@@ -295,23 +332,36 @@ def createRealTimeLabelFiles():
             while fileIndex + 1 < len(modelData) and round(modelData.loc[fileIndex + 1]['Clock']) <= timeValue:
                 fileIndex += 1
             workload.append(modelData.loc[fileIndex]['Speech'])
+
+            workloadValue = modelData.loc[fileIndex]['Workload_State']
+
+            if workloadValue == "Overload":
+                workloadValue = "ol"
+            elif workloadValue == "Normal Load":
+                workloadValue = "nl"
+            elif workloadValue == "Underload":
+                workloadValue = "ul"
+
+            workloadCondition.append(workloadValue)
             # print(timeValue, fileIndex, modelData.loc[fileIndex]['Speech'])
 
-        currentData = pd.read_csv(filePath, index_col=0)
+        # currentData = pd.read_csv(filePath, index_col=0)
 
-        # Add extra zeros to the labels if inputs run over the length
-        if len(currentData.index) > len(workload):
-            offsetSize = len(currentData.index) - len(workload)
-            fill = np.zeros(offsetSize)
-            workload = np.append(workload, fill)
+        # # Add extra zeros to the labels if inputs run over the length
+        # if len(currentData.index) > len(workload):
+        #     offsetSize = len(currentData.index) - len(workload)
+        #     fill = np.zeros(offsetSize)
+        #     workload = np.append(workload, fill)
 
-        workload = workload[:len(currentData.index)]
+        # workload = workload[:len(currentData.index)]
 
-        times = np.arange(0, len(workload), timeStep)
+        # times = np.arange(0, len(workload), timeStep)
 
-        workloadData = np.swapaxes(np.array([times, workload]), 0, 1)
-        workloadFrame = pd.DataFrame(workloadData, columns=[
-                                     'time', 'speechWorkload'])
+        workloadFrame = pd.DataFrame([times, workload, workloadCondition]).T
+        workloadFrame.columns = ['time', 'speechWorkload', 'overall']
+
+        # print(len(workloadFrame))
+        print(workloadFrame)
 
         print(workloadFrame)
 
@@ -352,7 +402,6 @@ def makeSupervisoryPhysioDataTrainingFiles():
 
 def makeRealTimePhysioDataTrainingFiles():
     directory = "../media/Jamison_Evaluations/Real_Time_Evaluation/"
-    outputDirectoryPath = "/"
 
     for participantNumber in range(1, 32):
         if participantNumber not in [16, 19]:
@@ -408,7 +457,7 @@ def makePeerBasedPhysioDataTrainingFiles():
 
 
 def main():
-    makePeerBasedPhysioDataTrainingFiles()
+    createRealTimeLabelFiles()
 
 
 main()
