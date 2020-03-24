@@ -213,6 +213,12 @@ def assessModelAccuracy(model, data, shouldFilterOutMismatch=False, shouldGraph=
         assessmentData = assessmentData.reset_index().drop(columns=["index"])
 
     if not len(assessmentData) > 0:
+        if shouldSplitByWorkloadState: # Prevent unpacking from failing.
+            return [[len(assessmentData.index), None, None, None, None, None, None, None]] * 3
+
+        if shouldSplitByCondition: # Prevent unpacking from failing.
+            return [[len(assessmentData.index), None, None, None, None, None, None, None]] * 2
+
         return [len(assessmentData.index), None, None, None, None, None, None, None]
 
     # print(assessmentData)
@@ -229,8 +235,8 @@ def assessModelAccuracy(model, data, shouldFilterOutMismatch=False, shouldGraph=
 
         return accuracyMetrics(model, high), accuracyMetrics(model, low)
 
-    else:
-        return accuracyMetrics(model, assessmentData)
+
+    return accuracyMetrics(model, assessmentData)
 
 
 
@@ -799,7 +805,6 @@ def createSummary(dataFrame):
 def main():
     print(); print(); print()
 
-    # Fixed and run
     # supervisoryRealWorld(100, trainModelsAndSave=False)
     # supervisoryRealWorld(100, trainModelsAndSave=False,
     #                      leaveOut=["filledPauses"])
@@ -808,28 +813,21 @@ def main():
     # supervisoryRealWorld(100, trainModelsAndSave=False,
     #                      leaveOut=["respirationRate", "filledPauses"])
 
-    # TODO
-    # data = pd.read_csv("./analyses/supervisoryCrossValidationResults-LeaveOut[]-50epochs.csv", index_col=0)
-
-    # print(createSummary(data))
     # supervisoryLeaveOneOutCrossValidation(50, trainModelsAndSave=False)
     # supervisoryLeaveOneOutCrossValidation(50, trainModelsAndSave=True, leaveOut=["filledPauses"])
     # supervisoryLeaveOneOutCrossValidation(50, trainModelsAndSave=True, leaveOut=["respirationRate"])
     # supervisoryRealWorld(50, trainModelsAndSave=True, leaveOut=["respirationRate", "filledPauses"])
 
-    # Fixed and run
     # supervisoryHumanRobot(100, trainModelsAndSave=False)
     # supervisoryHumanRobot(100, trainModelsAndSave=False, leaveOut=["filledPauses"])
     # supervisoryHumanRobot(100, trainModelsAndSave=False, leaveOut=["respirationRate"])
     # supervisoryHumanRobot(100, trainModelsAndSave=False, leaveOut=["respirationRate", "filledPauses"])
 
-    # Fixed and run
     # peerHumanRobot(100, trainModelsAndSave=False)
     # peerHumanRobot(100, trainModelsAndSave=False, leaveOut=["filledPauses"])
     # peerHumanRobot(100, trainModelsAndSave=False, leaveOut=["respirationRate"])
     # peerHumanRobot(100, trainModelsAndSave=False, leaveOut=["respirationRate", "filledPauses"])
 
-    # Fixed and run
     # realTimeSanityCheck(100, trainModelsAndSave=False)
     # realTimeSanityCheck(100, trainModelsAndSave=False,
     #                     leaveOut=["filledPauses"])
