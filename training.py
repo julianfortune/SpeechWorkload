@@ -837,9 +837,9 @@ def main():
     #                     leaveOut=["respirationRate", "filledPauses"])
 
     # TODO
-    realTimeWindowSizeEvaluation(50, trainModelsAndSave= True)
-    realTimeWindowSizeEvaluation(50, trainModelsAndSave= True, leaveOut= ["respirationRate"])
-    realTimeWindowSizeEvaluation(50, trainModelsAndSave= True, leaveOut= ["filledPauses"])
+    # realTimeWindowSizeEvaluation(50, trainModelsAndSave= True)
+    # realTimeWindowSizeEvaluation(50, trainModelsAndSave= True, leaveOut= ["respirationRate"])
+    # realTimeWindowSizeEvaluation(50, trainModelsAndSave= True, leaveOut= ["filledPauses"])
     realTimeWindowSizeEvaluation(50, trainModelsAndSave= True, leaveOut= ["filledPauses", "respirationRate"])
 
 

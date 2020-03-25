@@ -6,16 +6,7 @@
 #
 
 import sys, time, glob, os
-import wavio
 import pandas as pd
-
-import numpy as np
-import matplotlib.pyplot as plt
-from pydub import AudioSegment
-
-from speechLibrary import featureModule, speechAnalysis, audioModule
-
-np.set_printoptions(threshold=sys.maxsize)
 
 basePath = "./training/"
 directories = ["Real_Time-1_second_window", "Real_Time-5_second_window", "Real_Time-10_second_window", "Real_Time-15_second_window", "Real_Time-30_second_window", "Real_Time-60_second_window"]
