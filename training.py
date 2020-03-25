@@ -637,7 +637,7 @@ def realTimeWindowSizeEvaluation(epochs, leaveOut=[], trainModelsAndSave=True):
         30: "Real_Time-30_second_window",
         60: "Real_Time-60_second_window"}
 
-    results = pd.DataFrame(columns=["windowSize", "participant", "filtered", "condition", "samples", "coefficient",
+    results = pd.DataFrame(columns=["windowSize", "participant", "filtered", "overallWorkloadState", "samples", "coefficient",
                                     "significance", "RMSE", "actualMean", "actualStDev", "predMean", "predStDev"])
 
     for windowSize, directory in directories.items():
@@ -837,10 +837,10 @@ def main():
     #                     leaveOut=["respirationRate", "filledPauses"])
 
     # TODO
-    # realTimeWindowSizeEvaluation(50, trainModelsAndSave= True)
-    # realTimeWindowSizeEvaluation(50, trainModelsAndSave= True, leaveOut= ["respirationRate"])
-    # realTimeWindowSizeEvaluation(50, trainModelsAndSave= True, leaveOut= ["filledPauses"])
-    realTimeWindowSizeEvaluation(50, trainModelsAndSave= True, leaveOut= ["filledPauses", "respirationRate"])
+    realTimeWindowSizeEvaluation(50, trainModelsAndSave= False)
+    realTimeWindowSizeEvaluation(50, trainModelsAndSave= False, leaveOut= ["respirationRate"])
+    realTimeWindowSizeEvaluation(50, trainModelsAndSave= False, leaveOut= ["filledPauses"])
+    realTimeWindowSizeEvaluation(50, trainModelsAndSave= False, leaveOut= ["filledPauses", "respirationRate"])
 
 
 if __name__ == "__main__":

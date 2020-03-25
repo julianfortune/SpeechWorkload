@@ -1,2 +1,2 @@
-model_checkpoint_path: "/home/julian/Desktop/speechWorkload/speechWorkload/models/Real_Time_Window_Size-15_seconds/leaveOut-28-50epochs.tflearn"
-all_model_checkpoint_paths: "/home/julian/Desktop/speechWorkload/speechWorkload/models/Real_Time_Window_Size-15_seconds/leaveOut-28-50epochs.tflearn"
+model_checkpoint_path: "/home/julian/Desktop/speechWorkload/speechWorkload/models/Real_Time_Window_Size-15_seconds/leaveOut-30-50epochs.tflearn"
+all_model_checkpoint_paths: "/home/julian/Desktop/speechWorkload/speechWorkload/models/Real_Time_Window_Size-15_seconds/leaveOut-30-50epochs.tflearn"
