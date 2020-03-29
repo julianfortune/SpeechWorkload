@@ -159,6 +159,10 @@ def neuralNetwork(data, train=True, epochs=50):
         return model
 
 def accuracyMetrics(model, data):
+    # Catch empty data set before bad things happen D:
+    if not len(data) > 0:
+        return [len(data.index), None, None, None, None, None, None, None, None, None, None, None, None, None]
+
     # Remove any extra information about overall condition/workload state to
     # not mess up this function
     if "condition" in data.columns:
@@ -179,13 +183,22 @@ def accuracyMetrics(model, data):
                            ** 2, axis=0, keepdims=True))[0]
     actualMean = np.mean(actual)
     actualStandardDeviation = np.std(actual)
+    actualMedian = np.median(actual)
+    actualMinimum = actual.min()
+    actualMaximum = actual.max()
+
     predictionsMean = np.mean(predictions)
     predictionsStandardDeviation = np.std(predictions)
+    predictionsMedian = np.median(predictions)
+    predictionsMinimum = predictions.min()
+    predictionsMaximum = predictions.max()
 
     # print([len(data.index), correlationCoefficient, significance, rmse,
     #        actualMean, actualStandardDeviation, predictionsMean, predictionsStandardDeviation])
 
-    return [len(data.index), correlationCoefficient, significance, rmse, actualMean, actualStandardDeviation, predictionsMean, predictionsStandardDeviation]
+    return [len(data.index), correlationCoefficient, significance, rmse,
+           actualMean, actualStandardDeviation, actualMedian, actualMinimum, actualMaximum,
+           predictionsMean, predictionsStandardDeviation, predictionsMedian, predictionsMinimum, predictionsMaximum]
 
 
 def assessModelAccuracy(model, data, shouldFilterOutMismatch=False, shouldGraph=False, shouldSplitByWorkloadState=False, shouldSplitByCondition=False):
@@ -214,12 +227,12 @@ def assessModelAccuracy(model, data, shouldFilterOutMismatch=False, shouldGraph=
 
     if not len(assessmentData) > 0:
         if shouldSplitByWorkloadState: # Prevent unpacking from failing.
-            return [[len(assessmentData.index), None, None, None, None, None, None, None]] * 3
+            return [[len(assessmentData.index), None, None, None, None, None, None, None, None, None, None, None, None, None]] * 3
 
         if shouldSplitByCondition: # Prevent unpacking from failing.
-            return [[len(assessmentData.index), None, None, None, None, None, None, None]] * 2
+            return [[len(assessmentData.index), None, None, None, None, None, None, None, None, None, None, None, None, None]] * 2
 
-        return [len(assessmentData.index), None, None, None, None, None, None, None]
+        return [len(assessmentData.index), None, None, None, None, None, None, None, None, None, None, None, None, None]
 
     # print(assessmentData)
     if shouldSplitByWorkloadState:
@@ -294,7 +307,7 @@ def supervisoryRealWorld(epochs, leaveOut=[], trainModelsAndSave=True):
 
     # Convert results to data frame
     results = pd.DataFrame(metrics, columns=["filtered", "overallWorkloadState", "samples", "coefficient",
-                                             "significance", "RMSE", "actualMean", "actualStDev", "predMean", "predStDev"])
+                                             "significance", "RMSE", "actualMean", "actualStDev", "actualMedian", "actualMin", "actualMax", "predMean", "predStDev", "predMedian", "predMin", "predMax"])
 
     print(results)
     results.to_csv("./analyses/realWorldResults-LeaveOut" +
@@ -325,7 +338,7 @@ def supervisoryLeaveOneOutCrossValidation(epochs, leaveOut=[], trainModelsAndSav
         modelDirectory = "./models/Supervisory_Leave_One_Out-LeaveOut-" + leaveOutString + "/"
 
     results = pd.DataFrame(columns=["participant", "filtered", "overallWorkloadState", "samples", "coefficient",
-                                    "significance", "RMSE", "actualMean", "actualStDev", "predMean", "predStDev"])
+                                    "significance", "RMSE", "actualMean", "actualStDev", "actualMedian", "actualMin", "actualMax", "predMean", "predStDev", "predMedian", "predMin", "predMax"])
 
     for participantNumber in range(1, 31):
         print("Participant", participantNumber)
@@ -465,7 +478,7 @@ def supervisoryHumanRobot(epochs, leaveOut=[], trainModelsAndSave=True):
 
     # Convert results to data frame
     results = pd.DataFrame(metrics, columns=["filtered", "condition", "samples", "coefficient",
-                                             "significance", "RMSE", "actualMean", "actualStDev", "predMean", "predStDev"])
+                                             "significance", "RMSE", "actualMean", "actualStDev", "actualMedian", "actualMin", "actualMax", "predMean", "predStDev", "predMedian", "predMin", "predMax"])
 
     # print(results)
     results.to_csv("./analyses/supervisoryHumanRobot-LeaveOut" +
@@ -536,7 +549,7 @@ def peerHumanRobot(epochs, leaveOut=[], trainModelsAndSave=True):
 
     # Convert results to data frame
     results = pd.DataFrame(metrics, columns=["filtered", "overallWorkloadState", "samples", "coefficient",
-                                             "significance", "RMSE", "actualMean", "actualStDev", "predMean", "predStDev"])
+                                             "significance", "RMSE", "actualMean", "actualStDev", "actualMedian", "actualMin", "actualMax", "predMean", "predStDev", "predMedian", "predMin", "predMax"])
 
     # print(results)
     results.to_csv("./analyses/peerHumanRobot-LeaveOut" +
@@ -608,7 +621,7 @@ def realTimeSanityCheck(epochs, leaveOut=[], trainModelsAndSave=True):
 
     # Convert results to data frame
     results = pd.DataFrame(metrics, columns=["filtered", "overallWorkloadState", "samples", "coefficient",
-                                             "significance", "RMSE", "actualMean", "actualStDev", "predMean", "predStDev"])
+                                             "significance", "RMSE", "actualMean", "actualStDev", "actualMedian", "actualMin", "actualMax", "predMean", "predStDev", "predMedian", "predMin", "predMax"])
 
     # print(results)
     results.to_csv("./analyses/realTimeSanityCheck-LeaveOut" +
@@ -638,7 +651,7 @@ def realTimeWindowSizeEvaluation(epochs, leaveOut=[], trainModelsAndSave=True):
         60: "Real_Time-60_second_window"}
 
     results = pd.DataFrame(columns=["windowSize", "participant", "filtered", "overallWorkloadState", "samples", "coefficient",
-                                    "significance", "RMSE", "actualMean", "actualStDev", "predMean", "predStDev"])
+                                    "significance", "RMSE", "actualMean", "actualStDev", "actualMedian", "actualMin", "actualMax", "predMean", "predStDev", "predMedian", "predMin", "predMax"])
 
     for windowSize, directory in directories.items():
         featureDirectory = "./training/" + directory + "/"
@@ -814,9 +827,9 @@ def main():
     #                      leaveOut=["respirationRate", "filledPauses"])
 
     # supervisoryLeaveOneOutCrossValidation(50, trainModelsAndSave=False)
-    # supervisoryLeaveOneOutCrossValidation(50, trainModelsAndSave=True, leaveOut=["filledPauses"])
-    # supervisoryLeaveOneOutCrossValidation(50, trainModelsAndSave=True, leaveOut=["respirationRate"])
-    # supervisoryRealWorld(50, trainModelsAndSave=True, leaveOut=["respirationRate", "filledPauses"])
+    # supervisoryLeaveOneOutCrossValidation(50, trainModelsAndSave=False, leaveOut=["filledPauses"])
+    # supervisoryLeaveOneOutCrossValidation(50, trainModelsAndSave=False, leaveOut=["respirationRate"])
+    supervisoryLeaveOneOutCrossValidation(50, trainModelsAndSave=True, leaveOut=["respirationRate", "filledPauses"])
 
     # supervisoryHumanRobot(100, trainModelsAndSave=False)
     # supervisoryHumanRobot(100, trainModelsAndSave=False, leaveOut=["filledPauses"])
@@ -836,11 +849,11 @@ def main():
     # realTimeSanityCheck(100, trainModelsAndSave=False,
     #                     leaveOut=["respirationRate", "filledPauses"])
 
-    # TODO
-    realTimeWindowSizeEvaluation(50, trainModelsAndSave= False)
-    realTimeWindowSizeEvaluation(50, trainModelsAndSave= False, leaveOut= ["respirationRate"])
-    realTimeWindowSizeEvaluation(50, trainModelsAndSave= False, leaveOut= ["filledPauses"])
-    realTimeWindowSizeEvaluation(50, trainModelsAndSave= False, leaveOut= ["filledPauses", "respirationRate"])
+    # # TODO
+    # realTimeWindowSizeEvaluation(50, trainModelsAndSave= False)
+    # realTimeWindowSizeEvaluation(50, trainModelsAndSave= False, leaveOut= ["respirationRate"])
+    # realTimeWindowSizeEvaluation(50, trainModelsAndSave= False, leaveOut= ["filledPauses"])
+    # realTimeWindowSizeEvaluation(50, trainModelsAndSave= False, leaveOut= ["filledPauses", "respirationRate"])
 
 
 if __name__ == "__main__":

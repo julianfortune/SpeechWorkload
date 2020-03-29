@@ -154,9 +154,9 @@ def graphPredictedActualComparison(data, conditions): # , value, yAxisLabel, con
     #     plt.text(xValue + (width+spacing), yValue, " " + '{0:.2f}'.format(yValue),
     #              color= "black", va= "bottom", ha= "center")
 
-    # plt.ylabel(yAxisLabel)
-    # plt.xlabel(xAxisLabel)
-    # plt.title(graphTitle)
+    plt.ylabel("Speech Workload")
+    plt.xlabel("Workload State")
+    plt.title("Descriptive Statistics")
     plt.margins(0.05, 0.1)
 
     # # plt.legend(loc='lower center', bbox_to_anchor=(0.5, -0.4), ncol=5)
@@ -169,8 +169,8 @@ def graphPredictedActualComparison(data, conditions): # , value, yAxisLabel, con
 
 
 def main():
-    # createSupervisoryRealWorldRMSEFigure()
-    # createSupervisoryRealWorldCorrelationFigure()
+    createSupervisoryRealWorldRMSEFigure()
+    createSupervisoryRealWorldCorrelationFigure()
     createSupervisoryRealWorldDescriptiveStatsFigure()
 
 if __name__ == "__main__":
