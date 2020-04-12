@@ -283,7 +283,6 @@ def getVoiceActivity(data, sampleRate, pitchValues, windowSize, stepSize, useAda
     if __debug__:
         if DEBUG_VOICE_ACTIVITY_GRAPH:
             # Show graph if debugging
-            times = np.arange(0, len(data)/sampleRate, stepSize/1000)
             energyTimes = np.arange(0, len(data)/sampleRate, stepSize/1000)[:len(energy)]
             zcrTimes = np.arange(0, len(data)/sampleRate, stepSize/1000)[:len(zcr)]
             pitchTimes = np.arange(0, len(data)/sampleRate, stepSize/1000)[:len(pitchValues)]
