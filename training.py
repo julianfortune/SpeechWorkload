@@ -213,14 +213,14 @@ def assessModelAccuracy(model, data, shouldFilterOutMismatch=False, shouldGraph=
             assessmentData["meanVoiceActivity"] < 0.1)]
         silentData = silentData.reset_index().drop(columns=["index"])
 
-        if len(silentData) > len(vocalData):
-            silentData = silentData.sample(
-                n=len(vocalData.index), random_state=930123201)
-            silentData = silentData.reset_index().drop(columns=["index"])
-        else:
-            vocalData = vocalData.sample(
-                n=len(silentData.index), random_state=930123201)
-            vocalData = vocalData.reset_index().drop(columns=["index"])
+        # if len(silentData) > len(vocalData):
+        #     silentData = silentData.sample(
+        #         n=len(vocalData.index), random_state=930123201)
+        #     silentData = silentData.reset_index().drop(columns=["index"])
+        # else:
+        #     vocalData = vocalData.sample(
+        #         n=len(silentData.index), random_state=930123201)
+        #     vocalData = vocalData.reset_index().drop(columns=["index"])
 
         assessmentData = pd.concat([vocalData, silentData])
         assessmentData = assessmentData.reset_index().drop(columns=["index"])
@@ -818,42 +818,43 @@ def createSummary(dataFrame):
 def main():
     print(); print(); print()
 
-    # supervisoryRealWorld(100, trainModelsAndSave=False)
-    # supervisoryRealWorld(100, trainModelsAndSave=False,
+    train = True
+
+    # supervisoryRealWorld(100, trainModelsAndSave=train)
+    # supervisoryRealWorld(100, trainModelsAndSave=train,
     #                      leaveOut=["filledPauses"])
-    # supervisoryRealWorld(100, trainModelsAndSave=False,
+    # supervisoryRealWorld(100, trainModelsAndSave=train,
     #                      leaveOut=["respirationRate"])
-    # supervisoryRealWorld(100, trainModelsAndSave=False,
+    # supervisoryRealWorld(100, trainModelsAndSave=train,
     #                      leaveOut=["respirationRate", "filledPauses"])
 
-    # supervisoryLeaveOneOutCrossValidation(50, trainModelsAndSave=False)
-    # supervisoryLeaveOneOutCrossValidation(50, trainModelsAndSave=False, leaveOut=["filledPauses"])
-    # supervisoryLeaveOneOutCrossValidation(50, trainModelsAndSave=False, leaveOut=["respirationRate"])
-    supervisoryLeaveOneOutCrossValidation(50, trainModelsAndSave=True, leaveOut=["respirationRate", "filledPauses"])
+    # supervisoryLeaveOneOutCrossValidation(100, trainModelsAndSave=train)
+    # supervisoryLeaveOneOutCrossValidation(100, trainModelsAndSave=train, leaveOut=["filledPauses"])
+    # supervisoryLeaveOneOutCrossValidation(100, trainModelsAndSave=train, leaveOut=["respirationRate"])
+    # supervisoryLeaveOneOutCrossValidation(100, trainModelsAndSave=train, leaveOut=["respirationRate", "filledPauses"])
 
-    # supervisoryHumanRobot(100, trainModelsAndSave=False)
-    # supervisoryHumanRobot(100, trainModelsAndSave=False, leaveOut=["filledPauses"])
-    # supervisoryHumanRobot(100, trainModelsAndSave=False, leaveOut=["respirationRate"])
-    # supervisoryHumanRobot(100, trainModelsAndSave=False, leaveOut=["respirationRate", "filledPauses"])
+    # supervisoryHumanRobot(100, trainModelsAndSave=train)
+    # supervisoryHumanRobot(100, trainModelsAndSave=train, leaveOut=["filledPauses"])
+    # supervisoryHumanRobot(100, trainModelsAndSave=train, leaveOut=["respirationRate"])
+    # supervisoryHumanRobot(100, trainModelsAndSave=train, leaveOut=["respirationRate", "filledPauses"])
 
-    # peerHumanRobot(100, trainModelsAndSave=False)
-    # peerHumanRobot(100, trainModelsAndSave=False, leaveOut=["filledPauses"])
-    # peerHumanRobot(100, trainModelsAndSave=False, leaveOut=["respirationRate"])
-    # peerHumanRobot(100, trainModelsAndSave=False, leaveOut=["respirationRate", "filledPauses"])
+    # peerHumanRobot(100, trainModelsAndSave=train)
+    # peerHumanRobot(100, trainModelsAndSave=train, leaveOut=["filledPauses"])
+    # peerHumanRobot(100, trainModelsAndSave=train, leaveOut=["respirationRate"])
+    # peerHumanRobot(100, trainModelsAndSave=train, leaveOut=["respirationRate", "filledPauses"])
 
-    # realTimeSanityCheck(100, trainModelsAndSave=False)
-    # realTimeSanityCheck(100, trainModelsAndSave=False,
+    # realTimeSanityCheck(100, trainModelsAndSave=train)
+    # realTimeSanityCheck(100, trainModelsAndSave=train,
     #                     leaveOut=["filledPauses"])
-    # realTimeSanityCheck(100, trainModelsAndSave=False,
+    # realTimeSanityCheck(100, trainModelsAndSave=train,
     #                     leaveOut=["respirationRate"])
-    # realTimeSanityCheck(100, trainModelsAndSave=False,
+    # realTimeSanityCheck(100, trainModelsAndSave=train,
     #                     leaveOut=["respirationRate", "filledPauses"])
 
-    # # TODO
-    # realTimeWindowSizeEvaluation(50, trainModelsAndSave= False)
-    # realTimeWindowSizeEvaluation(50, trainModelsAndSave= False, leaveOut= ["respirationRate"])
-    # realTimeWindowSizeEvaluation(50, trainModelsAndSave= False, leaveOut= ["filledPauses"])
-    # realTimeWindowSizeEvaluation(50, trainModelsAndSave= False, leaveOut= ["filledPauses", "respirationRate"])
+    # realTimeWindowSizeEvaluation(100, trainModelsAndSave= train)
+    # realTimeWindowSizeEvaluation(100, trainModelsAndSave= train, leaveOut= ["respirationRate"])
+    realTimeWindowSizeEvaluation(100, trainModelsAndSave= train, leaveOut= ["filledPauses"])
+    realTimeWindowSizeEvaluation(100, trainModelsAndSave= train, leaveOut= ["filledPauses", "respirationRate"])
 
 
 if __name__ == "__main__":
