@@ -34,12 +34,14 @@ rmseLatexStringPeer="""
 \\thline
 \\textbf{Dataset}               & \\textbf{Condition} &   \\textbf{RMSE} &   \\textbf{Percent Error} \\\\
 \\hline
-\\multirow[c]{4}{*}{Unfiltered} &                 High & %s & %s\\%% \\\\
+\\multirow[c]{3}{*}{Unfiltered} &                 High & %s & %s\\%% \\\\
                                &                 Low & %s & %s\\%% \\\\
+                               \\cline{2-4}
                                &           \\bothCond & %s & %s\\%% \\\\
 \\hline
-\\multirow[c]{4}{*}{Filtered}   &                 High & %s & %s\\%% \\\\
+\\multirow[c]{3}{*}{Filtered}   &                 High & %s & %s\\%% \\\\
                                &                 Low & %s & %s\\%% \\\\
+                               \\cline{2-4}
                                &           \\bothCond & %s & %s\\%% \\\\
 \\thline
 \\end{tabu}
@@ -52,21 +54,21 @@ descriptiveLatexStringPeer="""
 \\thline
 \\textbf{Dataset} &  \\textbf{Condition} & \\textbf{Source} &  \\textbf{Mean} &  \\textbf{St. Dev.} &  \\textbf{Median} &  \\textbf{Max.} \\\\
 \\hline
-\\multirow[c]{8}{*}{Unfiltered} & \\multirow[c]{2}{*}{High}       &    Model &  %s &  %s &  %s &  %s \\\\
+\\multirow[c]{6}{*}{Unfiltered} & \\multirow[c]{2}{*}{High}       &    Model &  %s &  %s &  %s &  %s \\\\
                                &                              & Algorithm &  %s &  %s &  %s &  %s \\\\
-                               \\cline{2-8}
+                               \\cline{2-7}
                                & \\multirow[c]{2}{*}{Low}       &    Model &  %s &  %s &  %s &  %s \\\\
                                &                              & Algorithm &  %s &  %s &  %s &  %s \\\\
-                               \\cline{2-8}
+                               \\cline{2-7}
                                & \\multirow[c]{2}{*}{\\bothCond} &    Model &  %s &  %s &  %s &  %s \\\\
                                &                              & Algorithm &  %s &  %s &  %s &  %s \\\\
 \\hline
-\\multirow[c]{8}{*}{Filtered}   & \\multirow[c]{2}{*}{High}       &    Model &  %s &  %s &  %s &  %s \\\\
+\\multirow[c]{6}{*}{Filtered}   & \\multirow[c]{2}{*}{High}       &    Model &  %s &  %s &  %s &  %s \\\\
                                &                              & Algorithm &  %s &  %s &  %s &  %s \\\\
-                               \\cline{2-8}
+                               \\cline{2-7}
                                & \\multirow[c]{2}{*}{Low}       &    Model &  %s &  %s &  %s &  %s \\\\
                                &                              & Algorithm &  %s &  %s &  %s &  %s \\\\
-                               \\cline{2-8}
+                               \\cline{2-7}
                                & \\multirow[c]{2}{*}{\\bothCond} &    Model &  %s &  %s &  %s &  %s \\\\
                                &                              & Algorithm &  %s &  %s &  %s &  %s \\\\
 \\thline
@@ -80,13 +82,13 @@ correlationLatexString = """
 \\thline
 \\textbf{Dataset}       & \\textbf{Condition}  &  \\textbf{Coefficient} \\\\
 \\hline
-\\multirow[c]{4}{*}{Unfiltered}  &        OL  &        %s \\\\
+\\multirow[c]{3}{*}{Unfiltered}  &        OL  &        %s \\\\
                                 &        NL  &        %s \\\\
                                 &        UL  &        %s \\\\
                                 \\cline{2-3}
                                 &   \\allCond &        %s \\\\
 \\hline
-\\multirow[c]{4}{*}{Filtered}    &        OL  &        %s \\\\
+\\multirow[c]{3}{*}{Filtered}    &        OL  &        %s \\\\
                                 &        NL  &        %s \\\\
                                 &        UL  &        %s \\\\
                                 \\cline{2-3}
@@ -104,11 +106,13 @@ rmseLatexString="""
 \\multirow[c]{4}{*}{Unfiltered} &                 OL & %s & %s\\%% \\\\
                                &                 NL & %s & %s\\%% \\\\
                                &                 UL & %s & %s\\%% \\\\
+                               \\cline{2-4}
                                &           \\allCond & %s & %s\\%% \\\\
 \\hline
 \\multirow[c]{4}{*}{Filtered}   &                 OL & %s & %s\\%% \\\\
                                &                 NL & %s & %s\\%% \\\\
                                &                 UL & %s & %s\\%% \\\\
+                               \\cline{2-4}
                                &           \\allCond & %s & %s\\%% \\\\
 \\thline
 \\end{tabu}
@@ -260,7 +264,7 @@ def createTables(file, isPeer=False):
 
 def main():
     # 1. Emulated Real-World Conditions Experiment
-    createTables("./analyses/realWorldResults-LeaveOut['respirationRate', 'filledPauses']-100epochs.csv")
+    # createTables("./analyses/realWorldResults-LeaveOut['respirationRate', 'filledPauses']-100epochs.csv")
 
     # 2. Population Generalizability
     # createTables("./analyses/supervisoryCrossValidationResults-LeaveOut['respirationRate', 'filledPauses']-50epochs-summary.csv")

@@ -159,26 +159,37 @@ def neuralNetwork(data, train=True, epochs=50):
         return model
 
 def accuracyMetrics(model, data):
-    # Catch empty data set before bad things happen D:
-    if not len(data) > 0:
-        return [len(data.index), None, None, None, None, None, None, None, None, None, None, None, None, None]
+    assert model is not None or 'prediction' in data, "Missing model and predictions, unable to assess."
 
-    # Remove any extra information about overall condition/workload state to
-    # not mess up this function
-    if "condition" in data.columns:
-        data = data.drop(columns=['condition'])
-    if "overallState" in data.columns:
-        data = data.drop(columns=['overallState'])
+    # If there aren't yet any predictions
+    if model is not None:
+        # Catch empty data set before bad things happen D:
+        if not len(data) > 0:
+            return [len(data.index), None, None, None, None, None, None, None, None, None, None, None, None, None]
 
-    predictions = model.predict(data.drop(columns=['speechWorkload']).to_numpy())[:, 0]
-    predictions[data.meanVoiceActivity < 0.1] = 0
+        # Remove any extra information about overall condition/workload state to
+        # not mess up this function
+        if "condition" in data.columns:
+            data = data.drop(columns=['condition'])
+        if "overallState" in data.columns:
+            data = data.drop(columns=['overallState'])
 
-    actual = data.speechWorkload.to_numpy()
+        predictions = model.predict(data.drop(columns=['speechWorkload']).to_numpy())[:, 0]
+        predictions[data.meanVoiceActivity < 0.1] = 0
+
+        actual = data.speechWorkload.to_numpy()
+    else:
+        # Use the existing predictions
+        predictions = data.prediction.to_numpy()
+        predictions[data.meanVoiceActivity < 0.1] = 0
+
+        actual = data.speechWorkload.to_numpy()
 
     if len(actual) >= 2:
         correlationCoefficient, significance = stats.pearsonr(actual, predictions)
     else:
         correlationCoefficient, significance = (None, None)
+
     rmse = np.sqrt(np.mean((predictions - actual)
                            ** 2, axis=0, keepdims=True))[0]
     actualMean = np.mean(actual)
@@ -208,19 +219,18 @@ def assessModelAccuracy(model, data, shouldFilterOutMismatch=False, shouldGraph=
         vocalData = assessmentData[(assessmentData["speechWorkload"] > 0) & (
             assessmentData["meanVoiceActivity"] >= 0.1)]
         vocalData = vocalData.reset_index().drop(columns=["index"])
-
         silentData = assessmentData[(assessmentData["speechWorkload"] == 0) & (
             assessmentData["meanVoiceActivity"] < 0.1)]
         silentData = silentData.reset_index().drop(columns=["index"])
 
-        # if len(silentData) > len(vocalData):
-        #     silentData = silentData.sample(
-        #         n=len(vocalData.index), random_state=930123201)
-        #     silentData = silentData.reset_index().drop(columns=["index"])
-        # else:
-        #     vocalData = vocalData.sample(
-        #         n=len(silentData.index), random_state=930123201)
-        #     vocalData = vocalData.reset_index().drop(columns=["index"])
+        if len(silentData) > len(vocalData):
+            silentData = silentData.sample(
+                n=len(vocalData.index), random_state=930123201)
+            silentData = silentData.reset_index().drop(columns=["index"])
+        else:
+            vocalData = vocalData.sample(
+                n=len(silentData.index), random_state=930123201)
+            vocalData = vocalData.reset_index().drop(columns=["index"])
 
         assessmentData = pd.concat([vocalData, silentData])
         assessmentData = assessmentData.reset_index().drop(columns=["index"])
@@ -296,7 +306,7 @@ def supervisoryRealWorld(epochs, leaveOut=[], trainModelsAndSave=True):
     nonSplit = [[False, "all"] + assessModelAccuracy(model, test)]
     nonSplitFiltered = [[True, "all"] + assessModelAccuracy(model, test, shouldFilterOutMismatch=True)]
 
-    # Asses by each condition (low/high)
+    # Asses by each condition (ul/nl/ol)
     ol, nl, ul = assessModelAccuracy(model, test, shouldSplitByWorkloadState=True)
     unfilteredSplit = [[False, "ol"] + ol, [False, "nl"] + nl, [False, "ul"] + ul]
 
@@ -340,6 +350,11 @@ def supervisoryLeaveOneOutCrossValidation(epochs, leaveOut=[], trainModelsAndSav
     results = pd.DataFrame(columns=["participant", "filtered", "overallWorkloadState", "samples", "coefficient",
                                     "significance", "RMSE", "actualMean", "actualStDev", "actualMedian", "actualMin", "actualMax", "predMean", "predStDev", "predMedian", "predMin", "predMax"])
 
+    # Keep track of everything to do summary results
+    allData = pd.DataFrame(columns=['meanIntensity', 'stDevIntensity', 'meanPitch', 'stDevPitch',
+                                    'stDevVoiceActivity', 'meanVoiceActivity', 'syllablesPerSecond',
+                                    'speechWorkload', 'overallState', 'prediction'])
+
     for participantNumber in range(1, 31):
         print("Participant", participantNumber)
 
@@ -375,8 +390,6 @@ def supervisoryLeaveOneOutCrossValidation(epochs, leaveOut=[], trainModelsAndSav
             model.load(modelDirectory + "leaveOut-" +
                        str(participantNumber) + "-" + str(epochs) + "epochs.tflearn")
 
-        # Append results to the end of the data frame
-        # TODO: Make results from each into a pd frame and use concat(ignore_index=True) to append to overall `results`
         # Assess the performance of the neural network
         nonSplit         = [[participantNumber, False, "all"] + assessModelAccuracy(model, test)]
         nonSplitFiltered = [[participantNumber, True, "all"] + assessModelAccuracy(model, test, shouldFilterOutMismatch=True)]
@@ -406,12 +419,37 @@ def supervisoryLeaveOneOutCrossValidation(epochs, leaveOut=[], trainModelsAndSav
         # results.loc[len(results)] = [participantNumber, False, "all"] + assessModelAccuracy(model, test)
         # results.loc[len(results)] = [participantNumber, True, "all"] + assessModelAccuracy(model, test, shouldFilterOutMismatch=True)
 
+        allData = pd.concat([allData, test], ignore_index=True)
+
     print(results)
     results.to_csv("./analyses/supervisoryCrossValidationResults-LeaveOut" +
                    str(leaveOut) + "-" + str(epochs) + "epochs.csv")
-    summary = createSummary(results)
-    summary.to_csv("./analyses/supervisoryCrossValidationResults-LeaveOut" +
-                   str(leaveOut) + "-" + str(epochs) + "epochs-summary.csv")
+
+    allData = allData.dropna()
+
+    # Assess the performance of the neural network
+    nonSplit = [["all", False, "all"] + assessModelAccuracy(None, allData)]
+    nonSplitFiltered = [["all", True, "all"] + assessModelAccuracy(None, allData, shouldFilterOutMismatch=True)]
+
+    # Asses by each condition (ul/nl/ol)
+    ol, nl, ul = assessModelAccuracy(None, allData, shouldSplitByWorkloadState=True)
+    unfilteredSplit = [["all", False, "ol"] + ol,
+                       ["all", False, "nl"] + nl,
+                       ["all", False, "ul"] + ul]
+
+    olFilter, nlFilter, ulFilter = assessModelAccuracy(None, allData, shouldFilterOutMismatch=True, shouldSplitByWorkloadState=True)
+    filteredSplit = [["all", True, "ol"] + olFilter,
+                     ["all", True, "nl"] + nlFilter,
+                     ["all", True, "ul"] + ulFilter]
+
+    metrics = unfilteredSplit + nonSplit + filteredSplit + nonSplitFiltered
+
+    # Convert results to data frame
+    resultsOverAllParticipants = pd.DataFrame(metrics, columns=["participant", "filtered", "overallWorkloadState", "samples", "coefficient",
+                                              "significance", "RMSE", "actualMean", "actualStDev", "actualMedian", "actualMin", "actualMax",
+                                              "predMean", "predStDev", "predMedian", "predMin", "predMax"])
+    resultsOverAllParticipants.to_csv("./analyses/supervisoryCrossValidationResults-LeaveOut" +
+                                      str(leaveOut) + "-" + str(epochs) + "epochs-summary.csv")
 
 
 # Human-Robot Teaming Generalizability - Train on Supervisory, test on Peer-Based (split by low/condition)
@@ -653,7 +691,15 @@ def realTimeWindowSizeEvaluation(epochs, leaveOut=[], trainModelsAndSave=True):
     results = pd.DataFrame(columns=["windowSize", "participant", "filtered", "overallWorkloadState", "samples", "coefficient",
                                     "significance", "RMSE", "actualMean", "actualStDev", "actualMedian", "actualMin", "actualMax", "predMean", "predStDev", "predMedian", "predMin", "predMax"])
 
+    summaryResults = pd.DataFrame(columns=["windowSize", "participant", "filtered", "overallWorkloadState", "samples", "coefficient",
+                                    "significance", "RMSE", "actualMean", "actualStDev", "actualMedian", "actualMin", "actualMax", "predMean", "predStDev", "predMedian", "predMin", "predMax"])
+
     for windowSize, directory in directories.items():
+        # Keep track of everything to do summary results for the entire window size
+        allData = pd.DataFrame(columns=['meanIntensity', 'stDevIntensity', 'meanPitch', 'stDevPitch',
+                                        'stDevVoiceActivity', 'meanVoiceActivity', 'syllablesPerSecond',
+                                        'speechWorkload', 'overallState', 'prediction'])
+
         featureDirectory = "./training/" + directory + "/"
 
         modelDirectory = "./models/Real_Time_Window_Size-" + \
@@ -682,14 +728,16 @@ def realTimeWindowSizeEvaluation(epochs, leaveOut=[], trainModelsAndSave=True):
                 if str(participantNumber) == os.path.basename(path).split('_')[0][1:][:-4]:
                     participantPath = path
 
-            if participantPath != "":  # some participants are missing from the dataset
-                featurePaths.remove(participantPath)
+            if participantPath == "":  # some participants are missing from the dataset
+                continue
 
-                train = loadData(trainingFiles=featurePaths, audioFeatures=audioFeatures,
-                                 respirationRate=includeRespirationRate, trimToRespirationLength=False)
-                test = loadData(trainingFiles=[participantPath], audioFeatures=audioFeatures,
-                                respirationRate=includeRespirationRate, trimToRespirationLength=False, filter=False,
-                                labelsHaveOverallState=True)
+            featurePaths.remove(participantPath)
+
+            train = loadData(trainingFiles=featurePaths, audioFeatures=audioFeatures,
+                                respirationRate=includeRespirationRate, trimToRespirationLength=False)
+            test = loadData(trainingFiles=[participantPath], audioFeatures=audioFeatures,
+                            respirationRate=includeRespirationRate, trimToRespirationLength=False, filter=False,
+                            labelsHaveOverallState=True)
 
             if trainModelsAndSave:
                 model = neuralNetwork(train, epochs=epochs)
@@ -725,100 +773,64 @@ def realTimeWindowSizeEvaluation(epochs, leaveOut=[], trainModelsAndSave=True):
 
             results = pd.concat([results, currentResults], ignore_index=True)
 
-            # print(">>> about to append ")
-            # # Append results to the end of the data frame
-            # print(results)
-            # # TODO: Make results from each into a pd frame and use concat(ignore_index=True) to append to overall `results`
-            # results.loc[len(results)] = [windowSize, participantNumber,
-            #                              False] + assessModelAccuracy(model, test)
-            # results.loc[len(results)] = [windowSize, participantNumber, True] + \
-            #     assessModelAccuracy(model, test, shouldFilterOutMismatch=True)
+            testArray = test
+            # Remove any extra information about overall condition/workload state to
+            # not mess up this function
+            if "condition" in testArray.columns:
+                testArray = testArray.drop(columns=['condition'])
+            if "overallState" in testArray.columns:
+                testArray = testArray.drop(columns=['overallState'])
 
-        print(results)
+            # Keep track of all data to analyze at the end
+            predictions = model.predict(testArray.drop(columns=['speechWorkload']).to_numpy())[:, 0]
+            predictions[test.meanVoiceActivity < 0.1] = 0
+
+            actual = testArray.speechWorkload.to_numpy()
+
+            test['prediction'] = predictions
+
+            print(test)
+
+            allData = pd.concat([allData, test], ignore_index=True)
+
+        allData = allData.dropna()
+
+        # Assess the performance of the neural network
+        nonSplit = [[windowSize, "all", False, "all"] + assessModelAccuracy(None, allData)]
+        nonSplitFiltered = [[windowSize, "all", True, "all"] + assessModelAccuracy(None, allData, shouldFilterOutMismatch=True)]
+
+        # Asses by each condition (ul/nl/ol)
+        ol, nl, ul = assessModelAccuracy(None, allData, shouldSplitByWorkloadState=True)
+        unfilteredSplit = [[windowSize, "all", False, "ol"] + ol,
+                        [windowSize, "all", False, "nl"] + nl,
+                        [windowSize, "all", False, "ul"] + ul]
+
+        olFilter, nlFilter, ulFilter = assessModelAccuracy(None, allData, shouldFilterOutMismatch=True, shouldSplitByWorkloadState=True)
+        filteredSplit = [[windowSize, "all", True, "ol"] + olFilter,
+                        [windowSize, "all", True, "nl"] + nlFilter,
+                        [windowSize, "all", True, "ul"] + ulFilter]
+
+        metrics = unfilteredSplit + nonSplit + filteredSplit + nonSplitFiltered
+
+        # Convert results to data frame
+        currentResultsOverWindowSize = pd.DataFrame(metrics, columns=["windowSize", "participant", "filtered", "overallWorkloadState", "samples", "coefficient",
+                                                "significance", "RMSE", "actualMean", "actualStDev", "actualMedian", "actualMin", "actualMax", "predMean", "predStDev", "predMedian", "predMin", "predMax"])
+
+        summaryResults = pd.concat([summaryResults, currentResultsOverWindowSize], ignore_index=True)
+
 
     results.to_csv("./analyses/realTimeWindowSizeEvaluation-LeaveOut" +
                    str(leaveOut) + "-" + str(epochs) + "epochs.csv")
 
-    summary = createSummary(results)
-    summary.to_csv("./analyses/realTimeWindowSizeEvaluation-LeaveOut" +
+    # summary = createSummary(results)
+    summaryResults.to_csv("./analyses/realTimeWindowSizeEvaluation-LeaveOut" +
                    str(leaveOut) + "-" + str(epochs) + "epochs-summary.csv")
-
-
-#                          pd.DataFrame   Bool  String
-def summarizeWorkloadState(dataFrame, filtered, state):
-    workloadStateData = dataFrame.loc[(dataFrame["filtered"] == filtered) & (dataFrame["overallWorkloadState"] == state)]
-
-    meanDataFrame = workloadStateData.mean()
-    # Use total number of samples instead of mean
-    meanDataFrame["samples"] = workloadStateData.sum()["samples"]
-    # Set values not defined for mean()
-    meanDataFrame["participant"] = "all"
-    meanDataFrame["overallWorkloadState"] = state
-    meanDataFrame["filtered"] = filtered
-
-    return meanDataFrame
-
-def createSummary(dataFrame):
-    dataFrame = dataFrame.dropna()
-
-    if "windowSize" in dataFrame.columns:
-        resultFrame = pd.DataFrame([], columns=dataFrame.columns)
-
-        for windowSize in [1, 5, 10, 15, 30, 60]:
-            windowSizeData = dataFrame.loc[dataFrame["windowSize"]
-                                           == windowSize]
-
-            filteredOverload = summarizeWorkloadState(windowSizeData, True, "ol")
-            filteredNormalLoad = summarizeWorkloadState(windowSizeData, True, "nl")
-            filteredUnderload = summarizeWorkloadState(windowSizeData, True, "ul")
-            filtered = summarizeWorkloadState(windowSizeData, True, "all")
-
-            unfilteredOverload = summarizeWorkloadState(windowSizeData, False, "ol")
-            unfilteredNormalLoad = summarizeWorkloadState(windowSizeData, False, "nl")
-            unfilteredUnderload = summarizeWorkloadState(windowSizeData, False, "ul")
-            unfiltered = summarizeWorkloadState(windowSizeData, False, "all")
-
-            resultFrame = pd.concat([resultFrame,
-                                     pd.DataFrame([filteredOverload,
-                                                   filteredNormalLoad,
-                                                   filteredUnderload,
-                                                   filtered,
-                                                   unfilteredOverload,
-                                                   unfilteredNormalLoad,
-                                                   unfilteredUnderload,
-                                                   unfiltered],
-                                                  columns=dataFrame.columns)])
-
-        return resultFrame
-
-    else:
-        filteredOverload = summarizeWorkloadState(dataFrame, True, "ol")
-        filteredNormalLoad = summarizeWorkloadState(dataFrame, True, "nl")
-        filteredUnderload = summarizeWorkloadState(dataFrame, True, "ul")
-        filtered = summarizeWorkloadState(dataFrame, True, "all")
-
-        unfilteredOverload = summarizeWorkloadState(dataFrame, False, "ol")
-        unfilteredNormalLoad = summarizeWorkloadState(dataFrame, False, "nl")
-        unfilteredUnderload = summarizeWorkloadState(dataFrame, False, "ul")
-        unfiltered = summarizeWorkloadState(dataFrame, False, "all")
-
-        resultFrame = pd.DataFrame([filteredOverload,
-                                    filteredNormalLoad,
-                                    filteredUnderload,
-                                    filtered,
-                                    unfilteredOverload,
-                                    unfilteredNormalLoad,
-                                    unfilteredUnderload,
-                                    unfiltered],
-                                    columns=dataFrame.columns)
-
-        return resultFrame
 
 
 def main():
     print(); print(); print()
 
-    train = True
+    train = False
 
     # supervisoryRealWorld(100, trainModelsAndSave=train)
     # supervisoryRealWorld(100, trainModelsAndSave=train,
@@ -828,11 +840,11 @@ def main():
     # supervisoryRealWorld(100, trainModelsAndSave=train,
     #                      leaveOut=["respirationRate", "filledPauses"])
 
-    # supervisoryLeaveOneOutCrossValidation(100, trainModelsAndSave=train)
-    # supervisoryLeaveOneOutCrossValidation(100, trainModelsAndSave=train, leaveOut=["filledPauses"])
-    # supervisoryLeaveOneOutCrossValidation(100, trainModelsAndSave=train, leaveOut=["respirationRate"])
+    supervisoryLeaveOneOutCrossValidation(50, trainModelsAndSave=train)
+    supervisoryLeaveOneOutCrossValidation(50, trainModelsAndSave=train, leaveOut=["filledPauses"])
+    supervisoryLeaveOneOutCrossValidation(50, trainModelsAndSave=train, leaveOut=["respirationRate"])
     # supervisoryLeaveOneOutCrossValidation(100, trainModelsAndSave=train, leaveOut=["respirationRate", "filledPauses"])
-
+#
     # supervisoryHumanRobot(100, trainModelsAndSave=train)
     # supervisoryHumanRobot(100, trainModelsAndSave=train, leaveOut=["filledPauses"])
     # supervisoryHumanRobot(100, trainModelsAndSave=train, leaveOut=["respirationRate"])
@@ -842,7 +854,7 @@ def main():
     # peerHumanRobot(100, trainModelsAndSave=train, leaveOut=["filledPauses"])
     # peerHumanRobot(100, trainModelsAndSave=train, leaveOut=["respirationRate"])
     # peerHumanRobot(100, trainModelsAndSave=train, leaveOut=["respirationRate", "filledPauses"])
-
+#
     # realTimeSanityCheck(100, trainModelsAndSave=train)
     # realTimeSanityCheck(100, trainModelsAndSave=train,
     #                     leaveOut=["filledPauses"])
@@ -851,11 +863,12 @@ def main():
     # realTimeSanityCheck(100, trainModelsAndSave=train,
     #                     leaveOut=["respirationRate", "filledPauses"])
 
-    # realTimeWindowSizeEvaluation(100, trainModelsAndSave= train)
-    # realTimeWindowSizeEvaluation(100, trainModelsAndSave= train, leaveOut= ["respirationRate"])
-    realTimeWindowSizeEvaluation(100, trainModelsAndSave= train, leaveOut= ["filledPauses"])
-    realTimeWindowSizeEvaluation(100, trainModelsAndSave= train, leaveOut= ["filledPauses", "respirationRate"])
+    realTimeWindowSizeEvaluation(50, trainModelsAndSave= train)
+    realTimeWindowSizeEvaluation(50, trainModelsAndSave= train, leaveOut= ["respirationRate"])
+    # realTimeWindowSizeEvaluation(50, trainModelsAndSave= train, leaveOut= ["filledPauses"])
+    # realTimeWindowSizeEvaluation(50, trainModelsAndSave= train, leaveOut= ["filledPauses", "respirationRate"])
 
+    # print(results)
 
 if __name__ == "__main__":
     main()
