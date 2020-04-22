@@ -242,8 +242,10 @@ def createDescriptiveTable(results, peer=False):
 
 def createTables(file, isPeer=False):
     results = pd.read_csv(file, index_col=0)
+    results = results.sort_values(by='filtered', kind='mergesort') # Use mergesort to get stable sort
+    results = results.reset_index().drop(columns=['index'])
 
-    # print(results)
+    print(results)
 
     CorrelationLatex = createCorrelationTable(results, peer=isPeer)
     print("% Table created " + date.today().strftime("%B %d, %Y"))
@@ -267,7 +269,7 @@ def main():
     # createTables("./analyses/realWorldResults-LeaveOut['respirationRate', 'filledPauses']-100epochs.csv")
 
     # 2. Population Generalizability
-    # createTables("./analyses/supervisoryCrossValidationResults-LeaveOut['respirationRate', 'filledPauses']-50epochs-summary.csv")
+    createTables("./analyses/supervisoryCrossValidationResults-LeaveOut['respirationRate', 'filledPauses']-50epochs-summary.csv")
 
     # 3.a. Human-Robot Teaming Generalizability (train Peer-based)
     # createTables("./analyses/peerHumanRobot-LeaveOut['respirationRate', 'filledPauses']-100epochs.csv")

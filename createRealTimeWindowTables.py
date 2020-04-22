@@ -22,64 +22,59 @@ correlationLatexString = """
 \\textbf{Dataset} &  \\textbf{Condition} & \\textbf{1s} &  \\textbf{5s} &  \\textbf{10s} &  \\textbf{15s} &  \\textbf{30s} &  \\textbf{60s} \\\\
 \\hline
 
-\\\\multirow[c]{4}{*}{Unfiltered}  &         OL &  %s &  %s &  %s &  %s &  %s &  %s \\\\\\\\
-                                &         NL &  %s &  %s &  %s &  %s &  %s &  %s \\\\\\\\
-                                &         UL &  %s &  %s &  %s &  %s &  %s &  %s \\\\\\\\
-                                \\\\cline{2-8}
-                                &   \\\\allCond &  %s &  %s &  %s &  %s &  %s &  %s \\\\\\\\
+\\multirow[c]{4}{*}{Unfiltered}  &         OL &  %s &  %s &  %s &  %s &  %s &  %s \\\\
+                                &         NL &  %s &  %s &  %s &  %s &  %s &  %s \\\\
+                                &         UL &  %s &  %s &  %s &  %s &  %s &  %s \\\\
+                                \\cline{2-8}
+                                &   \\allCond &  %s &  %s &  %s &  %s &  %s &  %s \\\\
 
-\\\\hline
-\\\\multirow[c]{4}{*}{Filtered}    &         OL &  %s &  %s &  %s &  %s &  %s &  %s \\\\\\\\
-                                &         NL &  %s &  %s &  %s &  %s &  %s &  %s \\\\\\\\
-                                &         UL &  %s &  %s &  %s &  %s &  %s &  %s \\\\\\\\
-                                \\\\cline{2-8}
-                                &   \\\\allCond &  %s &  %s &  %s &  %s &  %s &  %s \\\\\\\\
-\\\\thline
-\\\\end{tabu}
+\\hline
+\\multirow[c]{4}{*}{Filtered}    &         OL &  %s &  %s &  %s &  %s &  %s &  %s \\\\
+                                &         NL &  %s &  %s &  %s &  %s &  %s &  %s \\\\
+                                &         UL &  %s &  %s &  %s &  %s &  %s &  %s \\\\
+                                \\cline{2-8}
+                                &   \\allCond &  %s &  %s &  %s &  %s &  %s &  %s \\\\
+\\thline
+\\end{tabu}
 """
 
 # Latex for the descriptive statistics graph
 runTimeLatexString = """
-\\\\\\\\centering
-\\\\\\\\begin{tabu}{c|llllll}
+\\centering
+\\begin{tabu}{X|XXXXXX}
 
-\\\\\\\\thline
-                 & \\\\\\\\multicolumn{6}{c}{\\\\\\\\textbf{Window Size (Seconds)}} \\\\\\\\\\\\\\\\
-                 \\\\\\\\cline{2-7}
+\\thline
+                        & \\multicolumn{6}{c}{\\textbf{Window Size (Seconds)}} \\\\
+                        \\cline{2-7}
 
-\\\\\\\\textbf{Feature}                            &  \\\\\\\\textbf{1s} &  \\\\\\\\textbf{5s} &  \\\\\\\\textbf{10s} &  \\\\\\\\textbf{15s} &  \\\\\\\\textbf{30s} &  \\\\\\\\textbf{60s} \\\\\\\\\\\\\\\\
-\\\\\\\\hline
+\\textbf{Feature}        &  \\textbf{1s} &  \\textbf{5s} &  \\textbf{10s} &  \\textbf{15s} &  \\textbf{30s} &  \\textbf{60s} \\\\
+\\hline
 
-\\\\\\\\multirow[c]{2}{*}{\\\\\\\\textbf{Intensity}}      &  %s &  %s &  %s &  %s &  %s &  %s \\\\\\\\\\\\\\\\
-                                            &  (%s) &  (%s) &  (%s) &  (%s) &  (%s) &  (%s) \\\\\\\\\\\\\\\\
-\\\\\\\\hline
+\\textbf{Intensity}      &  %s (%s) &  %s (%s) &  %s (%s) &  %s (%s) &  %s (%s) &  %s (%s) \\\\
+\\hline
 
-\\\\\\\\multirow[c]{2}{*}{\\\\\\\\textbf{Pitch}}          &  %s &  %s &  %s &  %s &  %s &  %s \\\\\\\\\\\\\\\\
-                                            &  (%s) &  (%s) &  (%s) &  (%s) &  (%s) &  (%s) \\\\\\\\\\\\\\\\
-\\\\\\\\hline
+\\textbf{Pitch}          &  %s (%s) &  %s (%s) &  %s (%s) &  %s (%s) &  %s (%s) &  %s (%s) \\\\
+\\hline
 
-\\\\\\\\multirow[c]{2}{*}{\\\\\\\\textbf{Voice Activity}} &  %s &  %s &  %s &  %s &  %s &  %s \\\\\\\\\\\\\\\\
-                                            &  (%s) &  (%s) &  (%s) &  (%s) &  (%s) &  (%s) \\\\\\\\\\\\\\\\
-\\\\\\\\hline
+\\textbf{Voice Activity} &  %s (%s) &  %s (%s) &  %s (%s) &  %s (%s) &  %s (%s) &  %s (%s) \\\\
+\\hline
 
-\\\\\\\\multirow[c]{2}{*}{\\\\\\\\textbf{Speech-Rate}}    &  %s &  %s &  %s &  %s &  %s &  %s \\\\\\\\\\\\\\\\
-                                            &  (%s) &  (%s) &  (%s) &  (%s) &  (%s) &  (%s) \\\\\\\\\\\\\\\\
-\\\\\\\\hline
+\\textbf{Speech-Rate}    &  %s (%s) &  %s (%s) &  %s (%s) &  %s (%s) &  %s (%s) &  %s (%s) \\\\
+\\hline
 
-\\\\\\\\multirow[c]{2}{*}{\\\\\\\\textbf{Total}}          &  %s &  %s &  %s &  %s &  %s &  %s \\\\\\\\\\\\\\\\
-                                            &  (%s) &  (%s) &  (%s) &  (%s) &  (%s) &  (%s) \\\\\\\\\\\\\\\\
-\\\\\\\\hline
+\\textbf{All Features}   &  %s (%s) &  %s (%s) &  %s (%s) &  %s (%s) &  %s (%s) &  %s (%s) \\\\
+\\hline
 
 
-\\\\\\\\thline
-\\\\\\\\end{tabu}
+\\thline
+\\end{tabu}
 """
 
 def convertToLatex(df):
     return df.to_latex(index=False, float_format="%.3f")
 
 def createCorrelationTable(results):
-    print("Correlation\\\\n============")
+    print("Correlation\n============")
 
     stringsToPlaceInTable = []
 
@@ -105,7 +100,7 @@ def createCorrelationTable(results):
 
 
 def createRMSETable(results):
-    print("RMSE\\\\t% Err.\\\\t(Mean)\\\\n=====================")
+    print("RMSE\t% Err.\t(Mean)\n=====================")
 
     stringsToPlaceInTable = []
 
@@ -156,17 +151,22 @@ def createRunTimeTable():
                "voiceActivityMean", "voiceActivityStDev", "syllablesMean",
                "syllablesStDev", "totalMean", "totalStDev"]
 
-    for columnIndex in range(len(columns)):
+    for columnIndex in range(len(columns)//2):
         for index in range(len([1,5,10,15,30,60])):
-            if columnIndex % 2 == 0:
-                mean  = timings.loc[index, columns[columnIndex]]
-                meanString  = "{0:.3f}".format(mean).rstrip('0').rstrip('.')
-                stringsToPlaceInTable.append(meanString)
+            print(index, columns[columnIndex*2], columns[columnIndex*2 + 1])
+            mean  = timings.loc[index, columns[columnIndex*2]]
+            meanString  = "{0:.3f}".format(mean).rstrip('0').rstrip('.')
+            if not meanString == "0":
+                meanString = meanString.lstrip('0')
+            if len(meanString) > 4:
+                meanString  = "{0:.2f}".format(mean).rstrip('0').rstrip('.').lstrip('0')
+            stringsToPlaceInTable.append(meanString)
 
-            else:
-                stDev = timings.loc[index, columns[columnIndex]]
-                stDevString = "{0:.2f}".format(stDev).rstrip('0').rstrip('.')
-                stringsToPlaceInTable.append(stDevString)
+            stDev = timings.loc[index, columns[columnIndex*2 + 1]]
+            stDevString = "{0:.2f}".format(stDev).rstrip('0').rstrip('.')
+            if not stDevString == "0":
+                stDevString = stDevString.lstrip('0')
+            stringsToPlaceInTable.append(stDevString)
 
             # print(timings.loc[index, 'windowSize'], meanString, stDevString)
 
