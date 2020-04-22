@@ -415,9 +415,23 @@ def supervisoryLeaveOneOutCrossValidation(epochs, leaveOut=[], trainModelsAndSav
 
         results = pd.concat([results, currentResults], ignore_index=True)
 
-        # currentResults =
-        # results.loc[len(results)] = [participantNumber, False, "all"] + assessModelAccuracy(model, test)
-        # results.loc[len(results)] = [participantNumber, True, "all"] + assessModelAccuracy(model, test, shouldFilterOutMismatch=True)
+        testArray = test
+        # Remove any extra information about overall condition/workload state to
+        # not mess up this function
+        if "condition" in testArray.columns:
+            testArray = testArray.drop(columns=['condition'])
+        if "overallState" in testArray.columns:
+            testArray = testArray.drop(columns=['overallState'])
+
+        # Keep track of all data to analyze at the end
+        predictions = model.predict(testArray.drop(columns=['speechWorkload']).to_numpy())[:, 0]
+        predictions[test.meanVoiceActivity < 0.1] = 0
+
+        actual = testArray.speechWorkload.to_numpy()
+
+        test['prediction'] = predictions
+
+        print(test)
 
         allData = pd.concat([allData, test], ignore_index=True)
 
@@ -426,6 +440,8 @@ def supervisoryLeaveOneOutCrossValidation(epochs, leaveOut=[], trainModelsAndSav
                    str(leaveOut) + "-" + str(epochs) + "epochs.csv")
 
     allData = allData.dropna()
+
+    print(allData)
 
     # Assess the performance of the neural network
     nonSplit = [["all", False, "all"] + assessModelAccuracy(None, allData)]
@@ -448,8 +464,12 @@ def supervisoryLeaveOneOutCrossValidation(epochs, leaveOut=[], trainModelsAndSav
     resultsOverAllParticipants = pd.DataFrame(metrics, columns=["participant", "filtered", "overallWorkloadState", "samples", "coefficient",
                                               "significance", "RMSE", "actualMean", "actualStDev", "actualMedian", "actualMin", "actualMax",
                                               "predMean", "predStDev", "predMedian", "predMin", "predMax"])
+
+    print(resultsOverAllParticipants)
+
     resultsOverAllParticipants.to_csv("./analyses/supervisoryCrossValidationResults-LeaveOut" +
                                       str(leaveOut) + "-" + str(epochs) + "epochs-summary.csv")
+
 
 
 # Human-Robot Teaming Generalizability - Train on Supervisory, test on Peer-Based (split by low/condition)
@@ -843,7 +863,7 @@ def main():
     supervisoryLeaveOneOutCrossValidation(50, trainModelsAndSave=train)
     supervisoryLeaveOneOutCrossValidation(50, trainModelsAndSave=train, leaveOut=["filledPauses"])
     supervisoryLeaveOneOutCrossValidation(50, trainModelsAndSave=train, leaveOut=["respirationRate"])
-    # supervisoryLeaveOneOutCrossValidation(100, trainModelsAndSave=train, leaveOut=["respirationRate", "filledPauses"])
+    supervisoryLeaveOneOutCrossValidation(50, trainModelsAndSave=train, leaveOut=["respirationRate", "filledPauses"])
 #
     # supervisoryHumanRobot(100, trainModelsAndSave=train)
     # supervisoryHumanRobot(100, trainModelsAndSave=train, leaveOut=["filledPauses"])
@@ -863,8 +883,8 @@ def main():
     # realTimeSanityCheck(100, trainModelsAndSave=train,
     #                     leaveOut=["respirationRate", "filledPauses"])
 
-    realTimeWindowSizeEvaluation(50, trainModelsAndSave= train)
-    realTimeWindowSizeEvaluation(50, trainModelsAndSave= train, leaveOut= ["respirationRate"])
+    # realTimeWindowSizeEvaluation(50, trainModelsAndSave= train)
+    # realTimeWindowSizeEvaluation(50, trainModelsAndSave= train, leaveOut= ["respirationRate"])
     # realTimeWindowSizeEvaluation(50, trainModelsAndSave= train, leaveOut= ["filledPauses"])
     # realTimeWindowSizeEvaluation(50, trainModelsAndSave= train, leaveOut= ["filledPauses", "respirationRate"])
 

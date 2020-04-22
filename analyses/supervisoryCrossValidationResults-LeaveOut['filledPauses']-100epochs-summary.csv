@@ -1,9 +1,0 @@
-,participant,filtered,overallWorkloadState,samples,coefficient,significance,RMSE,actualMean,actualStDev,actualMedian,actualMin,actualMax,predMean,predStDev,predMedian,predMin,predMax
-0,all,False,ol,0,,,,,,,,,,,,,
-1,all,False,nl,0,,,,,,,,,,,,,
-2,all,False,ul,0,,,,,,,,,,,,,
-3,all,False,all,0,,,,,,,,,,,,,
-4,all,True,ol,0,,,,,,,,,,,,,
-5,all,True,nl,0,,,,,,,,,,,,,
-6,all,True,ul,0,,,,,,,,,,,,,
-7,all,True,all,0,,,,,,,,,,,,,
